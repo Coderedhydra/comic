@@ -15,11 +15,13 @@ def test_high_accuracy_mode():
     
     print("=== HIGH ACCURACY BUBBLE PLACEMENT TEST ===")
     print("This mode uses:")
-    print("1. Larger panels (fewer panels per page)")
-    print("2. Deterministic grid-based bubble positioning")
-    print("3. 80px face exclusion zones")
-    print("4. Smart collision avoidance")
-    print("5. Corner/edge preference for bubble placement")
+    print("1. ONLY 4 images per page (maximum bubble space)")
+    print("2. Larger panels for better bubble placement")
+    print("3. Deterministic grid-based bubble positioning")
+    print("4. 80px face exclusion zones")
+    print("5. Smart collision avoidance")
+    print("6. Corner/edge preference for bubble placement")
+    print("7. More grid positions for larger panels")
     print()
     
     # Test panel sizes
@@ -28,6 +30,14 @@ def test_high_accuracy_mode():
     for panel_type, specs in types.items():
         if panel_type in ['5', '6', '7', '8']:
             print(f"  Panel {panel_type}: {specs['width']:.0f}x{specs['height']:.0f} pixels")
+    
+    print()
+    print("Page templates in high-accuracy mode:")
+    print("  - 5555: 4 full-width panels")
+    print("  - 6666: 4 standard panels")
+    print("  - 7777: 4 medium panels")
+    print("  - 8888: 4 large panels")
+    print("  - Each page has exactly 4 images for maximum bubble space")
     
     print()
     print("To use high-accuracy mode:")

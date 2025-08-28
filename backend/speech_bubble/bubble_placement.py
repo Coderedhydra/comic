@@ -86,21 +86,25 @@ def get_bubble_position(crop_coord, CAM_data, lip_coords=None):
 
 def _get_safe_grid_positions(panel_width, panel_height):
     """
-    Generate a grid of safe bubble positions that avoid edges and center
+    Generate a grid of safe bubble positions optimized for larger panels
     """
     positions = []
     
-    # Define grid spacing
-    grid_cols = 4
-    grid_rows = 3
+    # For larger panels, use more grid positions
+    if panel_width > 500:  # Large panels (full-width)
+        grid_cols = 6
+        grid_rows = 4
+    else:  # Standard panels
+        grid_cols = 4
+        grid_rows = 3
     
     # Calculate grid cell size
     cell_width = panel_width / grid_cols
     cell_height = panel_height / grid_rows
     
     # Add margin to avoid edges
-    margin_x = BUBBLE_WIDTH / 2 + 20
-    margin_y = BUBBLE_HEIGHT / 2 + 20
+    margin_x = BUBBLE_WIDTH / 2 + 25
+    margin_y = BUBBLE_HEIGHT / 2 + 25
     
     # Generate grid positions
     for row in range(grid_rows):
@@ -114,7 +118,7 @@ def _get_safe_grid_positions(panel_width, panel_height):
                 positions.append((x, y))
     
     # Add corner positions for better coverage
-    corner_margin = 30
+    corner_margin = 40
     corners = [
         (corner_margin, corner_margin),  # Top-left
         (panel_width - corner_margin, corner_margin),  # Top-right
@@ -127,7 +131,29 @@ def _get_safe_grid_positions(panel_width, panel_height):
             margin_y <= corner[1] <= panel_height - margin_y):
             positions.append(corner)
     
-    print(f"Generated {len(positions)} safe grid positions")
+    # Add edge positions for better distribution
+    edge_positions = []
+    edge_margin = 60
+    
+    # Top edge
+    for i in range(1, grid_cols):
+        x = i * cell_width
+        y = edge_margin
+        if (margin_x <= x <= panel_width - margin_x and 
+            margin_y <= y <= panel_height - margin_y):
+            edge_positions.append((x, y))
+    
+    # Right edge
+    for i in range(1, grid_rows):
+        x = panel_width - edge_margin
+        y = i * cell_height
+        if (margin_x <= x <= panel_width - margin_x and 
+            margin_y <= y <= panel_height - margin_y):
+            edge_positions.append((x, y))
+    
+    positions.extend(edge_positions)
+    
+    print(f"Generated {len(positions)} safe grid positions for {panel_width:.0f}x{panel_height:.0f} panel")
     return positions
 
 def _select_best_position(positions, panel_width, panel_height):

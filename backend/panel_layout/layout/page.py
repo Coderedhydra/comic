@@ -70,9 +70,9 @@ templates = ['14124114','312341' , '4432111' , '21411241' , '3241141' , '1341114
 # High-accuracy mode: when HIGH_ACCURACY is set, use fewer larger panels for better bubble placement
 HIGH_ACCURACY = os.getenv('HIGH_ACCURACY', '0')
 if HIGH_ACCURACY in ('1', 'true', 'True', 'YES', 'yes'):
-    # Use templates with fewer, larger panels for maximum bubble placement accuracy
-    templates = ['5', '66', '666', '55', '555', '6666', '5555']
-    print("Using HIGH_ACCURACY mode with larger panels for better bubble placement")
+    # Use templates with ONLY 4 images per page for maximum bubble space
+    templates = ['5555', '6666', '7777', '8888', '5555', '6666']
+    print("Using HIGH_ACCURACY mode with 4 images per page for maximum bubble space")
 else:
     # Optional grid layout for efficiency: when GRID_LAYOUT is set, prefer uniform grids
     GRID_LAYOUT = os.getenv('GRID_LAYOUT', '0')
@@ -80,7 +80,11 @@ else:
         # Use simple repetitive templates that create grid-like pages
         templates = ['6666', '4488', '44446', '666', '67']
 
-min_length = 6
+# Adjust minimum length based on accuracy mode
+if HIGH_ACCURACY in ('1', 'true', 'True', 'YES', 'yes'):
+    min_length = 4  # Allow 4-image pages in high accuracy mode
+else:
+    min_length = 6
 folder_path = 'frames/final' # Specify the folder path
 
 
@@ -131,39 +135,44 @@ def last_page(panels,count_images, length):
     #     new[f'#_{i}']['display'] = 'none'
     
     if length == 1:
-        new_panel = panel(f'frame{count_images:03d}', 3, 4)
+        new_panel = panel(f'frame{count_images:03d}', 4, 4)  # Full page for single image
         panels.append(new_panel)
     elif length == 2:
-        new_panel = panel(f'frame{count_images:03d}', 1, 4)
+        new_panel = panel(f'frame{count_images:03d}', 2, 4)  # Half page each
         panels.append(new_panel)
         count += 1
         count_images += 1
         new_panel = panel(f'frame{count_images:03d}', 2, 4)
         panels.append(new_panel)
     elif length == 3:
-        for i in range(0, 3):
-            new_panel = panel(f'frame{count_images:03d}', 1, 4)
-            panels.append(new_panel)
-            count += 1
-            count_images += 1
+        # 2x2 grid with one full-width panel
+        new_panel = panel(f'frame{count_images:03d}', 2, 2)  # Top-left
+        panels.append(new_panel)
+        count += 1
+        count_images += 1
+        new_panel = panel(f'frame{count_images:03d}', 2, 2)  # Top-right
+        panels.append(new_panel)
+        count += 1
+        count_images += 1
+        new_panel = panel(f'frame{count_images:03d}', 4, 2)  # Bottom full-width
+        panels.append(new_panel)
+        count += 1
+        count_images += 1
     elif length == 4:
-        for i in range(0, 2):
-            new_panel = panel(f'frame{count_images:03d}', 1, 2)
-            panels.append(new_panel)
-            count += 1
-            count_images += 1
-        for i in range(2, 4):
+        # Perfect 2x2 grid
+        for i in range(0, 4):
             new_panel = panel(f'frame{count_images:03d}', 2, 2)
             panels.append(new_panel)
             count += 1
             count_images += 1
     elif length == 5:
+        # 2x2 grid plus one full-width panel
         for i in range(0, 4):
-            new_panel = panel(f'frame{count_images:03d}', 1, 2)
+            new_panel = panel(f'frame{count_images:03d}', 2, 2)
             panels.append(new_panel)
             count += 1
             count_images += 1
-        new_panel = panel(f'frame{count_images:03d}', 1, 4)
+        new_panel = panel(f'frame{count_images:03d}', 4, 2)  # Full-width bottom
         panels.append(new_panel)
         count += 1
         count_images += 1
