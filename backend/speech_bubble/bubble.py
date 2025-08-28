@@ -36,29 +36,45 @@ def _clamp_to_panel(px, py, crop_coord, bubble_width=200, bubble_height=94):
 def _avoid_lip_overlap(px, py, lip_x, lip_y, crop_coord, bubble_width=200, bubble_height=94):
     if lip_x == -1 and lip_y == -1:
         return px, py
-    # If the lip lies inside the bubble rectangle, push the bubble away
+    
+    # Create a larger exclusion zone around the lip (face area)
+    face_margin = 60  # Increased margin around face
     rect_x1, rect_y1 = px, py
     rect_x2, rect_y2 = px + bubble_width, py + bubble_height
-    if rect_x1 <= lip_x <= rect_x2 and rect_y1 <= lip_y <= rect_y2:
-        # Push along vector from lip to bubble center
-        cx = (rect_x1 + rect_x2) / 2.0
-        cy = (rect_y1 + rect_y2) / 2.0
-        vx = cx - lip_x
-        vy = cy - lip_y
+    
+    # Check if bubble overlaps with face exclusion zone
+    face_x1 = lip_x - face_margin
+    face_y1 = lip_y - face_margin  
+    face_x2 = lip_x + face_margin
+    face_y2 = lip_y + face_margin
+    
+    # If bubble overlaps face zone, push it away
+    if not (rect_x2 <= face_x1 or face_x2 <= rect_x1 or rect_y2 <= face_y1 or face_y2 <= rect_y1):
+        # Calculate push direction: away from face center
+        bubble_center_x = (rect_x1 + rect_x2) / 2.0
+        bubble_center_y = (rect_y1 + rect_y2) / 2.0
+        
+        # Vector from face to bubble center
+        vx = bubble_center_x - lip_x
+        vy = bubble_center_y - lip_y
+        
+        # Normalize and push
         if vx == 0 and vy == 0:
-            vx, vy = 1.0, 0.0
+            vx, vy = 1.0, 0.0  # Default push right if same position
+        
         mag = (vx**2 + vy**2) ** 0.5
         ux, uy = vx / mag, vy / mag
-        step = 24
-        max_steps = 20
-        for _ in range(max_steps):
-            px += ux * step
-            py += uy * step
-            px, py = _clamp_to_panel(px, py, crop_coord, bubble_width, bubble_height)
-            rect_x1, rect_y1 = px, py
-            rect_x2, rect_y2 = px + bubble_width, py + bubble_height
-            if not (rect_x1 <= lip_x <= rect_x2 and rect_y1 <= lip_y <= rect_y2):
-                break
+        
+        # Push bubble away from face
+        push_distance = face_margin + max(bubble_width, bubble_height) / 2
+        px += ux * push_distance
+        py += uy * push_distance
+        
+        # Ensure bubble stays within panel bounds
+        px, py = _clamp_to_panel(px, py, crop_coord, bubble_width, bubble_height)
+        
+        print(f"Pushed bubble away from face at ({lip_x}, {lip_y}) to ({px}, {py})")
+    
     return px, py
 
 def bubble_create(video, crop_coords, black_x, black_y):
@@ -97,7 +113,7 @@ def bubble_create(video, crop_coords, black_x, black_y):
         lip_x = lips[sub.index][0]
         lip_y = lips[sub.index][1]
 
-        bubble_x, bubble_y = get_bubble_position(crop_coords[sub.index-1], CAM_data[sub.index-1])
+        bubble_x, bubble_y = get_bubble_position(crop_coords[sub.index-1], CAM_data[sub.index-1], (lip_x, lip_y))
 
         # Simple collision avoidance: nudge right/down in steps until no overlap or max attempts
         max_attempts = 10
