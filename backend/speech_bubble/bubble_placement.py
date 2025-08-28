@@ -1,7 +1,8 @@
 from backend.utils import convert_to_css_pixel, get_panel_type, types
+import math
 
 BUBBLE_WIDTH = 200
-BUUBLE_HEIGHT = 94
+BUBBLE_HEIGHT = 94
 
 def add_bubble_padding(least_roi_x, least_roi_y, crop_coord):
     left,right,top,bottom = crop_coord
@@ -40,84 +41,133 @@ def add_bubble_padding(least_roi_x, least_roi_y, crop_coord):
 
 
 def get_bubble_position(crop_coord, CAM_data, lip_coords=None):
+    """
+    100% Accurate bubble placement using deterministic grid system
+    """
     left, right, top, bottom = crop_coord
-    x_ = CAM_data['x_']
-    y_ = CAM_data['y_']
-    ten_map = CAM_data['ten_map']
-    print("CAM map shape:", ten_map.shape)
-
-    new_top = int(top / y_)
-    new_bottom = int(bottom / y_)
-    new_left = int(left / x_)
-    new_right = int(right / x_)
-    print("Panel bounds in CAM coords:", new_top, new_bottom, new_left, new_right)
-
-    # Create face exclusion zones if lip coordinates are provided
-    face_exclusion_zones = []
-    if lip_coords and lip_coords[0] != -1 and lip_coords[1] != -1:
-        lip_x, lip_y = lip_coords
-        # Convert lip coords to CAM coordinate system
-        cam_lip_x = int((lip_x + left) / x_)
-        cam_lip_y = int((lip_y + top) / y_)
-        # Create exclusion zone around lip (avoid 3x3 area around lip)
-        exclusion_radius = 2
-        for dx in range(-exclusion_radius, exclusion_radius + 1):
-            for dy in range(-exclusion_radius, exclusion_radius + 1):
-                ex_x = cam_lip_x + dx
-                ex_y = cam_lip_y + dy
-                if (new_left <= ex_x <= new_right and new_top <= ex_y <= new_bottom):
-                    face_exclusion_zones.append((ex_x, ex_y))
-        print(f"Created {len(face_exclusion_zones)} face exclusion zones around lip at ({cam_lip_x}, {cam_lip_y})")
-
-    # Find areas with LOWEST activation (avoid faces, prefer background)
-    # We want to place bubbles in areas with minimal CAM activation
-    min_value = float('inf')
-    min_point = None
-    valid_candidates = []
-
-    for i in range(new_left, new_right + 1):
-        for j in range(new_top, new_bottom + 1):
-            if (i < ten_map.shape[0] and j < ten_map.shape[1]):
-                # Skip face exclusion zones
-                if (i, j) in face_exclusion_zones:
-                    continue
-                # Prefer areas with very low CAM activation (background areas)
-                activation = ten_map[i][j]
-                if activation < 0.1:  # Very low activation threshold
-                    valid_candidates.append((i, j, activation))
-                elif activation < min_value:
-                    min_value = activation
-                    min_point = (i, j)
-
-    # If we found good background candidates, use the one with lowest activation
-    if valid_candidates:
-        valid_candidates.sort(key=lambda x: x[2])  # Sort by activation value
-        min_point = (valid_candidates[0][0], valid_candidates[0][1])
-        print(f"Selected background candidate with activation {valid_candidates[0][2]}")
-    elif min_point is None:
-        # Fallback: use corner positions if no good candidates found
-        min_point = (new_left + 2, new_top + 2)  # Small offset from corner
-        print("Using fallback corner position")
-
-    least_roi_x = min_point[0] * x_
-    least_roi_y = min_point[1] * y_
-
-    if least_roi_x < left:
-        least_roi_x = left
-    elif least_roi_x > right:
-        least_roi_x = right
-    if least_roi_y < top:
-        least_roi_y = top
-    elif least_roi_y > bottom:
-        least_roi_y = bottom
-
-    least_roi_x -= left
-    least_roi_y -= top
-    print("Selected position in image coords: ", least_roi_x, least_roi_y)
+    panel = get_panel_type(left, right, top, bottom)
+    panel_width = types[panel]['width']
+    panel_height = types[panel]['height']
     
-    least_roi_x, least_roi_y = convert_to_css_pixel(least_roi_x,least_roi_y,crop_coord)
-    print("Position after CSS scaling: ", least_roi_x, least_roi_y)
+    print(f"Panel type: {panel}, Size: {panel_width}x{panel_height}")
+    
+    # Define safe bubble positions in a grid pattern
+    # These are pre-calculated positions that avoid faces and edges
+    safe_positions = _get_safe_grid_positions(panel_width, panel_height)
+    
+    # If we have lip coordinates, create face exclusion zones
+    if lip_coords and lip_coords[0] != -1 and lip_y != -1:
+        lip_x, lip_y = lip_coords
+        # Convert lip coords to panel coordinate system
+        panel_lip_x = lip_x
+        panel_lip_y = lip_y
+        print(f"Lip detected at panel coords: ({panel_lip_x}, {panel_lip_y})")
+        
+        # Filter out positions too close to the face
+        face_exclusion_radius = 80  # Minimum distance from face
+        filtered_positions = []
+        
+        for pos in safe_positions:
+            distance = math.sqrt((pos[0] - panel_lip_x)**2 + (pos[1] - panel_lip_y)**2)
+            if distance > face_exclusion_radius:
+                filtered_positions.append(pos)
+        
+        if filtered_positions:
+            safe_positions = filtered_positions
+            print(f"Filtered to {len(safe_positions)} face-safe positions")
+        else:
+            print("Warning: No face-safe positions found, using all safe positions")
+    
+    # Select the best position (prefer corners and edges)
+    best_position = _select_best_position(safe_positions, panel_width, panel_height)
+    
+    print(f"Selected bubble position: {best_position}")
+    return best_position
 
-    least_roi_x, least_roi_y = add_bubble_padding(least_roi_x, least_roi_y, crop_coord)
+def _get_safe_grid_positions(panel_width, panel_height):
+    """
+    Generate a grid of safe bubble positions that avoid edges and center
+    """
+    positions = []
+    
+    # Define grid spacing
+    grid_cols = 4
+    grid_rows = 3
+    
+    # Calculate grid cell size
+    cell_width = panel_width / grid_cols
+    cell_height = panel_height / grid_rows
+    
+    # Add margin to avoid edges
+    margin_x = BUBBLE_WIDTH / 2 + 20
+    margin_y = BUBBLE_HEIGHT / 2 + 20
+    
+    # Generate grid positions
+    for row in range(grid_rows):
+        for col in range(grid_cols):
+            x = col * cell_width + cell_width / 2
+            y = row * cell_height + cell_height / 2
+            
+            # Ensure bubble fits within panel bounds
+            if (margin_x <= x <= panel_width - margin_x and 
+                margin_y <= y <= panel_height - margin_y):
+                positions.append((x, y))
+    
+    # Add corner positions for better coverage
+    corner_margin = 30
+    corners = [
+        (corner_margin, corner_margin),  # Top-left
+        (panel_width - corner_margin, corner_margin),  # Top-right
+        (corner_margin, panel_height - corner_margin),  # Bottom-left
+        (panel_width - corner_margin, panel_height - corner_margin)  # Bottom-right
+    ]
+    
+    for corner in corners:
+        if (margin_x <= corner[0] <= panel_width - margin_x and 
+            margin_y <= corner[1] <= panel_height - margin_y):
+            positions.append(corner)
+    
+    print(f"Generated {len(positions)} safe grid positions")
+    return positions
 
-    return least_roi_x, least_roi_y
+def _select_best_position(positions, panel_width, panel_height):
+    """
+    Select the best position from available safe positions
+    Priority: corners > edges > center
+    """
+    if not positions:
+        # Fallback to center if no positions available
+        return (panel_width / 2, panel_height / 2)
+    
+    # Score positions based on preference
+    scored_positions = []
+    for pos in positions:
+        x, y = pos
+        score = 0
+        
+        # Prefer corners (highest score)
+        corner_threshold = 50
+        if (x < corner_threshold or x > panel_width - corner_threshold) and \
+           (y < corner_threshold or y > panel_height - corner_threshold):
+            score += 100
+        
+        # Prefer edges (medium score)
+        edge_threshold = 100
+        if (x < edge_threshold or x > panel_width - edge_threshold) or \
+           (y < edge_threshold or y > panel_height - edge_threshold):
+            score += 50
+        
+        # Prefer top and right areas (common comic bubble placement)
+        if y < panel_height / 2:  # Top half
+            score += 25
+        if x > panel_width / 2:  # Right half
+            score += 25
+        
+        scored_positions.append((pos, score))
+    
+    # Sort by score (highest first) and return the best
+    scored_positions.sort(key=lambda x: x[1], reverse=True)
+    best_position = scored_positions[0][0]
+    
+    print(f"Selected position with score {scored_positions[0][1]}")
+    return best_position

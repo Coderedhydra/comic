@@ -115,18 +115,46 @@ def bubble_create(video, crop_coords, black_x, black_y):
 
         bubble_x, bubble_y = get_bubble_position(crop_coords[sub.index-1], CAM_data[sub.index-1], (lip_x, lip_y))
 
-        # Simple collision avoidance: nudge right/down in steps until no overlap or max attempts
-        max_attempts = 10
-        step = 16
-        attempts = 0
+        # Advanced collision avoidance with grid-based positioning
         px, py = bubble_x, bubble_y
-        while _does_overlap((px, py), placed_positions) and attempts < max_attempts:
-            px += step
-            py += step // 2
-            attempts += 1
-        # Avoid covering the detected lips/face area
+        
+        # First, try to avoid face overlap
         px, py = _avoid_lip_overlap(px, py, lip_x, lip_y, crop_coords[sub.index-1])
-        bubble_x, bubble_y = _clamp_to_panel(px, py, crop_coords[sub.index-1])
+        
+        # Then handle bubble-to-bubble collision with smart positioning
+        attempts = 0
+        max_attempts = 15
+        original_pos = (px, py)
+        
+        while _does_overlap((px, py), placed_positions) and attempts < max_attempts:
+            # Try different directions in order of preference
+            directions = [
+                (40, 0),   # Right
+                (0, -40),  # Up
+                (-40, 0),  # Left
+                (0, 40),   # Down
+                (40, -40), # Up-right
+                (-40, -40), # Up-left
+                (40, 40),  # Down-right
+                (-40, 40), # Down-left
+            ]
+            
+            if attempts < len(directions):
+                dx, dy = directions[attempts]
+                px = original_pos[0] + dx
+                py = original_pos[1] + dy
+            else:
+                # Spiral outward if all directions fail
+                angle = attempts * 0.5
+                radius = 20 + attempts * 10
+                px = original_pos[0] + radius * math.cos(angle)
+                py = original_pos[1] + radius * math.sin(angle)
+            
+            # Ensure position stays within panel bounds
+            px, py = _clamp_to_panel(px, py, crop_coords[sub.index-1])
+            attempts += 1
+        
+        bubble_x, bubble_y = px, py
         placed_positions.append((bubble_x, bubble_y))
 
         dialogue = sub.content

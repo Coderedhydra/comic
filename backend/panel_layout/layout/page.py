@@ -20,8 +20,24 @@ template_specs = {
      "4" : {
         "span" : 2,
         "direction": "column"
+    },
+    # High-accuracy templates with fewer, larger panels
+    "5" : {
+        "span" : 4,
+        "direction": "row"
+    },
+    "6" : {
+        "span" : 2,
+        "direction": "row"
+    },
+    "7" : {
+        "span" : 3,
+        "direction": "row"
+    },
+    "8" : {
+        "span" : 4,
+        "direction": "column"
     }
-      
 }
 
 input = '433343333343343333443333443334333343344443433'
@@ -51,11 +67,18 @@ def get_files_in_folder(folder_path):
 templates = ['14124114','312341' , '4432111' , '21411241' , '3241141' , '13411141' , '12411131' ,'1321113', '131423' , 
 '142344' , '234241','2411413','3141214','42111131']
 
-# Optional grid layout for efficiency: when GRID_LAYOUT is set, prefer uniform grids
-GRID_LAYOUT = os.getenv('GRID_LAYOUT', '0')
-if GRID_LAYOUT in ('1', 'true', 'True', 'YES', 'yes'):
-    # Use simple repetitive templates that create grid-like pages
-    templates = ['6666', '4488', '44446', '666', '67']
+# High-accuracy mode: when HIGH_ACCURACY is set, use fewer larger panels for better bubble placement
+HIGH_ACCURACY = os.getenv('HIGH_ACCURACY', '0')
+if HIGH_ACCURACY in ('1', 'true', 'True', 'YES', 'yes'):
+    # Use templates with fewer, larger panels for maximum bubble placement accuracy
+    templates = ['5', '66', '666', '55', '555', '6666', '5555']
+    print("Using HIGH_ACCURACY mode with larger panels for better bubble placement")
+else:
+    # Optional grid layout for efficiency: when GRID_LAYOUT is set, prefer uniform grids
+    GRID_LAYOUT = os.getenv('GRID_LAYOUT', '0')
+    if GRID_LAYOUT in ('1', 'true', 'True', 'YES', 'yes'):
+        # Use simple repetitive templates that create grid-like pages
+        templates = ['6666', '4488', '44446', '666', '67']
 
 min_length = 6
 folder_path = 'frames/final' # Specify the folder path
