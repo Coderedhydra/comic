@@ -7,7 +7,7 @@
   <meta name="description" content="" />
   <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors" />
   <meta name="generator" content="Hugo 0.122.0" />
-  <title>CineComic</title>
+  <title>Comic</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bungee+Spice&display=swap" rel="stylesheet">
@@ -17,10 +17,6 @@
   <link rel="stylesheet" href="{{url_for('static', filename='styles.css')}}" />
 </head>
 <body class="d-flex h-100 text-center text-bg-dark">
-  <!-- The video -->
-  <video autoplay muted loop id="bgVideo">
-    <source src="{{ url_for('static', filename='bg.mp4') }}" type="video/mp4">
-  </video>
   <div class="carousel">
     <div id="preview-container">
       <div id="video-container">
@@ -33,7 +29,7 @@
       </div>
     </div>
     <div class="box" id="box">
-      <h1 id="title">CineComic</h1>
+      <h1 id="title">Comic</h1>
       <p id="description">An automated movie-to-comic generator</p>
       <div class="button-container">
         <input type="file" id="fileInput" accept=".mp4" style="display: none" />

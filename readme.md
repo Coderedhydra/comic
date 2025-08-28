@@ -1,5 +1,5 @@
-# Cinecomic
-Cinecomic is an automated movie-to-comic generator. Input a video and it generates a comic book for the same complete with a comic style and dialogue bubbles
+# Comic
+Comic is an automated movie-to-comic generator. Input a video and it generates a comic book for the same complete with a comic style and dialogue bubbles
 
 https://github.com/reubendinny/Cinecomic/assets/30729856/6b40279c-26de-4eb3-b0fa-7de1f5605d0e
 

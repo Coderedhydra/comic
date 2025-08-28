@@ -1,11 +1,12 @@
 const carousel = document.querySelector(".carousel");
-const carouselItems = carousel.querySelectorAll(".carousel-item");
+const carouselItems = carousel ? carousel.querySelectorAll(".carousel-item") : [];
 const submissionResult = document.getElementById("submissionResult");
 const linkInput = document.getElementById("link-input");
 const filePicker = document.getElementById("fileInput");
 const videoPreview = document.getElementById("video-preview");
 const iFramePreview = document.getElementById("iframe-preview");
-const bgVideo = document.getElementById("bgVideo");
+// Background video removed; keep null to avoid errors
+const bgVideo = null;
 
 var selectedFile = null;
 var selectedLink = "";
@@ -14,6 +15,7 @@ let currentItem = 0;
 
 // 1. Background image carousel
 function changeImage() {
+  if (!carouselItems || carouselItems.length === 0) return;
   carouselItems.forEach((item, index) => {
     if (index === currentItem) {
       item.classList.add("active");
@@ -147,24 +149,24 @@ function showVideoPreview(url) {
   videoPreview.src = url;
   videoPreview.style.display = "block";
   videoPreview.play();
-  bgVideo.pause()
+  // no-op: background video removed
 }
 
 function hideVideoPreview() {
   videoPreview.src = "";
   videoPreview.style.display = "none";
-  bgVideo.play()
+  // no-op: background video removed
 }
 
 function showIFramePreview(url) {
   hideVideoPreview();
   iFramePreview.src = url;
   iFramePreview.style.display = "block";
-  bgVideo.pause()
+  // no-op: background video removed
 }
 
 function hideIFramePreview() {
   iFramePreview.src = "";
   iFramePreview.style.display = "none";
-  bgVideo.play()
+  // no-op: background video removed
 }

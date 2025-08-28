@@ -1,17 +1,22 @@
 from transformers import pipeline
 
 
+# Upgrade to a higher-quality multi-label emotions model for richer outputs
 sentiment_analysis = pipeline(
-  "sentiment-analysis",
+  "text-classification",
   framework="pt",
-  model="SamLowe/roberta-base-go_emotions"
+  model="joeddav/distilbert-base-uncased-go-emotions-student",
+  top_k=None,
+  return_all_scores=True
 )
 
 def analyze_sentiment(text):
   results = sentiment_analysis(text)
-  sentiment_results = {
-    result['label']: result['score'] for result in results
-  }
+  if isinstance(results, list) and len(results) > 0 and isinstance(results[0], list):
+    flat = results[0]
+  else:
+    flat = results
+  sentiment_results = {item['label']: item['score'] for item in flat}
   return sentiment_results
 
 
