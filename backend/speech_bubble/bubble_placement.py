@@ -56,7 +56,7 @@ def get_bubble_position(crop_coord, CAM_data, lip_coords=None):
     safe_positions = _get_safe_grid_positions(panel_width, panel_height)
     
     # If we have lip coordinates, create face exclusion zones
-    if lip_coords and lip_coords[0] != -1 and lip_y != -1:
+    if lip_coords and lip_coords[0] != -1 and lip_coords[1] != -1:
         lip_x, lip_y = lip_coords
         # Convert lip coords to panel coordinate system
         panel_lip_x = lip_x
@@ -64,7 +64,13 @@ def get_bubble_position(crop_coord, CAM_data, lip_coords=None):
         print(f"Lip detected at panel coords: ({panel_lip_x}, {panel_lip_y})")
         
         # Filter out positions too close to the face
-        face_exclusion_radius = 80  # Minimum distance from face
+        # Adjust exclusion radius based on panel size
+        if panel_width > 500:
+            face_exclusion_radius = 80  # Large panels
+        elif panel_width > 300:
+            face_exclusion_radius = 60  # Medium panels
+        else:
+            face_exclusion_radius = 40  # Small panels
         filtered_positions = []
         
         for pos in safe_positions:
@@ -86,25 +92,36 @@ def get_bubble_position(crop_coord, CAM_data, lip_coords=None):
 
 def _get_safe_grid_positions(panel_width, panel_height):
     """
-    Generate a grid of safe bubble positions optimized for larger panels
+    Generate a grid of safe bubble positions optimized for all panel sizes
     """
     positions = []
     
-    # For larger panels, use more grid positions
+    # Adjust grid and margins based on panel size
     if panel_width > 500:  # Large panels (full-width)
         grid_cols = 6
         grid_rows = 4
-    else:  # Standard panels
+        margin_x = BUBBLE_WIDTH / 2 + 25
+        margin_y = BUBBLE_HEIGHT / 2 + 25
+        corner_margin = 40
+        edge_margin = 60
+    elif panel_width > 300:  # Medium panels
         grid_cols = 4
         grid_rows = 3
+        margin_x = BUBBLE_WIDTH / 2 + 20
+        margin_y = BUBBLE_HEIGHT / 2 + 20
+        corner_margin = 30
+        edge_margin = 50
+    else:  # Small panels (like panel type 1)
+        grid_cols = 3
+        grid_rows = 2
+        margin_x = BUBBLE_WIDTH / 2 + 15
+        margin_y = BUBBLE_HEIGHT / 2 + 15
+        corner_margin = 25
+        edge_margin = 40
     
     # Calculate grid cell size
     cell_width = panel_width / grid_cols
     cell_height = panel_height / grid_rows
-    
-    # Add margin to avoid edges
-    margin_x = BUBBLE_WIDTH / 2 + 25
-    margin_y = BUBBLE_HEIGHT / 2 + 25
     
     # Generate grid positions
     for row in range(grid_rows):
@@ -118,7 +135,6 @@ def _get_safe_grid_positions(panel_width, panel_height):
                 positions.append((x, y))
     
     # Add corner positions for better coverage
-    corner_margin = 40
     corners = [
         (corner_margin, corner_margin),  # Top-left
         (panel_width - corner_margin, corner_margin),  # Top-right
@@ -131,27 +147,35 @@ def _get_safe_grid_positions(panel_width, panel_height):
             margin_y <= corner[1] <= panel_height - margin_y):
             positions.append(corner)
     
-    # Add edge positions for better distribution
-    edge_positions = []
-    edge_margin = 60
+    # Add edge positions for better distribution (only for larger panels)
+    if panel_width > 300:
+        edge_positions = []
+        
+        # Top edge
+        for i in range(1, grid_cols):
+            x = i * cell_width
+            y = edge_margin
+            if (margin_x <= x <= panel_width - margin_x and 
+                margin_y <= y <= panel_height - margin_y):
+                edge_positions.append((x, y))
+        
+        # Right edge
+        for i in range(1, grid_rows):
+            x = panel_width - edge_margin
+            y = i * cell_height
+            if (margin_x <= x <= panel_width - margin_x and 
+                margin_y <= y <= panel_height - margin_y):
+                edge_positions.append((x, y))
+        
+        positions.extend(edge_positions)
     
-    # Top edge
-    for i in range(1, grid_cols):
-        x = i * cell_width
-        y = edge_margin
-        if (margin_x <= x <= panel_width - margin_x and 
-            margin_y <= y <= panel_height - margin_y):
-            edge_positions.append((x, y))
-    
-    # Right edge
-    for i in range(1, grid_rows):
-        x = panel_width - edge_margin
-        y = i * cell_height
-        if (margin_x <= x <= panel_width - margin_x and 
-            margin_y <= y <= panel_height - margin_y):
-            edge_positions.append((x, y))
-    
-    positions.extend(edge_positions)
+    # If still no positions, create minimal safe positions
+    if len(positions) == 0:
+        # Use center position with minimal margins
+        center_x = panel_width / 2
+        center_y = panel_height / 2
+        positions.append((center_x, center_y))
+        print(f"Warning: Panel too small, using center position only")
     
     print(f"Generated {len(positions)} safe grid positions for {panel_width:.0f}x{panel_height:.0f} panel")
     return positions
