@@ -40,41 +40,33 @@ def add_bubble_padding(least_roi_x, least_roi_y, crop_coord):
     return least_roi_x, least_roi_y
 
 
-def get_bubble_position(crop_coord, CAM_data, lip_coords=None):
+def get_bubble_position(image_coords, CAM_data=None, lip_coords=None):
     """
-    100% Accurate bubble placement using deterministic grid system
+    Redesigned bubble placement for smart resize - positions relative to actual image content
     """
-    left, right, top, bottom = crop_coord
-    panel = get_panel_type(left, right, top, bottom)
-    panel_width = types[panel]['width']
-    panel_height = types[panel]['height']
+    left, right, top, bottom = image_coords
     
-    print(f"Panel type: {panel}, Size: {panel_width}x{panel_height}")
+    # Calculate image dimensions within panel
+    image_width = right - left
+    image_height = bottom - top
     
-    # Define safe bubble positions in a grid pattern
-    # These are pre-calculated positions that avoid faces and edges
-    safe_positions = _get_safe_grid_positions(panel_width, panel_height)
+    print(f"Image area: {image_width:.0f}x{image_height:.0f} at ({left:.0f}, {top:.0f})")
+    
+    # Define safe bubble positions relative to the actual image content
+    safe_positions = _get_safe_image_positions(left, right, top, bottom, image_width, image_height)
     
     # If we have lip coordinates, create face exclusion zones
     if lip_coords and lip_coords[0] != -1 and lip_coords[1] != -1:
         lip_x, lip_y = lip_coords
-        # Convert lip coords to panel coordinate system
-        panel_lip_x = lip_x
-        panel_lip_y = lip_y
-        print(f"Lip detected at panel coords: ({panel_lip_x}, {panel_lip_y})")
+        # Lip coordinates are already in panel coordinate system
+        print(f"Lip detected at coords: ({lip_x}, {lip_y})")
         
         # Filter out positions too close to the face
-        # Adjust exclusion radius based on panel size
-        if panel_width > 500:
-            face_exclusion_radius = 80  # Large panels
-        elif panel_width > 300:
-            face_exclusion_radius = 60  # Medium panels
-        else:
-            face_exclusion_radius = 40  # Small panels
+        face_exclusion_radius = 60  # Standard exclusion radius
         filtered_positions = []
         
         for pos in safe_positions:
-            distance = math.sqrt((pos[0] - panel_lip_x)**2 + (pos[1] - panel_lip_y)**2)
+            distance = math.sqrt((pos[0] - lip_x)**2 + (pos[1] - lip_y)**2)
             if distance > face_exclusion_radius:
                 filtered_positions.append(pos)
         
@@ -84,110 +76,95 @@ def get_bubble_position(crop_coord, CAM_data, lip_coords=None):
         else:
             print("Warning: No face-safe positions found, using all safe positions")
     
-    # Select the best position (prefer corners and edges)
-    best_position = _select_best_position(safe_positions, panel_width, panel_height)
+    # Select the best position (prefer corners and edges of image)
+    best_position = _select_best_image_position(safe_positions, left, right, top, bottom)
     
     print(f"Selected bubble position: {best_position}")
     return best_position
 
-def _get_safe_grid_positions(panel_width, panel_height):
+def _get_safe_image_positions(left, right, top, bottom, image_width, image_height):
     """
-    Generate a grid of safe bubble positions optimized for all panel sizes
+    Generate safe bubble positions relative to the actual image content
     """
     positions = []
     
-    # Adjust grid and margins based on panel size
-    if panel_width > 500:  # Large panels (full-width)
-        grid_cols = 6
-        grid_rows = 4
-        margin_x = BUBBLE_WIDTH / 2 + 25
-        margin_y = BUBBLE_HEIGHT / 2 + 25
-        corner_margin = 40
-        edge_margin = 60
-    elif panel_width > 300:  # Medium panels
-        grid_cols = 4
-        grid_rows = 3
-        margin_x = BUBBLE_WIDTH / 2 + 20
-        margin_y = BUBBLE_HEIGHT / 2 + 20
-        corner_margin = 30
-        edge_margin = 50
-    else:  # Small panels (like panel type 1)
-        grid_cols = 3
-        grid_rows = 2
-        margin_x = BUBBLE_WIDTH / 2 + 15
-        margin_y = BUBBLE_HEIGHT / 2 + 15
-        corner_margin = 25
-        edge_margin = 40
+    # Calculate margins to keep bubbles within image bounds
+    margin_x = BUBBLE_WIDTH / 2 + 20
+    margin_y = BUBBLE_HEIGHT / 2 + 20
     
-    # Calculate grid cell size
-    cell_width = panel_width / grid_cols
-    cell_height = panel_height / grid_rows
+    # Define grid within the image area
+    grid_cols = 4
+    grid_rows = 3
     
-    # Generate grid positions
+    # Calculate grid cell size within image
+    cell_width = image_width / grid_cols
+    cell_height = image_height / grid_rows
+    
+    # Generate grid positions within image
     for row in range(grid_rows):
         for col in range(grid_cols):
-            x = col * cell_width + cell_width / 2
-            y = row * cell_height + cell_height / 2
+            x = left + col * cell_width + cell_width / 2
+            y = top + row * cell_height + cell_height / 2
             
-            # Ensure bubble fits within panel bounds
-            if (margin_x <= x <= panel_width - margin_x and 
-                margin_y <= y <= panel_height - margin_y):
+            # Ensure bubble fits within image bounds
+            if (left + margin_x <= x <= right - margin_x and 
+                top + margin_y <= y <= bottom - margin_y):
                 positions.append((x, y))
     
-    # Add corner positions for better coverage
+    # Add corner positions relative to image
+    corner_margin = 30
     corners = [
-        (corner_margin, corner_margin),  # Top-left
-        (panel_width - corner_margin, corner_margin),  # Top-right
-        (corner_margin, panel_height - corner_margin),  # Bottom-left
-        (panel_width - corner_margin, panel_height - corner_margin)  # Bottom-right
+        (left + corner_margin, top + corner_margin),  # Top-left of image
+        (right - corner_margin, top + corner_margin),  # Top-right of image
+        (left + corner_margin, bottom - corner_margin),  # Bottom-left of image
+        (right - corner_margin, bottom - corner_margin)  # Bottom-right of image
     ]
     
     for corner in corners:
-        if (margin_x <= corner[0] <= panel_width - margin_x and 
-            margin_y <= corner[1] <= panel_height - margin_y):
+        if (left + margin_x <= corner[0] <= right - margin_x and 
+            top + margin_y <= corner[1] <= bottom - margin_y):
             positions.append(corner)
     
-    # Add edge positions for better distribution (only for larger panels)
-    if panel_width > 300:
-        edge_positions = []
-        
-        # Top edge
-        for i in range(1, grid_cols):
-            x = i * cell_width
-            y = edge_margin
-            if (margin_x <= x <= panel_width - margin_x and 
-                margin_y <= y <= panel_height - margin_y):
-                edge_positions.append((x, y))
-        
-        # Right edge
-        for i in range(1, grid_rows):
-            x = panel_width - edge_margin
-            y = i * cell_height
-            if (margin_x <= x <= panel_width - margin_x and 
-                margin_y <= y <= panel_height - margin_y):
-                edge_positions.append((x, y))
-        
-        positions.extend(edge_positions)
+    # Add edge positions along image boundaries
+    edge_positions = []
+    edge_margin = 50
     
-    # If still no positions, create minimal safe positions
+    # Top edge of image
+    for i in range(1, grid_cols):
+        x = left + i * cell_width
+        y = top + edge_margin
+        if (left + margin_x <= x <= right - margin_x and 
+            top + margin_y <= y <= bottom - margin_y):
+            edge_positions.append((x, y))
+    
+    # Right edge of image
+    for i in range(1, grid_rows):
+        x = right - edge_margin
+        y = top + i * cell_height
+        if (left + margin_x <= x <= right - margin_x and 
+            top + margin_y <= y <= bottom - margin_y):
+            edge_positions.append((x, y))
+    
+    positions.extend(edge_positions)
+    
+    # If still no positions, use image center
     if len(positions) == 0:
-        # Use center position with minimal margins
-        center_x = panel_width / 2
-        center_y = panel_height / 2
+        center_x = left + image_width / 2
+        center_y = top + image_height / 2
         positions.append((center_x, center_y))
-        print(f"Warning: Panel too small, using center position only")
+        print(f"Warning: Image too small, using center position only")
     
-    print(f"Generated {len(positions)} safe grid positions for {panel_width:.0f}x{panel_height:.0f} panel")
+    print(f"Generated {len(positions)} safe positions for image area {image_width:.0f}x{image_height:.0f}")
     return positions
 
-def _select_best_position(positions, panel_width, panel_height):
+def _select_best_image_position(positions, left, right, top, bottom):
     """
-    Select the best position from available safe positions
+    Select the best position relative to image content
     Priority: corners > edges > center
     """
     if not positions:
-        # Fallback to center if no positions available
-        return (panel_width / 2, panel_height / 2)
+        # Fallback to image center if no positions available
+        return (left + (right - left) / 2, top + (bottom - top) / 2)
     
     # Score positions based on preference
     scored_positions = []
@@ -195,22 +172,22 @@ def _select_best_position(positions, panel_width, panel_height):
         x, y = pos
         score = 0
         
-        # Prefer corners (highest score)
+        # Prefer corners of image (highest score)
         corner_threshold = 50
-        if (x < corner_threshold or x > panel_width - corner_threshold) and \
-           (y < corner_threshold or y > panel_height - corner_threshold):
+        if (x < left + corner_threshold or x > right - corner_threshold) and \
+           (y < top + corner_threshold or y > bottom - corner_threshold):
             score += 100
         
-        # Prefer edges (medium score)
-        edge_threshold = 100
-        if (x < edge_threshold or x > panel_width - edge_threshold) or \
-           (y < edge_threshold or y > panel_height - edge_threshold):
+        # Prefer edges of image (medium score)
+        edge_threshold = 80
+        if (x < left + edge_threshold or x > right - edge_threshold) or \
+           (y < top + edge_threshold or y > bottom - edge_threshold):
             score += 50
         
         # Prefer top and right areas (common comic bubble placement)
-        if y < panel_height / 2:  # Top half
+        if y < top + (bottom - top) / 2:  # Top half of image
             score += 25
-        if x > panel_width / 2:  # Right half
+        if x > left + (right - left) / 2:  # Right half of image
             score += 25
         
         scored_positions.append((pos, score))
