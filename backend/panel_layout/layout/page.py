@@ -51,6 +51,12 @@ def get_files_in_folder(folder_path):
 templates = ['14124114','312341' , '4432111' , '21411241' , '3241141' , '13411141' , '12411131' ,'1321113', '131423' , 
 '142344' , '234241','2411413','3141214','42111131']
 
+# Optional grid layout for efficiency: when GRID_LAYOUT is set, prefer uniform grids
+GRID_LAYOUT = os.getenv('GRID_LAYOUT', '0')
+if GRID_LAYOUT in ('1', 'true', 'True', 'YES', 'yes'):
+    # Use simple repetitive templates that create grid-like pages
+    templates = ['6666', '4488', '44446', '666', '67']
+
 min_length = 6
 folder_path = 'frames/final' # Specify the folder path
 
