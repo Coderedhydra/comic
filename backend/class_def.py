@@ -119,4 +119,16 @@ class Page:
 
         for i in range(len(panels)):
             self.panels.append(panels[i].__dict__)
-            self.bubbles.append(bubbles[i].__dict__)
+            if i < len(bubbles):
+                self.bubbles.append(bubbles[i].__dict__)
+            else:
+                # Fallback placeholder bubble to keep indices aligned with panels
+                self.bubbles.append({
+                    'dialog': '((action-scene))',
+                    'emotion': 'normal',
+                    'bubble_offset_x': 0,
+                    'bubble_offset_y': 0,
+                    'tail_deg': 0,
+                    'tail_offset_x': None,
+                    'tail_offset_y': None
+                })
