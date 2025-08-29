@@ -291,24 +291,53 @@ class EnhancedComicGenerator:
         .comic-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; height: 600px; }
         .panel { position: relative; border: 2px solid #333; overflow: hidden; }
         .panel img { width: 100%; height: 100%; object-fit: cover; }
-        .speech-bubble { position: absolute; background: white; border: 2px solid #333; border-radius: 10px; padding: 10px; max-width: 150px; font-size: 12px; }
-        .speech-bubble::after { content: ''; position: absolute; bottom: -10px; left: 20px; width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 10px solid #333; }
+        .speech-bubble { 
+            position: absolute; 
+            background: white; 
+            border: 2px solid #333; 
+            border-radius: 10px; 
+            padding: 10px; 
+            max-width: 200px; 
+            font-size: 14px; 
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+        .speech-bubble::after { 
+            content: ''; 
+            position: absolute; 
+            bottom: -10px; 
+            left: 20px; 
+            width: 0; 
+            height: 0; 
+            border-left: 10px solid transparent; 
+            border-right: 10px solid transparent; 
+            border-top: 10px solid #333; 
+        }
+        .comic-title { text-align: center; color: #333; margin-bottom: 20px; }
+        .loading { text-align: center; color: #666; font-style: italic; }
     </style>
 </head>
 <body>
     <div class="comic-page">
-        <h1>🎬 Generated Comic</h1>
+        <h1 class="comic-title">🎬 Generated Comic</h1>
         <div class="comic-grid" id="comic-grid">
-            <!-- Panels will be loaded here -->
+            <div class="loading">Loading comic...</div>
         </div>
     </div>
     <script>
         // Load comic data
         fetch('pages.json')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load pages.json');
+                }
+                return response.json();
+            })
             .then(data => {
                 const grid = document.getElementById('comic-grid');
-                if (data.length > 0 && data[0].panels.length > 0) {
+                grid.innerHTML = ''; // Clear loading message
+                
+                if (data && data.length > 0 && data[0].panels && data[0].panels.length > 0) {
                     data[0].panels.forEach((panel, index) => {
                         const panelDiv = document.createElement('div');
                         panelDiv.className = 'panel';
@@ -316,6 +345,10 @@ class EnhancedComicGenerator:
                         const img = document.createElement('img');
                         img.src = '../frames/final/' + panel.image;
                         img.alt = 'Comic Panel ' + (index + 1);
+                        img.onerror = function() {
+                            this.style.display = 'none';
+                            panelDiv.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666;">Image not found</div>';
+                        };
                         panelDiv.appendChild(img);
                         
                         // Add speech bubbles
@@ -323,21 +356,27 @@ class EnhancedComicGenerator:
                             const bubble = data[0].bubbles[index];
                             const bubbleDiv = document.createElement('div');
                             bubbleDiv.className = 'speech-bubble';
-                            bubbleDiv.style.left = bubble.x + 'px';
-                            bubbleDiv.style.top = bubble.y + 'px';
-                            bubbleDiv.style.width = bubble.width + 'px';
-                            bubbleDiv.style.height = bubble.height + 'px';
-                            bubbleDiv.textContent = bubble.text;
+                            
+                            // Use bubble_offset_x and bubble_offset_y from the data
+                            bubbleDiv.style.left = (bubble.bubble_offset_x || 50) + 'px';
+                            bubbleDiv.style.top = (bubble.bubble_offset_y || 50) + 'px';
+                            bubbleDiv.style.maxWidth = '200px';
+                            bubbleDiv.style.minHeight = '60px';
+                            
+                            // Use dialog from the data
+                            bubbleDiv.textContent = bubble.dialog || '((action-scene))';
                             panelDiv.appendChild(bubbleDiv);
                         }
                         
                         grid.appendChild(panelDiv);
                     });
+                } else {
+                    grid.innerHTML = '<div class="loading">No comic data found</div>';
                 }
             })
             .catch(error => {
                 console.error('Error loading comic:', error);
-                document.getElementById('comic-grid').innerHTML = '<p>Error loading comic data</p>';
+                document.getElementById('comic-grid').innerHTML = '<div class="loading">Error loading comic data: ' + error.message + '</div>';
             });
     </script>
 </body>
