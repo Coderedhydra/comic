@@ -120,11 +120,18 @@ def bubble_create(video, crop_coords, black_x, black_y):
         lip_x = lips[sub.index][0]
         lip_y = lips[sub.index][1]
 
-        # Use new image-based positioning system
+        # Use smart bubble positioning system
         HIGH_ACCURACY = os.getenv('HIGH_ACCURACY', '0')
         if HIGH_ACCURACY in ('1', 'true', 'True', 'YES', 'yes'):
-            # For high-accuracy mode, use image coordinates directly
-            bubble_x, bubble_y = get_bubble_position(crop_coords[sub.index-1], None, (lip_x, lip_y))
+            # Use smart image analysis for bubble placement
+            try:
+                from backend.speech_bubble.smart_bubble_placement import get_smart_bubble_position
+                frame_path = f"frames/final/frame{sub.index:03}.png"
+                bubble_x, bubble_y = get_smart_bubble_position(frame_path, crop_coords[sub.index-1], (lip_x, lip_y))
+                print(f"Smart placement: ({bubble_x:.0f}, {bubble_y:.0f})")
+            except ImportError:
+                # Fallback to image-based positioning
+                bubble_x, bubble_y = get_bubble_position(crop_coords[sub.index-1], None, (lip_x, lip_y))
         else:
             # For legacy mode, use CAM data
             bubble_x, bubble_y = get_bubble_position(crop_coords[sub.index-1], CAM_data[sub.index-1], (lip_x, lip_y))
