@@ -231,18 +231,13 @@ class EnhancedComicGenerator:
                 page_bubbles = []
                 
                 for j in range(4):
-                    # Use different frame combinations for each page
-                    # Create variety by using different frame orders
-                    if page_num == 0:
-                        frame_index = j  # Page 1: frames 1,2,3,4
-                    elif page_num == 1:
-                        frame_index = (j + 1) % len(frame_files)  # Page 2: frames 2,3,4,1
-                    elif page_num == 2:
-                        frame_index = (j + 2) % len(frame_files)  # Page 3: frames 3,4,1,2
+                    # Use unique frames for each page (16 total frames, 4 per page)
+                    frame_index = page_num * 4 + j
+                    if frame_index < len(frame_files):
+                        frame_file = frame_files[frame_index]
                     else:
-                        frame_index = (j + 3) % len(frame_files)  # Page 4: frames 4,1,2,3
-                    
-                    frame_file = frame_files[frame_index]
+                        # Fallback to first frame if we don't have enough
+                        frame_file = frame_files[0]
                     
                     panel_obj = panel(
                         image=frame_file,

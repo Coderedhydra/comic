@@ -91,6 +91,15 @@ def generate_keyframes(video):
     subs = srt.parse(data)
     torch.cuda.empty_cache()
 
+    # Create final directory if it doesn't exist
+    final_dir = os.path.join("frames", "final")
+    if not os.path.exists(final_dir):
+        os.makedirs(final_dir)
+        print(f"Created directory: {final_dir}")
+
+    frame_counter = 1
+    
+    # Extract frames from subtitle segments (4 frames)
     for sub in subs:
         frames = []
         if not os.path.exists(f"frames/sub{sub.index}"):
@@ -99,22 +108,45 @@ def generate_keyframes(video):
         features = _get_features(frames, gpu=False)
         highlight_scores = _get_probs(features, gpu=False)
 
-        # Create final directory if it doesn't exist
-        final_dir = os.path.join("frames", "final")
-        if not os.path.exists(final_dir):
-            os.makedirs(final_dir)
-            print(f"Created directory: {final_dir}")
-        
         try:
             highlight_scores = list(highlight_scores)    
             sorted_indices = [i[0] for i in sorted(enumerate(highlight_scores), key=lambda x: x[1])]
             print(f"The indices of the list in the increasing order of value are {sorted_indices}.")
             selected_keyframe = sorted_indices[-1]
             frames[selected_keyframe]
-            copy_and_rename_file(frames[selected_keyframe], final_dir, f"frame{sub.index:03}.png")
+            copy_and_rename_file(frames[selected_keyframe], final_dir, f"frame{frame_counter:03}.png")
+            frame_counter += 1
         
         except(TypeError):
-            copy_and_rename_file(frames[0], final_dir, f"frame{sub.index:03}.png")
+            copy_and_rename_file(frames[0], final_dir, f"frame{frame_counter:03}.png")
+            frame_counter += 1
+    
+    # Extract additional frames from the entire video to get 16 total frames
+    import cv2
+    cap = cv2.VideoCapture(video)
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    duration = total_frames / fps
+    
+    # Extract 12 more frames at regular intervals
+    additional_frames_needed = 16 - frame_counter + 1
+    interval = duration / additional_frames_needed
+    
+    for i in range(additional_frames_needed):
+        target_time = i * interval
+        target_frame = int(target_time * fps)
+        
+        cap.set(cv2.CAP_PROP_POS_FRAMES, target_frame)
+        ret, frame = cap.read()
+        
+        if ret:
+            frame_path = os.path.join(final_dir, f"frame{frame_counter:03}.png")
+            cv2.imwrite(frame_path, frame)
+            print(f"Extracted additional frame {frame_counter} at {target_time:.2f}s")
+            frame_counter += 1
+    
+    cap.release()
+    print(f"✅ Generated {frame_counter-1} total frames")
     
 
 def black_bar_crop():
