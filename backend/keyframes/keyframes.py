@@ -162,7 +162,12 @@ def _select_story_relevant_frames(frames, highlight_scores, subtitle):
     except Exception as e:
         print(f"Story selection failed: {e}")
         # Fallback to original method
-        return [sorted_indices[0]] if sorted_indices else [0]
+        try:
+            highlight_scores = list(highlight_scores)
+            sorted_indices = [i[0] for i in sorted(enumerate(highlight_scores), key=lambda x: x[1], reverse=True)]
+            return [sorted_indices[0]] if sorted_indices else [0]
+        except:
+            return [0]  # Ultimate fallback
 
 def _analyze_story_relevance(frame_path, ai_score, subtitle):
     """Analyze frame for story relevance"""

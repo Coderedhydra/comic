@@ -21,7 +21,7 @@ from backend.ai_enhanced_core import (
     image_processor, comic_styler, face_detector, layout_optimizer
 )
 from backend.ai_bubble_placement import ai_bubble_placer
-from backend.subtitles.subs_simple import get_subtitles
+from backend.subtitles.subs_real import get_real_subtitles
 from backend.keyframes.keyframes import generate_keyframes, black_bar_crop
 from backend.class_def import bubble, panel, Page
 
@@ -60,9 +60,9 @@ class EnhancedComicGenerator:
         print("🎬 Starting Enhanced Comic Generation...")
         
         try:
-            # 1. Extract subtitles
-            print("📝 Extracting subtitles...")
-            get_subtitles(self.video_path)
+            # 1. Extract real subtitles from video audio
+            print("📝 Extracting real subtitles from video...")
+            get_real_subtitles(self.video_path)
             
             # 2. Generate keyframes with enhanced quality
             print("🎯 Generating high-quality keyframes...")
