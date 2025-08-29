@@ -62,21 +62,42 @@ class SmartBubblePlacer:
     def _detect_faces(self, image) -> List[Tuple[int, int, int, int]]:
         """Detect face regions in image"""
         if self.face_detector:
-            # Use modern face detector
-            faces = self.face_detector.detect_faces_opencv(image)
-            face_regions = []
-            for face in faces:
-                if face != (-1, -1):
-                    # Create face region around detected point
-                    x, y = face
-                    face_regions.append((x-50, y-50, 100, 100))
-            return face_regions
+            # Use modern face detector with image object
+            try:
+                # Convert image to format expected by face detector
+                if isinstance(image, str):
+                    # If it's a file path, read the image
+                    img = cv2.imread(image)
+                else:
+                    # If it's already an image object
+                    img = image
+                
+                faces = self.face_detector.detect_faces_opencv(img)
+                face_regions = []
+                for face in faces:
+                    if face != (-1, -1):
+                        # Create face region around detected point
+                        x, y = face
+                        face_regions.append((x-50, y-50, 100, 100))
+                return face_regions
+            except Exception as e:
+                print(f"Face detection error: {e}")
+                return []
         else:
             # Fallback to basic face detection
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-            return [(x, y, w, h) for (x, y, w, h) in faces]
+            try:
+                if isinstance(image, str):
+                    img = cv2.imread(image)
+                else:
+                    img = image
+                
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+                faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+                return [(x, y, w, h) for (x, y, w, h) in faces]
+            except Exception as e:
+                print(f"Fallback face detection error: {e}")
+                return []
     
     def _find_empty_areas(self, gray_image) -> List[Tuple[int, int, int, int]]:
         """Find areas with low variance (good for bubbles)"""

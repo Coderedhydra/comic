@@ -53,13 +53,18 @@ class ModernFaceDetector:
         print(f"Downloading face detection model from {url}")
         urllib.request.urlretrieve(url, "backend/speech_bubble/face_detection_yunet_2023mar.onnx")
     
-    def detect_faces_mediapipe(self, image_path: str) -> List[Tuple[int, int]]:
+    def detect_faces_mediapipe(self, image) -> List[Tuple[int, int]]:
         """Detect faces using MediaPipe (most accurate)"""
-        image = cv2.imread(image_path)
-        if image is None:
+        # Handle both file paths and image objects
+        if isinstance(image, str):
+            img = cv2.imread(image)
+        else:
+            img = image
+            
+        if img is None:
             return [(-1, -1)]
         
-        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        rgb_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         results = self.face_mesh.process(rgb_image)
         
         lip_positions = []
@@ -79,16 +84,21 @@ class ModernFaceDetector:
         
         return lip_positions if lip_positions else [(-1, -1)]
     
-    def detect_faces_opencv(self, image_path: str) -> List[Tuple[int, int]]:
+    def detect_faces_opencv(self, image) -> List[Tuple[int, int]]:
         """Detect faces using OpenCV DNN (fallback)"""
-        image = cv2.imread(image_path)
-        if image is None:
+        # Handle both file paths and image objects
+        if isinstance(image, str):
+            img = cv2.imread(image)
+        else:
+            img = image
+            
+        if img is None:
             return [(-1, -1)]
         
-        height, width = image.shape[:2]
+        height, width = img.shape[:2]
         self.face_detector.setInputSize((width, height))
         
-        _, faces = self.face_detector.detect(image)
+        _, faces = self.face_detector.detect(img)
         lip_positions = []
         
         if faces is not None:
@@ -104,12 +114,12 @@ class ModernFaceDetector:
         
         return lip_positions if lip_positions else [(-1, -1)]
     
-    def detect_faces(self, image_path: str) -> List[Tuple[int, int]]:
+    def detect_faces(self, image) -> List[Tuple[int, int]]:
         """Main face detection method"""
         if self.use_mediapipe:
-            return self.detect_faces_mediapipe(image_path)
+            return self.detect_faces_mediapipe(image)
         else:
-            return self.detect_faces_opencv(image_path)
+            return self.detect_faces_opencv(image)
 
 def get_modern_lip_positions(video_path: str, frame_paths: List[str]) -> dict:
     """
