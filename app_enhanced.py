@@ -7,13 +7,14 @@ import os
 import webbrowser
 import time
 import threading
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from pathlib import Path
 import cv2
 import numpy as np
 from PIL import Image
 import srt
 import json
+import shutil
 
 # Import enhanced modules
 from backend.ai_enhanced_core import (
@@ -23,9 +24,13 @@ from backend.ai_bubble_placement import ai_bubble_placer
 from backend.subtitles.subs_simple import get_subtitles
 from backend.keyframes.keyframes import generate_keyframes, black_bar_crop
 from backend.class_def import bubble, panel, Page
-from backend.utils import cleanup, download_video, copy_template
 
 app = Flask(__name__)
+
+# Ensure directories exist
+os.makedirs('video', exist_ok=True)
+os.makedirs('frames/final', exist_ok=True)
+os.makedirs('output', exist_ok=True)
 
 class EnhancedComicGenerator:
     """High-quality comic generation with AI enhancement"""
@@ -106,251 +111,243 @@ class EnhancedComicGenerator:
     def _enhance_all_images(self):
         """Enhance quality of all extracted frames"""
         if not os.path.exists(self.frames_dir):
-            print("No frames directory found, skipping enhancement")
+            print(f"❌ Frames directory not found: {self.frames_dir}")
             return
-        
+            
         frame_files = [f for f in os.listdir(self.frames_dir) if f.endswith('.png')]
         print(f"Found {len(frame_files)} frames to enhance")
         
-        for i, frame_file in enumerate(frame_files):
-            frame_path = os.path.join(self.frames_dir, frame_file)
+        for i, frame_file in enumerate(frame_files, 1):
             try:
-                # Apply AI-enhanced image processing
-                image_processor.enhance_image_quality(frame_path)
-                print(f"Enhanced: {frame_file} ({i+1}/{len(frame_files)})")
+                frame_path = os.path.join(self.frames_dir, frame_file)
+                image_processor.enhance_image_quality(frame_path, frame_path)
+                print(f"Enhanced: {frame_file} ({i}/{len(frame_files)})")
             except Exception as e:
                 print(f"Failed to enhance {frame_file}: {e}")
-                # Continue with other frames
-                continue
     
     def _apply_comic_styling(self):
-        """Apply AI-enhanced comic styling to all frames"""
+        """Apply comic styling to all frames"""
         if not os.path.exists(self.frames_dir):
-            print("No frames directory found, skipping styling")
+            print(f"❌ Frames directory not found: {self.frames_dir}")
             return
-        
+            
         frame_files = [f for f in os.listdir(self.frames_dir) if f.endswith('.png')]
         print(f"Found {len(frame_files)} frames to style")
         
-        for i, frame_file in enumerate(frame_files):
-            frame_path = os.path.join(self.frames_dir, frame_file)
+        for i, frame_file in enumerate(frame_files, 1):
             try:
-                # Apply modern comic style
-                comic_styler.apply_comic_style(frame_path, style_type="modern")
-                print(f"Styled: {frame_file} ({i+1}/{len(frame_files)})")
+                frame_path = os.path.join(self.frames_dir, frame_file)
+                comic_styler.apply_comic_style(frame_path, frame_path)
+                print(f"Styled: {frame_file} ({i}/{len(frame_files)})")
             except Exception as e:
                 print(f"Failed to style {frame_file}: {e}")
-                # Continue with other frames
-                continue
     
     def _generate_optimized_layout(self):
         """Generate AI-optimized layout"""
-        if not os.path.exists(self.frames_dir):
-            return {'panels': [], 'templates': []}
-        
-        frame_files = sorted([f for f in os.listdir(self.frames_dir) if f.endswith('.png')])
-        frame_paths = [os.path.join(self.frames_dir, f) for f in frame_files]
-        
-        # Use AI layout optimizer
-        if self.ai_mode == '1':
-            layout = layout_optimizer.optimize_layout(frame_paths, target_layout="2x2")
-        else:
+        try:
+            layout_data = layout_optimizer.optimize_layout(self.frames_dir)
+            return layout_data
+        except Exception as e:
+            print(f"Layout generation failed: {e}")
             # Fallback to simple 2x2 layout
-            layout = self._create_simple_layout(frame_paths)
-        
-        return {
-            'panels': layout,
-            'templates': ['6666'] * (len(frame_paths) // 4 + 1)
-        }
-    
-    def _create_simple_layout(self, frame_paths):
-        """Create simple 2x2 layout as fallback"""
-        layout = []
-        for i, frame_path in enumerate(frame_paths[:4]):  # Limit to 4 images
-            layout.append({
-                'index': i,
-                'type': '6',
-                'span': (2, 2),
-                'priority': 'medium',
-                'content_analysis': {'complexity': 'medium', 'faces': 0, 'action': 'low'}
-            })
-        return layout
+            return ['6666', '6666', '6666', '6666']
     
     def _create_ai_bubbles(self, black_x, black_y):
         """Create AI-powered speech bubbles"""
         bubbles = []
         
-        # Read subtitles
-        with open("test1.srt") as f:
-            data = f.read()
-        subs = srt.parse(data)
-        
-        # Get lip positions using AI face detection
-        lip_positions = self._get_ai_lip_positions()
-        
-        for sub in subs:
-            if sub.content == "((action-scene))":
-                continue
+        try:
+            # Read subtitles
+            with open('test1.srt', 'r', encoding='utf-8') as f:
+                subs = list(srt.parse(f.read()))
             
-            # Get lip coordinates
-            lip_x, lip_y = lip_positions.get(sub.index, (-1, -1))
+            frame_files = sorted([f for f in os.listdir(self.frames_dir) if f.endswith('.png')])
             
-            # Get panel coordinates (simplified for 2x2 layout)
-            panel_coords = self._get_panel_coords(sub.index)
-            
-            # Use AI bubble placement
-            if self.ai_mode == '1':
-                bubble_x, bubble_y = ai_bubble_placer.place_bubble_ai(
-                    f"frames/final/frame{sub.index:03}.png",
-                    panel_coords,
-                    (lip_x, lip_y),
-                    sub.content
-                )
-            else:
-                # Fallback positioning
-                bubble_x, bubble_y = self._get_fallback_position(panel_coords, lip_x, lip_y)
-            
-            # Determine bubble shape based on content
-            bubble_shape = self._determine_bubble_shape(sub.content)
-            
-            # Create bubble object
-            bubble_obj = bubble(bubble_x, bubble_y, lip_x, lip_y, sub.content, bubble_shape)
-            bubbles.append(bubble_obj)
+            for i, frame_file in enumerate(frame_files):
+                if i < len(subs):
+                    sub = subs[i]
+                    frame_path = os.path.join(self.frames_dir, frame_file)
+                    
+                    try:
+                        # Get lip coordinates (simplified)
+                        lip_x, lip_y = -1, -1
+                        
+                        # Try to detect faces and get lip position
+                        try:
+                            faces = face_detector.detect_faces(frame_path)
+                            if faces:
+                                lip_x, lip_y = face_detector.get_lip_position(frame_path, faces[0])
+                        except Exception as e:
+                            print(f"Face detection failed for {frame_file}: {e}")
+                        
+                        print(f"lipx = {lip_x} and lipy = {lip_y}")
+                        
+                        # Get bubble position using AI
+                        bubble_x, bubble_y = ai_bubble_placer.place_bubble_ai(
+                            frame_path, (lip_x, lip_y)
+                        )
+                        
+                        # Create bubble
+                        bubble_obj = bubble(
+                            text=sub.content,
+                            x=bubble_x,
+                            y=bubble_y,
+                            width=200,
+                            height=100
+                        )
+                        
+                        bubbles.append(bubble_obj)
+                        
+                    except Exception as e:
+                        print(f"Bubble creation failed for {frame_file}: {e}")
+                        # Create fallback bubble
+                        bubble_obj = bubble(
+                            text=sub.content,
+                            x=50,
+                            y=50,
+                            width=200,
+                            height=100
+                        )
+                        bubbles.append(bubble_obj)
+                        
+        except Exception as e:
+            print(f"Bubble creation failed: {e}")
         
         return bubbles
-    
-    def _get_ai_lip_positions(self):
-        """Get lip positions using AI face detection"""
-        lip_positions = {}
-        
-        if not os.path.exists(self.frames_dir):
-            return lip_positions
-        
-        frame_files = sorted([f for f in os.listdir(self.frames_dir) if f.endswith('.png')])
-        
-        for frame_file in frame_files:
-            frame_path = os.path.join(self.frames_dir, frame_file)
-            frame_index = int(frame_file.replace('frame', '').replace('.png', ''))
-            
-            try:
-                # Use AI face detection
-                faces = face_detector.detect_faces_advanced(frame_path)
-                
-                if faces:
-                    # Use the first detected face
-                    lip_pos = faces[0]['lip_position']
-                    lip_positions[frame_index] = lip_pos
-                else:
-                    lip_positions[frame_index] = (-1, -1)
-                    
-            except Exception as e:
-                print(f"Face detection failed for {frame_file}: {e}")
-                lip_positions[frame_index] = (-1, -1)
-        
-        return lip_positions
-    
-    def _get_panel_coords(self, frame_index):
-        """Get panel coordinates for 2x2 layout"""
-        # Simplified 2x2 layout coordinates
-        panel_width = 1035 // 2
-        panel_height = 1100 // 2
-        
-        # Calculate panel position based on frame index
-        row = (frame_index - 1) // 2
-        col = (frame_index - 1) % 2
-        
-        left = col * panel_width
-        right = (col + 1) * panel_width
-        top = row * panel_height
-        bottom = (row + 1) * panel_height
-        
-        return (left, right, top, bottom)
-    
-    def _get_fallback_position(self, panel_coords, lip_x, lip_y):
-        """Get fallback bubble position"""
-        left, right, top, bottom = panel_coords
-        
-        # Simple upper-right positioning
-        bubble_x = right - 250  # 50px margin from right
-        bubble_y = top + 50     # 50px margin from top
-        
-        # Avoid lip if detected
-        if lip_x != -1 and lip_y != -1:
-            distance = ((bubble_x - lip_x)**2 + (bubble_y - lip_y)**2)**0.5
-            if distance < 100:
-                bubble_x = left + 100
-                bubble_y = top + 100
-        
-        return bubble_x, bubble_y
-    
-    def _determine_bubble_shape(self, dialogue):
-        """Determine bubble shape based on dialogue content"""
-        dialogue_lower = dialogue.lower()
-        
-        # Check for exclamations
-        if any(word in dialogue_lower for word in ['!', 'wow', 'oh', 'ah', 'hey']):
-            return 'exclamation'
-        
-        # Check for questions
-        if any(word in dialogue_lower for word in ['?', 'what', 'how', 'why', 'when']):
-            return 'question'
-        
-        # Check for thoughts
-        if any(word in dialogue_lower for word in ['think', 'thought', 'maybe', 'perhaps']):
-            return 'thought'
-        
-        # Default to normal speech
-        return 'normal'
     
     def _generate_pages(self, layout_data, bubbles):
         """Generate final pages"""
         pages = []
         
-        # Group bubbles by page (4 per page for 2x2 layout)
-        bubbles_per_page = 4
-        for i in range(0, len(bubbles), bubbles_per_page):
-            page_bubbles = bubbles[i:i + bubbles_per_page]
+        try:
+            frame_files = sorted([f for f in os.listdir(self.frames_dir) if f.endswith('.png')])
             
-            # Create panels for this page
-            panels = []
-            for j in range(min(4, len(page_bubbles))):
-                panel_obj = panel(
-                    image=f"frame{j+1:03}.png",
-                    row_span=2, col_span=2
-                )
-                panels.append(panel_obj)
-            
-            # Create page
-            page = Page(panels, page_bubbles)
-            pages.append(page)
+            # Create pages based on layout
+            for i in range(0, len(frame_files), 4):
+                page_frames = frame_files[i:i+4]
+                page_bubbles = bubbles[i:i+4] if i < len(bubbles) else []
+                
+                # Create panels for this page
+                panels = []
+                for j, frame_file in enumerate(page_frames):
+                    panel_obj = panel(
+                        image=f"frame{j+1:03}.png",
+                        row_span=2,
+                        col_span=2
+                    )
+                    panels.append(panel_obj)
+                
+                # Create page
+                page = Page(panels=panels, bubbles=page_bubbles)
+                pages.append(page)
+                
+        except Exception as e:
+            print(f"Page generation failed: {e}")
         
         return pages
     
     def _save_results(self, pages):
-        """Save final results"""
-        print("💾 Saving results...")
-        
-        # Create output directory if it doesn't exist
-        os.makedirs('output', exist_ok=True)
-        
-        # Save pages as JSON
-        pages_data = []
-        for page in pages:
-            page_data = {
-                'panels': page.panels,  # Already dictionaries
-                'bubbles': page.bubbles  # Already dictionaries
-            }
-            pages_data.append(page_data)
-        
-        with open('output/pages.json', 'w') as f:
-            json.dump(pages_data, f, indent=2)
-        
-        print("📄 Copying template files...")
-        # Copy template files
-        copy_template()
-        
-        print("✅ Results saved successfully!")
-        print(f"📁 Comic saved to: {os.path.abspath('output/page.html')}")
+        """Save results to output directory"""
+        try:
+            # Ensure output directory exists
+            os.makedirs(self.output_dir, exist_ok=True)
+            
+            # Save pages data
+            pages_data = []
+            for page in pages:
+                page_data = {
+                    'panels': [{'image': p.image, 'row_span': p.row_span, 'col_span': p.col_span} for p in page.panels],
+                    'bubbles': [{'text': b.text, 'x': b.x, 'y': b.y, 'width': b.width, 'height': b.height} for b in page.bubbles]
+                }
+                pages_data.append(page_data)
+            
+            with open(os.path.join(self.output_dir, 'pages.json'), 'w') as f:
+                json.dump(pages_data, f, indent=2)
+            
+            # Copy template files
+            self._copy_template_files()
+            
+            print("✅ Results saved successfully!")
+            print(f"📁 Comic saved to: {os.path.abspath('output/page.html')}")
+            
+        except Exception as e:
+            print(f"Save results failed: {e}")
+    
+    def _copy_template_files(self):
+        """Copy template files to output directory"""
+        try:
+            # Copy HTML template
+            template_html = '''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generated Comic</title>
+    <style>
+        body { margin: 0; padding: 20px; background: #f0f0f0; font-family: Arial, sans-serif; }
+        .comic-page { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .comic-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; height: 600px; }
+        .panel { position: relative; border: 2px solid #333; overflow: hidden; }
+        .panel img { width: 100%; height: 100%; object-fit: cover; }
+        .speech-bubble { position: absolute; background: white; border: 2px solid #333; border-radius: 10px; padding: 10px; max-width: 150px; font-size: 12px; }
+        .speech-bubble::after { content: ''; position: absolute; bottom: -10px; left: 20px; width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 10px solid #333; }
+    </style>
+</head>
+<body>
+    <div class="comic-page">
+        <h1>🎬 Generated Comic</h1>
+        <div class="comic-grid" id="comic-grid">
+            <!-- Panels will be loaded here -->
+        </div>
+    </div>
+    <script>
+        // Load comic data
+        fetch('pages.json')
+            .then(response => response.json())
+            .then(data => {
+                const grid = document.getElementById('comic-grid');
+                if (data.length > 0 && data[0].panels.length > 0) {
+                    data[0].panels.forEach((panel, index) => {
+                        const panelDiv = document.createElement('div');
+                        panelDiv.className = 'panel';
+                        
+                        const img = document.createElement('img');
+                        img.src = '../frames/final/' + panel.image;
+                        img.alt = 'Comic Panel ' + (index + 1);
+                        panelDiv.appendChild(img);
+                        
+                        // Add speech bubbles
+                        if (data[0].bubbles && data[0].bubbles[index]) {
+                            const bubble = data[0].bubbles[index];
+                            const bubbleDiv = document.createElement('div');
+                            bubbleDiv.className = 'speech-bubble';
+                            bubbleDiv.style.left = bubble.x + 'px';
+                            bubbleDiv.style.top = bubble.y + 'px';
+                            bubbleDiv.style.width = bubble.width + 'px';
+                            bubbleDiv.style.height = bubble.height + 'px';
+                            bubbleDiv.textContent = bubble.text;
+                            panelDiv.appendChild(bubbleDiv);
+                        }
+                        
+                        grid.appendChild(panelDiv);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error loading comic:', error);
+                document.getElementById('comic-grid').innerHTML = '<p>Error loading comic data</p>';
+            });
+    </script>
+</body>
+</html>'''
+            
+            with open(os.path.join(self.output_dir, 'page.html'), 'w') as f:
+                f.write(template_html)
+            
+            print("📄 Template files copied successfully!")
+            
+        except Exception as e:
+            print(f"Template copy failed: {e}")
 
 # Global comic generator instance
 comic_generator = EnhancedComicGenerator()
@@ -364,13 +361,21 @@ def upload_file():
     if request.method == 'POST':
         try:
             print("📁 Processing file upload...")
+            
+            if 'file' not in request.files:
+                return "❌ No file uploaded"
+            
             f = request.files['file']
+            if f.filename == '':
+                return "❌ No file selected"
             
             # Clean up previous files
-            cleanup()
+            if os.path.exists('video/uploaded.mp4'):
+                os.remove('video/uploaded.mp4')
             
             # Save uploaded file
             f.save("video/uploaded.mp4")
+            print(f"✅ File saved: {f.filename}")
             
             # Generate comic
             success = comic_generator.generate_comic()
@@ -398,13 +403,28 @@ def handle_link():
     if request.method == 'POST':
         try:
             print("🔗 Processing video link...")
-            link = request.form['link']
+            link = request.form.get('link', '')
+            
+            if not link:
+                return "❌ No link provided"
             
             # Clean up previous files
-            cleanup()
+            if os.path.exists('video/uploaded.mp4'):
+                os.remove('video/uploaded.mp4')
             
-            # Download video
-            download_video(link)
+            # Download video using yt-dlp
+            try:
+                import yt_dlp
+                ydl_opts = {
+                    'outtmpl': 'video/uploaded.mp4',
+                    'format': 'best[height<=720]'
+                }
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    ydl.download([link])
+                print(f"✅ Video downloaded from: {link}")
+            except Exception as e:
+                print(f"❌ Video download failed: {e}")
+                return f"❌ Failed to download video: {str(e)}"
             
             # Generate comic
             success = comic_generator.generate_comic()
@@ -434,8 +454,19 @@ def status():
         'ai_mode': comic_generator.ai_mode,
         'quality_mode': comic_generator.quality_mode,
         'video_exists': os.path.exists(comic_generator.video_path),
-        'frames_exist': os.path.exists(comic_generator.frames_dir)
+        'frames_exist': os.path.exists(comic_generator.frames_dir),
+        'output_exists': os.path.exists('output/page.html')
     })
+
+@app.route('/output/<path:filename>')
+def output_file(filename):
+    """Serve output files"""
+    return send_from_directory('output', filename)
+
+@app.route('/frames/final/<path:filename>')
+def frame_file(filename):
+    """Serve frame files"""
+    return send_from_directory('frames/final', filename)
 
 if __name__ == '__main__':
     print("🚀 Starting Enhanced Comic Generator...")
@@ -445,5 +476,8 @@ if __name__ == '__main__':
     print("   - Smart bubble placement")
     print("   - High-quality comic styling")
     print("   - Optimized 2x2 layout")
+    print("")
+    print("🌐 Web interface available at: http://localhost:5000")
+    print("📁 Upload videos or paste YouTube links to generate comics!")
     print("")
     app.run(debug=True, host='0.0.0.0', port=5000)
