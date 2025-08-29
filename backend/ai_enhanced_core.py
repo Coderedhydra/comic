@@ -95,17 +95,15 @@ class HighQualityImageProcessor:
         # Load image
         img = Image.open(image_path)
         
-        # 1. Quick noise reduction (faster)
-        img = self._reduce_noise_advanced(img)
+        # High-quality enhancement pipeline
+        img = self._reduce_noise_advanced(img)     # Advanced noise reduction
+        img = self._enhance_colors(img)            # Enhanced color processing
+        img = self._improve_sharpness(img)         # Advanced sharpness
+        img = self._optimize_dynamic_range(img)    # Dynamic range optimization
+        img = self._apply_super_resolution(img)    # Super resolution enhancement
         
-        # 2. Basic color enhancement
-        img = self._enhance_colors(img)
-        
-        # 3. Quick sharpness improvement
-        img = self._improve_sharpness(img)
-        
-        # Save with good quality (faster)
-        img.save(output_path, quality=90, optimize=True)
+        # Save with maximum quality
+        img.save(output_path, quality=100, optimize=False)
         
         return output_path
     
@@ -241,7 +239,7 @@ class AIComicStyler:
         comic = self._final_enhancement(comic)
         
         # Save with maximum quality
-        cv2.imwrite(image_path, comic, [cv2.IMWRITE_JPEG_QUALITY, 100])
+        cv2.imwrite(image_path, comic, [cv2.IMWRITE_JPEG_QUALITY, 100, cv2.IMWRITE_PNG_COMPRESSION, 0])
         
         return image_path
     

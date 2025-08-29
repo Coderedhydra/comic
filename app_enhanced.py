@@ -294,13 +294,16 @@ class EnhancedComicGenerator:
         .speech-bubble { 
             position: absolute; 
             background: white; 
-            border: 2px solid #333; 
-            border-radius: 10px; 
-            padding: 10px; 
+            border: 3px solid #333; 
+            border-radius: 15px; 
+            padding: 12px; 
             max-width: 200px; 
             font-size: 14px; 
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+            font-weight: bold;
+            box-shadow: 3px 3px 8px rgba(0,0,0,0.4);
             z-index: 10;
+            text-align: center;
+            color: #333;
         }
         .speech-bubble::after { 
             content: ''; 
@@ -358,10 +361,21 @@ class EnhancedComicGenerator:
                             bubbleDiv.className = 'speech-bubble';
                             
                             // Use bubble_offset_x and bubble_offset_y from the data
-                            bubbleDiv.style.left = (bubble.bubble_offset_x || 50) + 'px';
-                            bubbleDiv.style.top = (bubble.bubble_offset_y || 50) + 'px';
-                            bubbleDiv.style.maxWidth = '200px';
-                            bubbleDiv.style.minHeight = '60px';
+                            // Fix positioning - ensure bubbles are visible within panel
+                            let x = bubble.bubble_offset_x || 50;
+                            let y = bubble.bubble_offset_y || 50;
+                            
+                            // Clamp positions to ensure bubbles are visible
+                            x = Math.max(10, Math.min(x, 300));
+                            y = Math.max(10, Math.min(y, 200));
+                            
+                            bubbleDiv.style.left = x + 'px';
+                            bubbleDiv.style.top = y + 'px';
+                            bubbleDiv.style.maxWidth = '180px';
+                            bubbleDiv.style.minHeight = '50px';
+                            bubbleDiv.style.fontSize = '12px';
+                            bubbleDiv.style.lineHeight = '1.2';
+                            bubbleDiv.style.wordWrap = 'break-word';
                             
                             // Use dialog from the data
                             bubbleDiv.textContent = bubble.dialog || '((action-scene))';

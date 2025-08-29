@@ -54,7 +54,12 @@ class AIBubblePlacer:
         # 5. Select optimal position
         best_position = self._select_optimal_position(scored_candidates, lip_coords)
         
-        return best_position
+        # Ensure position is within reasonable bounds
+        x, y = best_position
+        x = max(50, min(x, 300))  # Clamp to visible area
+        y = max(50, min(y, 200))  # Clamp to visible area
+        
+        return (x, y)
     
     def _analyze_image_content(self, image_path: str) -> Dict:
         """Comprehensive image content analysis"""
