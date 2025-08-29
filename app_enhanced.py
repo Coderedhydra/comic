@@ -20,7 +20,7 @@ from backend.ai_enhanced_core import (
     image_processor, comic_styler, face_detector, layout_optimizer
 )
 from backend.ai_bubble_placement import ai_bubble_placer
-from backend.subtitles.subs import get_subtitles
+from backend.subtitles.subs_simple import get_subtitles
 from backend.keyframes.keyframes import generate_keyframes, black_bar_crop
 from backend.class_def import bubble, panel, Page
 from backend.utils import cleanup, download_video, copy_template
@@ -315,8 +315,8 @@ class EnhancedComicGenerator:
             panels = []
             for j in range(min(4, len(page_bubbles))):
                 panel_obj = panel(
-                    left=0, right=1035//2, top=0, bottom=1100//2,
-                    span=(2, 2), type='6'
+                    image=f"frame{j+1:03}.png",
+                    row_span=2, col_span=2
                 )
                 panels.append(panel_obj)
             
@@ -337,8 +337,8 @@ class EnhancedComicGenerator:
         pages_data = []
         for page in pages:
             page_data = {
-                'panels': [{'left': p.left, 'right': p.right, 'top': p.top, 'bottom': p.bottom} for p in page.panels],
-                'bubbles': [{'x': b.x, 'y': b.y, 'content': b.content, 'shape': b.shape} for b in page.bubbles]
+                'panels': page.panels,  # Already dictionaries
+                'bubbles': page.bubbles  # Already dictionaries
             }
             pages_data.append(page_data)
         

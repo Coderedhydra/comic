@@ -29,7 +29,17 @@ class AIBubblePlacer:
         content_analysis = self._analyze_image_content(image_path)
         
         # 2. Detect faces and important regions
-        faces = face_detector.detect_faces_advanced(image_path)
+        faces = []
+        try:
+            # Use basic OpenCV face detection
+            img = cv2.imread(image_path)
+            if img is not None:
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+                face_rects = face_cascade.detectMultiScale(gray, 1.1, 4)
+                faces = [{'face_box': {'x': x, 'y': y, 'width': w, 'height': h}} for (x, y, w, h) in face_rects]
+        except:
+            faces = []
         
         # 3. Generate candidate positions
         candidates = self._generate_candidates(panel_coords, faces, content_analysis)
@@ -77,14 +87,17 @@ class AIBubblePlacer:
         a_channel = lab[:,:,1]
         b_channel = lab[:,:,2]
         
-        # Create saliency map
-        saliency = cv2.saliency.StaticSaliencySpectralResidual_create()
-        _, saliency_map = saliency.computeSaliency(img)
+        # Create simple saliency map using edge detection
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        edges = cv2.Canny(gray, 50, 150)
         
-        # Find regions with high saliency
+        # Find regions with high edge density
         salient_regions = []
-        threshold = np.percentile(saliency_map, 85)
-        salient_mask = saliency_map > threshold
+        kernel = np.ones((20, 20), np.uint8)
+        edge_density = cv2.filter2D(edges.astype(np.float32), -1, kernel)
+        
+        threshold = np.percentile(edge_density, 85)
+        salient_mask = edge_density > threshold
         
         # Find contours of salient regions
         contours, _ = cv2.findContours(salient_mask.astype(np.uint8), 
@@ -96,7 +109,7 @@ class AIBubblePlacer:
                 salient_regions.append({
                     'x': x, 'y': y, 'width': w, 'height': h,
                     'area': w * h,
-                    'saliency_score': np.mean(saliency_map[y:y+h, x:x+w])
+                    'saliency_score': np.mean(edge_density[y:y+h, x:x+w])
                 })
         
         return salient_regions

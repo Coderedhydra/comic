@@ -12,7 +12,7 @@ from PIL import Image, ImageEnhance, ImageFilter
 import os
 import json
 from typing import List, Tuple, Dict, Optional
-import mediapipe as mp
+# import mediapipe as mp  # Optional import
 from transformers import pipeline, AutoModelForImageClassification, AutoFeatureExtractor
 import requests
 from io import BytesIO
@@ -22,18 +22,28 @@ import time
 class AIEnhancedCore:
     def __init__(self):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.face_mesh = mp.solutions.face_mesh.FaceMesh(
-            static_image_mode=True,
-            max_num_faces=10,
-            refine_landmarks=True,
-            min_detection_confidence=0.5
-        )
-        self.pose = mp.solutions.pose.Pose(
-            static_image_mode=True,
-            model_complexity=2,
-            enable_segmentation=True,
-            min_detection_confidence=0.5
-        )
+        
+        # Try to initialize MediaPipe (optional)
+        try:
+            import mediapipe as mp
+            self.face_mesh = mp.solutions.face_mesh.FaceMesh(
+                static_image_mode=True,
+                max_num_faces=10,
+                refine_landmarks=True,
+                min_detection_confidence=0.5
+            )
+            self.pose = mp.solutions.pose.Pose(
+                static_image_mode=True,
+                model_complexity=2,
+                enable_segmentation=True,
+                min_detection_confidence=0.5
+            )
+            self.use_mediapipe = True
+        except ImportError:
+            print("⚠️ MediaPipe not available, using fallback methods")
+            self.face_mesh = None
+            self.pose = None
+            self.use_mediapipe = False
         
         # Initialize AI models
         self._load_ai_models()
@@ -396,9 +406,16 @@ class AILayoutOptimizer:
         if img is None:
             return {'complexity': 'low', 'faces': 0, 'action': 'low'}
         
-        # Face detection
-        face_detector = AIFaceDetector()
-        faces = face_detector.detect_faces_advanced(image_path)
+        # Face detection (simplified without MediaPipe)
+        faces = []
+        try:
+            # Use basic OpenCV face detection
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+            face_rects = face_cascade.detectMultiScale(gray, 1.1, 4)
+            faces = [(x, y, w, h) for (x, y, w, h) in face_rects]
+        except:
+            faces = []
         
         # Scene complexity analysis
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)

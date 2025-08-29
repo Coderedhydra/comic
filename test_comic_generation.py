@@ -25,7 +25,7 @@ def test_step_by_step():
     # Step 2: Test subtitle extraction
     print("\n2️⃣ Testing subtitle extraction...")
     try:
-        from backend.subtitles.subs import get_subtitles
+        from backend.subtitles.subs_simple import get_subtitles
         get_subtitles(video_path)
         print("✅ Subtitles extracted")
     except Exception as e:

@@ -99,31 +99,48 @@ def generate_keyframes(video):
         features = _get_features(frames, gpu=False)
         highlight_scores = _get_probs(features, gpu=False)
 
+        # Create final directory if it doesn't exist
+        final_dir = os.path.join("frames", "final")
+        if not os.path.exists(final_dir):
+            os.makedirs(final_dir)
+            print(f"Created directory: {final_dir}")
+        
         try:
             highlight_scores = list(highlight_scores)    
             sorted_indices = [i[0] for i in sorted(enumerate(highlight_scores), key=lambda x: x[1])]
             print(f"The indices of the list in the increasing order of value are {sorted_indices}.")
             selected_keyframe = sorted_indices[-1]
             frames[selected_keyframe]
-            copy_and_rename_file(frames[selected_keyframe], os.path.join("frames","final"), f"frame{sub.index:03}.png")
+            copy_and_rename_file(frames[selected_keyframe], final_dir, f"frame{sub.index:03}.png")
         
         except(TypeError):
-            copy_and_rename_file(frames[0], os.path.join("frames","final"), f"frame{sub.index:03}.png")
+            copy_and_rename_file(frames[0], final_dir, f"frame{sub.index:03}.png")
     
 
 def black_bar_crop():
     ref_img_path = "frames/final/frame001.png"
+    
+    # Check if reference image exists
+    if not os.path.exists(ref_img_path):
+        print(f"❌ Reference image not found: {ref_img_path}")
+        return 0, 0, 0, 0
+    
     x, y, w, h = get_black_bar_coordinates(ref_img_path)
     
     # Loop through each keyframe
     folder_dir = "frames/final"
+    if not os.path.exists(folder_dir):
+        print(f"❌ Frames directory not found: {folder_dir}")
+        return x, y, w, h
+    
     for image in os.listdir(folder_dir): 
         img_path = os.path.join("frames",'final',image)
-        image = cv2.imread(img_path)
-        
-        # Crop the image
-        crop = image[y:y+h, x:x+w]
-
-        # Save the cropped image
-        cv2.imwrite(img_path, crop)
-    return x,y,w,h
+        if os.path.exists(img_path):
+            image_data = cv2.imread(img_path)
+            if image_data is not None:
+                # Crop the image
+                crop = image_data[y:y+h, x:x+w]
+                # Save the cropped image
+                cv2.imwrite(img_path, crop)
+    
+    return x, y, w, h
