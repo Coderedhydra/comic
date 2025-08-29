@@ -326,7 +326,7 @@ class EnhancedComicGenerator:
     </div>
     <script>
         // Load comic data
-        fetch('pages.json')
+        fetch('/output/pages.json')
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Failed to load pages.json');
@@ -343,7 +343,7 @@ class EnhancedComicGenerator:
                         panelDiv.className = 'panel';
                         
                         const img = document.createElement('img');
-                        img.src = '../frames/final/' + panel.image;
+                        img.src = '/frames/final/' + panel.image;
                         img.alt = 'Comic Panel ' + (index + 1);
                         img.onerror = function() {
                             this.style.display = 'none';
@@ -422,15 +422,15 @@ def upload_file():
             success = comic_generator.generate_comic()
             
             if success:
-                # Open result in browser
-                output_path = os.path.join(os.getcwd(), 'output', 'page.html')
-                print(f"🌐 Opening comic in browser: {output_path}")
+                # Open result in browser through Flask
+                comic_url = f"http://localhost:5000/comic"
+                print(f"🌐 Opening comic in browser: {comic_url}")
                 try:
-                    webbrowser.open(f'file://{output_path}')
+                    webbrowser.open(comic_url)
                     print("✅ Browser opened successfully!")
                 except Exception as e:
                     print(f"⚠️ Could not open browser: {e}")
-                    print(f"📁 Please open manually: {output_path}")
+                    print(f"📁 Please open manually: {comic_url}")
                 return "🎉 Enhanced Comic Created Successfully!"
             else:
                 return "❌ Comic generation failed"
@@ -471,15 +471,15 @@ def handle_link():
             success = comic_generator.generate_comic()
             
             if success:
-                # Open result in browser
-                output_path = os.path.join(os.getcwd(), 'output', 'page.html')
-                print(f"🌐 Opening comic in browser: {output_path}")
+                # Open result in browser through Flask
+                comic_url = f"http://localhost:5000/comic"
+                print(f"🌐 Opening comic in browser: {comic_url}")
                 try:
-                    webbrowser.open(f'file://{output_path}')
+                    webbrowser.open(comic_url)
                     print("✅ Browser opened successfully!")
                 except Exception as e:
                     print(f"⚠️ Could not open browser: {e}")
-                    print(f"📁 Please open manually: {output_path}")
+                    print(f"📁 Please open manually: {comic_url}")
                 return "🎉 Enhanced Comic Created Successfully!"
             else:
                 return "❌ Comic generation failed"
@@ -508,6 +508,11 @@ def output_file(filename):
 def frame_file(filename):
     """Serve frame files"""
     return send_from_directory('frames/final', filename)
+
+@app.route('/comic')
+def view_comic():
+    """Serve the generated comic page"""
+    return send_from_directory('output', 'page.html')
 
 if __name__ == '__main__':
     print("🚀 Starting Enhanced Comic Generator...")
