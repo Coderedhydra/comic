@@ -37,85 +37,111 @@ class EnhancedComicGenerator:
         self.quality_mode = os.getenv('HIGH_QUALITY', '1')
         self.ai_mode = os.getenv('AI_ENHANCED', '1')
         
+        # Check for GPU
+        try:
+            import torch
+            if torch.cuda.is_available():
+                print("🚀 GPU detected! Using CUDA acceleration")
+                os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+            else:
+                print("💻 Using CPU processing")
+        except:
+            print("💻 Using CPU processing")
+        
     def generate_comic(self):
         """Main comic generation pipeline"""
         start_time = time.time()
         
         print("🎬 Starting Enhanced Comic Generation...")
         
-        # 1. Extract subtitles
-        print("📝 Extracting subtitles...")
-        get_subtitles(self.video_path)
-        
-        # 2. Generate keyframes with enhanced quality
-        print("🎯 Generating high-quality keyframes...")
-        generate_keyframes(self.video_path)
-        
-        # 3. Remove black bars
-        print("✂️ Removing black bars...")
-        black_x, black_y, _, _ = black_bar_crop()
-        
-        # 4. Enhance image quality
-        if self.quality_mode == '1':
-            print("✨ Enhancing image quality...")
-            self._enhance_all_images()
-        
-        # 5. Apply comic styling
-        print("🎨 Applying AI-enhanced comic styling...")
-        self._apply_comic_styling()
-        
-        # 6. Generate optimized layout
-        print("📐 Generating AI-optimized layout...")
-        layout_data = self._generate_optimized_layout()
-        
-        # 7. Create AI-powered speech bubbles
-        print("💬 Creating AI-powered speech bubbles...")
-        bubbles = self._create_ai_bubbles(black_x, black_y)
-        
-        # 8. Generate final pages
-        print("📄 Generating final pages...")
-        pages = self._generate_pages(layout_data, bubbles)
-        
-        # 9. Save results
-        print("💾 Saving results...")
-        self._save_results(pages)
-        
-        execution_time = (time.time() - start_time) / 60
-        print(f"✅ Comic generation completed in {execution_time:.2f} minutes")
-        
-        return True
+        try:
+            # 1. Extract subtitles
+            print("📝 Extracting subtitles...")
+            get_subtitles(self.video_path)
+            
+            # 2. Generate keyframes with enhanced quality
+            print("🎯 Generating high-quality keyframes...")
+            generate_keyframes(self.video_path)
+            
+            # 3. Remove black bars
+            print("✂️ Removing black bars...")
+            black_x, black_y, _, _ = black_bar_crop()
+            
+            # 4. Enhance image quality
+            if self.quality_mode == '1':
+                print("✨ Enhancing image quality...")
+                self._enhance_all_images()
+            
+            # 5. Apply comic styling
+            print("🎨 Applying AI-enhanced comic styling...")
+            self._apply_comic_styling()
+            
+            # 6. Generate optimized layout
+            print("📐 Generating AI-optimized layout...")
+            layout_data = self._generate_optimized_layout()
+            
+            # 7. Create AI-powered speech bubbles
+            print("💬 Creating AI-powered speech bubbles...")
+            bubbles = self._create_ai_bubbles(black_x, black_y)
+            
+            # 8. Generate final pages
+            print("📄 Generating final pages...")
+            pages = self._generate_pages(layout_data, bubbles)
+            
+            # 9. Save results
+            print("💾 Saving results...")
+            self._save_results(pages)
+            
+            execution_time = (time.time() - start_time) / 60
+            print(f"✅ Comic generation completed in {execution_time:.2f} minutes")
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ Comic generation failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
     
     def _enhance_all_images(self):
         """Enhance quality of all extracted frames"""
         if not os.path.exists(self.frames_dir):
+            print("No frames directory found, skipping enhancement")
             return
         
         frame_files = [f for f in os.listdir(self.frames_dir) if f.endswith('.png')]
+        print(f"Found {len(frame_files)} frames to enhance")
         
-        for frame_file in frame_files:
+        for i, frame_file in enumerate(frame_files):
             frame_path = os.path.join(self.frames_dir, frame_file)
             try:
                 # Apply AI-enhanced image processing
                 image_processor.enhance_image_quality(frame_path)
-                print(f"Enhanced: {frame_file}")
+                print(f"Enhanced: {frame_file} ({i+1}/{len(frame_files)})")
             except Exception as e:
                 print(f"Failed to enhance {frame_file}: {e}")
+                # Continue with other frames
+                continue
     
     def _apply_comic_styling(self):
         """Apply AI-enhanced comic styling to all frames"""
         if not os.path.exists(self.frames_dir):
+            print("No frames directory found, skipping styling")
             return
         
         frame_files = [f for f in os.listdir(self.frames_dir) if f.endswith('.png')]
+        print(f"Found {len(frame_files)} frames to style")
         
-        for frame_file in frame_files:
+        for i, frame_file in enumerate(frame_files):
             frame_path = os.path.join(self.frames_dir, frame_file)
             try:
                 # Apply modern comic style
                 comic_styler.apply_comic_style(frame_path, style_type="modern")
-                print(f"Styled: {frame_file}")
+                print(f"Styled: {frame_file} ({i+1}/{len(frame_files)})")
             except Exception as e:
                 print(f"Failed to style {frame_file}: {e}")
+                # Continue with other frames
+                continue
     
     def _generate_optimized_layout(self):
         """Generate AI-optimized layout"""
@@ -302,6 +328,11 @@ class EnhancedComicGenerator:
     
     def _save_results(self, pages):
         """Save final results"""
+        print("💾 Saving results...")
+        
+        # Create output directory if it doesn't exist
+        os.makedirs('output', exist_ok=True)
+        
         # Save pages as JSON
         pages_data = []
         for page in pages:
@@ -314,8 +345,12 @@ class EnhancedComicGenerator:
         with open('output/pages.json', 'w') as f:
             json.dump(pages_data, f, indent=2)
         
+        print("📄 Copying template files...")
         # Copy template files
         copy_template()
+        
+        print("✅ Results saved successfully!")
+        print(f"📁 Comic saved to: {os.path.abspath('output/page.html')}")
 
 # Global comic generator instance
 comic_generator = EnhancedComicGenerator()
@@ -343,7 +378,13 @@ def upload_file():
             if success:
                 # Open result in browser
                 output_path = os.path.join(os.getcwd(), 'output', 'page.html')
-                webbrowser.open(f'file://{output_path}')
+                print(f"🌐 Opening comic in browser: {output_path}")
+                try:
+                    webbrowser.open(f'file://{output_path}')
+                    print("✅ Browser opened successfully!")
+                except Exception as e:
+                    print(f"⚠️ Could not open browser: {e}")
+                    print(f"📁 Please open manually: {output_path}")
                 return "🎉 Enhanced Comic Created Successfully!"
             else:
                 return "❌ Comic generation failed"
@@ -371,7 +412,13 @@ def handle_link():
             if success:
                 # Open result in browser
                 output_path = os.path.join(os.getcwd(), 'output', 'page.html')
-                webbrowser.open(f'file://{output_path}')
+                print(f"🌐 Opening comic in browser: {output_path}")
+                try:
+                    webbrowser.open(f'file://{output_path}')
+                    print("✅ Browser opened successfully!")
+                except Exception as e:
+                    print(f"⚠️ Could not open browser: {e}")
+                    print(f"📁 Please open manually: {output_path}")
                 return "🎉 Enhanced Comic Created Successfully!"
             else:
                 return "❌ Comic generation failed"
