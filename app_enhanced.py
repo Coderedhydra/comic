@@ -73,10 +73,10 @@ class EnhancedComicGenerator:
             print("✂️ Removing black bars...")
             black_x, black_y, _, _ = black_bar_crop()
             
-            # 4. Enhance image quality
+            # 4. Enhance image quality with advanced models
             if self.quality_mode == '1':
-                print("✨ Enhancing image quality...")
-                self._enhance_all_images()
+                print("✨ Enhancing image quality with advanced AI models...")
+                self._enhance_all_images_advanced()
             
             # 5. Apply comic styling
             print("🎨 Applying AI-enhanced comic styling...")
@@ -110,7 +110,7 @@ class EnhancedComicGenerator:
             return False
     
     def _enhance_all_images(self):
-        """Enhance quality of all extracted frames"""
+        """Enhance quality of all extracted frames (legacy method)"""
         if not os.path.exists(self.frames_dir):
             print(f"❌ Frames directory not found: {self.frames_dir}")
             return
@@ -125,6 +125,48 @@ class EnhancedComicGenerator:
                 print(f"Enhanced: {frame_file} ({i}/{len(frame_files)})")
             except Exception as e:
                 print(f"Failed to enhance {frame_file}: {e}")
+    
+    def _enhance_all_images_advanced(self):
+        """Enhance quality using advanced AI models (Real-ESRGAN, GFPGAN, etc.)"""
+        if not os.path.exists(self.frames_dir):
+            print(f"❌ Frames directory not found: {self.frames_dir}")
+            return
+        
+        try:
+            # Get advanced enhancer
+            from backend.advanced_image_enhancer import get_advanced_enhancer
+            enhancer = get_advanced_enhancer()
+            
+            frame_files = [f for f in os.listdir(self.frames_dir) if f.endswith('.png')]
+            print(f"🚀 Found {len(frame_files)} frames to enhance with advanced AI models")
+            
+            for i, frame_file in enumerate(frame_files, 1):
+                try:
+                    frame_path = os.path.join(self.frames_dir, frame_file)
+                    print(f"🎯 Enhancing {frame_file} ({i}/{len(frame_files)}) with advanced AI...")
+                    
+                    # Apply advanced enhancement
+                    enhanced_path = enhancer.enhance_image(frame_path, frame_path)
+                    
+                    if enhanced_path != frame_path:
+                        print(f"✅ Advanced enhancement completed: {frame_file}")
+                    else:
+                        print(f"⚠️ Using fallback enhancement for: {frame_file}")
+                        
+                except Exception as e:
+                    print(f"❌ Advanced enhancement failed for {frame_file}: {e}")
+                    # Fallback to basic enhancement
+                    try:
+                        from backend.ai_enhanced_core import image_processor
+                        image_processor.enhance_image_quality(frame_path, frame_path)
+                        print(f"🔄 Applied fallback enhancement to: {frame_file}")
+                    except Exception as fallback_e:
+                        print(f"❌ Fallback enhancement also failed for {frame_file}: {fallback_e}")
+                        
+        except Exception as e:
+            print(f"❌ Advanced enhancement system failed: {e}")
+            print("🔄 Falling back to basic enhancement...")
+            self._enhance_all_images()
     
     def _apply_comic_styling(self):
         """Apply comic styling to all frames"""
