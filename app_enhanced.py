@@ -22,7 +22,8 @@ from backend.ai_enhanced_core import (
 )
 from backend.ai_bubble_placement import ai_bubble_placer
 from backend.subtitles.subs_real import get_real_subtitles
-from backend.keyframes.keyframes import generate_keyframes, black_bar_crop
+from backend.keyframes.keyframes_simple import generate_keyframes_simple
+from backend.keyframes.keyframes import black_bar_crop
 from backend.class_def import bubble, panel, Page
 
 app = Flask(__name__)
@@ -64,9 +65,9 @@ class EnhancedComicGenerator:
             print("📝 Extracting real subtitles from video...")
             get_real_subtitles(self.video_path)
             
-            # 2. Generate keyframes with enhanced quality
-            print("🎯 Generating high-quality keyframes...")
-            generate_keyframes(self.video_path)
+            # 2. Generate keyframes with simplified method (avoids infinite loops)
+            print("🎯 Generating keyframes...")
+            generate_keyframes_simple(self.video_path)
             
             # 3. Remove black bars
             print("✂️ Removing black bars...")

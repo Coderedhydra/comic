@@ -13,42 +13,51 @@ from backend.keyframes.extract_frames import extract_frames
 from backend.utils import copy_and_rename_file, get_black_bar_coordinates, crop_image
 
 # Cell 2
+# Global model cache to avoid reloading
+_googlenet_model = None
+_preprocess_pipeline = None
+
 def _get_features(frames, gpu=True, batch_size=1):
-    # Load pre-trained GoogLeNet model
-    googlenet = torch.hub.load('pytorch/vision:v0.10.0', 'googlenet', weights='GoogLeNet_Weights.DEFAULT')
-
-    # Remove the classification layer (last layer) to obtain features
-    googlenet = torch.nn.Sequential(*(list(googlenet.children())[:-1]))
-
-    # Set the model to evaluation mode
-    googlenet.eval()
+    global _googlenet_model, _preprocess_pipeline
+    
+    # Load pre-trained GoogLeNet model only once
+    if _googlenet_model is None:
+        print("🔄 Loading GoogLeNet model (this happens only once)...")
+        _googlenet_model = torch.hub.load('pytorch/vision:v0.10.0', 'googlenet', weights='GoogLeNet_Weights.DEFAULT')
+        # Remove the classification layer (last layer) to obtain features
+        _googlenet_model = torch.nn.Sequential(*(list(_googlenet_model.children())[:-1]))
+        _googlenet_model.eval()
+        
+        # Initialize preprocessing pipeline
+        _preprocess_pipeline = transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+        
+        # Move to GPU if available
+        if gpu:
+            _googlenet_model.to('cuda')
+        print("✅ GoogLeNet model loaded successfully")
 
     # Initialize a list to store the features
     features = []
-
-    # Image preprocessing pipeline
-    preprocess = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
 
     # Iterate through frames
     for frame_path in frames:
         # Load and preprocess the frame
         input_image = Image.open(frame_path)
-        input_tensor = preprocess(input_image)
+        input_tensor = _preprocess_pipeline(input_image)
         input_batch = input_tensor.unsqueeze(0)  # Add batch dimension
 
-        # Move the input and model to GPU if available
+        # Move the input to GPU if available
         if gpu:
             input_batch = input_batch.to('cuda')
-            googlenet.to('cuda')
 
         # Perform feature extraction
         with torch.no_grad():
-            output = googlenet(input_batch)
+            output = _googlenet_model(input_batch)
 
         # Append the features to the list
         features.append(output.squeeze().cpu().numpy())
@@ -58,23 +67,41 @@ def _get_features(frames, gpu=True, batch_size=1):
 
     return features.astype(np.float32)
 
-# Cell 3
-def _get_probs(features, gpu=True, mode=0):
-    # model_cache_key = "keyframes_rl_model_cache_" + str(mode)
-    if mode == 1:
-        model_path = "backend/keyframes/pretrained_model/model_1.pth.tar"
-    else:
-        model_path = "backend/keyframes/pretrained_model/model_0.pth.tar"
-    model = DSN(in_dim=1024, hid_dim=256, num_layers=1, cell="lstm")
-    if gpu:
-        checkpoint = torch.load(model_path)
-    else:
-        checkpoint = torch.load(model_path, map_location='cpu')
-    model.load_state_dict(checkpoint)
-    if gpu:
-        model = nn.DataParallel(model).cuda()
-    model.eval()
+# Global DSN model cache
+_dsn_models = {}
 
+def _get_probs(features, gpu=True, mode=0):
+    global _dsn_models
+    
+    # Create cache key
+    cache_key = f"dsn_model_{mode}_{gpu}"
+    
+    # Load model only if not already cached
+    if cache_key not in _dsn_models:
+        print(f"🔄 Loading DSN model {mode} (this happens only once)...")
+        
+        if mode == 1:
+            model_path = "backend/keyframes/pretrained_model/model_1.pth.tar"
+        else:
+            model_path = "backend/keyframes/pretrained_model/model_0.pth.tar"
+        
+        model = DSN(in_dim=1024, hid_dim=256, num_layers=1, cell="lstm")
+        
+        if gpu:
+            checkpoint = torch.load(model_path)
+        else:
+            checkpoint = torch.load(model_path, map_location='cpu')
+        
+        model.load_state_dict(checkpoint)
+        
+        if gpu:
+            model = nn.DataParallel(model).cuda()
+        
+        model.eval()
+        _dsn_models[cache_key] = model
+        print(f"✅ DSN model {mode} loaded successfully")
+    
+    model = _dsn_models[cache_key]
     seq = torch.from_numpy(features).unsqueeze(0)
     if gpu: seq = seq.cuda()
     probs = model(seq)
@@ -90,6 +117,16 @@ def generate_keyframes(video):
 
     subs = srt.parse(data)
     torch.cuda.empty_cache()
+    
+    # Add timeout protection
+    import signal
+    
+    def timeout_handler(signum, frame):
+        raise TimeoutError("Keyframe generation timed out")
+    
+    # Set timeout to 10 minutes
+    signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(600)  # 10 minutes timeout
 
     # Create final directory if it doesn't exist
     final_dir = os.path.join("frames", "final")
@@ -98,39 +135,67 @@ def generate_keyframes(video):
         print(f"Created directory: {final_dir}")
 
     frame_counter = 1
+    total_subs = len(list(subs))
+    subs = list(subs)  # Convert to list to avoid exhaustion
     
-    # Enhanced story-aware keyframe extraction
-    for sub in subs:
-        frames = []
-        if not os.path.exists(f"frames/sub{sub.index}"):
-            os.makedirs(f"frames/sub{sub.index}")
-        
-        # Extract more frames per segment for better story selection
-        frames = extract_frames(video, os.path.join("frames", f"sub{sub.index}"), 
-                              sub.start.total_seconds(), sub.end.total_seconds(), 10)  # Increased from 3 to 10
-        
-        if len(frames) > 0:
-            # Get AI highlight scores
-            features = _get_features(frames, gpu=False)
-            highlight_scores = _get_probs(features, gpu=False)
+    print(f"🎯 Processing {total_subs} subtitle segments...")
+    
+    try:
+        # Enhanced story-aware keyframe extraction
+        for i, sub in enumerate(subs, 1):
+            print(f"📝 Processing segment {i}/{total_subs}: {sub.content[:30]}...")
+            frames = []
+            if not os.path.exists(f"frames/sub{sub.index}"):
+                os.makedirs(f"frames/sub{sub.index}")
             
-            # Enhanced story-aware selection
-            story_frames = _select_story_relevant_frames(frames, highlight_scores, sub)
+            # Extract more frames per segment for better story selection
+            frames = extract_frames(video, os.path.join("frames", f"sub{sub.index}"), 
+                                  sub.start.total_seconds(), sub.end.total_seconds(), 10)  # Increased from 3 to 10
             
-            # Save the best story frames
-            for i, frame_idx in enumerate(story_frames):
-                if frame_counter <= 16:  # Limit to 16 frames total
-                    try:
-                        copy_and_rename_file(frames[frame_idx], final_dir, f"frame{frame_counter:03}.png")
-                        print(f"📖 Story frame {frame_counter}: {sub.content} (score: {highlight_scores[frame_idx]:.3f})")
+            if len(frames) > 0:
+                # Get AI highlight scores
+                features = _get_features(frames, gpu=False)
+                highlight_scores = _get_probs(features, gpu=False)
+                
+                # Enhanced story-aware selection
+                story_frames = _select_story_relevant_frames(frames, highlight_scores, sub)
+                
+                # Save the best story frames
+                for j, frame_idx in enumerate(story_frames):
+                    if frame_counter <= 16:  # Limit to 16 frames total
+                        try:
+                            copy_and_rename_file(frames[frame_idx], final_dir, f"frame{frame_counter:03}.png")
+                            print(f"📖 Story frame {frame_counter}: {sub.content} (score: {highlight_scores[frame_idx]:.3f})")
+                            frame_counter += 1
+                        except:
+                            pass
+            else:
+                # Fallback if no frames extracted
+                print(f"⚠️ No frames extracted for subtitle {sub.index}")
+        
+        print(f"✅ Generated {frame_counter-1} story-relevant frames")
+        
+    except TimeoutError:
+        print("⏰ Keyframe generation timed out, using fallback method...")
+        # Fallback: use first few subtitle segments
+        for i, sub in enumerate(subs[:4], 1):  # Use only first 4 segments
+            if frame_counter <= 16:
+                try:
+                    # Simple frame extraction without AI
+                    frames = extract_frames(video, os.path.join("frames", f"sub{sub.index}"), 
+                                          sub.start.total_seconds(), sub.end.total_seconds(), 1)
+                    if frames:
+                        copy_and_rename_file(frames[0], final_dir, f"frame{frame_counter:03}.png")
+                        print(f"📖 Fallback frame {frame_counter}: {sub.content}")
                         frame_counter += 1
-                    except:
-                        pass
-        else:
-            # Fallback if no frames extracted
-            print(f"⚠️ No frames extracted for subtitle {sub.index}")
+                except:
+                    pass
+        
+        print(f"✅ Generated {frame_counter-1} fallback frames")
     
-    print(f"✅ Generated {frame_counter-1} story-relevant frames")
+    finally:
+        # Cancel timeout
+        signal.alarm(0)
 
 def _select_story_relevant_frames(frames, highlight_scores, subtitle):
     """Enhanced story-aware frame selection"""
