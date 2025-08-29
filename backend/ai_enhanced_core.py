@@ -319,6 +319,41 @@ class AIFaceDetector:
         self.core = AIEnhancedCore()
         self.face_mesh = self.core.face_mesh
         
+    def detect_faces(self, image_path: str) -> List[Dict]:
+        """Basic face detection (fallback method)"""
+        img = cv2.imread(image_path)
+        if img is None:
+            return []
+        
+        # Use basic OpenCV face detection as fallback
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        faces_cv = face_cascade.detectMultiScale(gray, 1.1, 4)
+        
+        faces = []
+        for (x, y, w, h) in faces_cv:
+            face_data = {
+                'face_box': {'x': x, 'y': y, 'width': w, 'height': h},
+                'lip_position': (x + w//2, y + h//2),  # Approximate lip position
+                'eye_positions': [(x + w//3, y + h//3), (x + 2*w//3, y + h//3)],
+                'face_angle': 0,
+                'confidence': 0.8
+            }
+            faces.append(face_data)
+        
+        return faces
+    
+    def get_lip_position(self, image_path: str, face_data: Dict) -> Tuple[int, int]:
+        """Get lip position from face data"""
+        if 'lip_position' in face_data:
+            return face_data['lip_position']
+        else:
+            # Fallback to face center
+            face_box = face_data.get('face_box', {})
+            x = face_box.get('x', 0) + face_box.get('width', 0) // 2
+            y = face_box.get('y', 0) + face_box.get('height', 0) // 2
+            return (x, y)
+    
     def detect_faces_advanced(self, image_path: str) -> List[Dict]:
         """Advanced face detection with AI analysis"""
         img = cv2.imread(image_path)

@@ -20,9 +20,7 @@ class AIBubblePlacer:
         self.min_distance_from_face = 80
         self.quality_threshold = 0.7
         
-    def place_bubble_ai(self, image_path: str, panel_coords: Tuple[int, int, int, int], 
-                       lip_coords: Optional[Tuple[int, int]] = None, 
-                       dialogue: str = "") -> Tuple[int, int]:
+    def place_bubble_ai(self, image_path: str, lip_coords: Optional[Tuple[int, int]] = None) -> Tuple[int, int]:
         """AI-powered bubble placement with comprehensive analysis"""
         
         # 1. Analyze image content
@@ -42,10 +40,16 @@ class AIBubblePlacer:
             faces = []
         
         # 3. Generate candidate positions
+        img = cv2.imread(image_path)
+        if img is None:
+            return (50, 50)  # Fallback position
+        
+        height, width = img.shape[:2]
+        panel_coords = (0, 0, width, height)  # Use full image as panel
         candidates = self._generate_candidates(panel_coords, faces, content_analysis)
         
         # 4. Score candidates using AI
-        scored_candidates = self._score_candidates(candidates, faces, content_analysis, dialogue)
+        scored_candidates = self._score_candidates(candidates, faces, content_analysis, "")
         
         # 5. Select optimal position
         best_position = self._select_optimal_position(scored_candidates, lip_coords)

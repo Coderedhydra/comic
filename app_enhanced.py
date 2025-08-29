@@ -189,11 +189,12 @@ class EnhancedComicGenerator:
                         
                         # Create bubble
                         bubble_obj = bubble(
-                            text=sub.content,
-                            x=bubble_x,
-                            y=bubble_y,
-                            width=200,
-                            height=100
+                            bubble_offset_x=bubble_x,
+                            bubble_offset_y=bubble_y,
+                            lip_x=lip_x,
+                            lip_y=lip_y,
+                            dialog=sub.content,
+                            emotion='normal'
                         )
                         
                         bubbles.append(bubble_obj)
@@ -202,11 +203,12 @@ class EnhancedComicGenerator:
                         print(f"Bubble creation failed for {frame_file}: {e}")
                         # Create fallback bubble
                         bubble_obj = bubble(
-                            text=sub.content,
-                            x=50,
-                            y=50,
-                            width=200,
-                            height=100
+                            bubble_offset_x=50,
+                            bubble_offset_y=50,
+                            lip_x=-1,
+                            lip_y=-1,
+                            dialog=sub.content,
+                            emotion='normal'
                         )
                         bubbles.append(bubble_obj)
                         
@@ -256,8 +258,8 @@ class EnhancedComicGenerator:
             pages_data = []
             for page in pages:
                 page_data = {
-                    'panels': [{'image': p.image, 'row_span': p.row_span, 'col_span': p.col_span} for p in page.panels],
-                    'bubbles': [{'text': b.text, 'x': b.x, 'y': b.y, 'width': b.width, 'height': b.height} for b in page.bubbles]
+                    'panels': page.panels,  # Already dictionaries
+                    'bubbles': page.bubbles  # Already dictionaries
                 }
                 pages_data.append(page_data)
             
