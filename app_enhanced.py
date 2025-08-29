@@ -224,20 +224,58 @@ class EnhancedComicGenerator:
         try:
             frame_files = sorted([f for f in os.listdir(self.frames_dir) if f.endswith('.png')])
             
-            # Create pages based on layout
-            for i in range(0, len(frame_files), 4):
-                page_frames = frame_files[i:i+4]
-                page_bubbles = bubbles[i:i+4] if i < len(bubbles) else []
-                
+            # Create 4 pages with different frame combinations
+            for page_num in range(4):
                 # Create panels for this page
                 panels = []
-                for j, frame_file in enumerate(page_frames):
+                page_bubbles = []
+                
+                for j in range(4):
+                    # Use different frame combinations for each page
+                    # Create variety by using different frame orders
+                    if page_num == 0:
+                        frame_index = j  # Page 1: frames 1,2,3,4
+                    elif page_num == 1:
+                        frame_index = (j + 1) % len(frame_files)  # Page 2: frames 2,3,4,1
+                    elif page_num == 2:
+                        frame_index = (j + 2) % len(frame_files)  # Page 3: frames 3,4,1,2
+                    else:
+                        frame_index = (j + 3) % len(frame_files)  # Page 4: frames 4,1,2,3
+                    
+                    frame_file = frame_files[frame_index]
+                    
                     panel_obj = panel(
-                        image=f"frame{j+1:03}.png",
+                        image=frame_file,
                         row_span=2,
                         col_span=2
                     )
                     panels.append(panel_obj)
+                    
+                    # Add corresponding bubble with varied content
+                    if j < len(bubbles):
+                        # Modify the bubble content for variety
+                        original_bubble = bubbles[j]
+                        varied_dialog = f"Page {page_num + 1}: {original_bubble.dialog}"
+                        varied_bubble = bubble(
+                            bubble_offset_x=original_bubble.bubble_offset_x,
+                            bubble_offset_y=original_bubble.bubble_offset_y,
+                            lip_x=-1,  # Use default values
+                            lip_y=-1,  # Use default values
+                            dialog=varied_dialog,
+                            emotion=original_bubble.emotion
+                        )
+                        page_bubbles.append(varied_bubble)
+                    else:
+                        # Create fallback bubble
+                        fallback_bubble = bubble(
+                            bubble_offset_x=50,
+                            bubble_offset_y=200,
+                            lip_x=-1,
+                            lip_y=-1,
+                            dialog=f"Page {page_num + 1} - Panel {j + 1}",
+                            emotion='normal'
+                        )
+                        page_bubbles.append(fallback_bubble)
                 
                 # Create page
                 page = Page(panels=panels, bubbles=page_bubbles)
@@ -287,8 +325,10 @@ class EnhancedComicGenerator:
     <title>Generated Comic</title>
     <style>
         body { margin: 0; padding: 20px; background: #f0f0f0; font-family: Arial, sans-serif; }
-        .comic-page { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .comic-container { max-width: 1200px; margin: 0 auto; }
+        .comic-page { background: white; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-bottom: 30px; }
         .comic-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; height: 600px; }
+        .page-title { text-align: center; color: #333; margin-bottom: 15px; font-size: 18px; font-weight: bold; }
         .panel { position: relative; border: 2px solid #333; overflow: hidden; }
         .panel img { width: 100%; height: 100%; object-fit: cover; }
         .speech-bubble { 
@@ -321,9 +361,9 @@ class EnhancedComicGenerator:
     </style>
 </head>
 <body>
-    <div class="comic-page">
+    <div class="comic-container">
         <h1 class="comic-title">🎬 Generated Comic</h1>
-        <div class="comic-grid" id="comic-grid">
+        <div id="comic-pages">
             <div class="loading">Loading comic...</div>
         </div>
     </div>
@@ -337,55 +377,78 @@ class EnhancedComicGenerator:
                 return response.json();
             })
             .then(data => {
-                const grid = document.getElementById('comic-grid');
-                grid.innerHTML = ''; // Clear loading message
+                const pagesContainer = document.getElementById('comic-pages');
+                pagesContainer.innerHTML = ''; // Clear loading message
                 
-                if (data && data.length > 0 && data[0].panels && data[0].panels.length > 0) {
-                    data[0].panels.forEach((panel, index) => {
-                        const panelDiv = document.createElement('div');
-                        panelDiv.className = 'panel';
-                        
-                        const img = document.createElement('img');
-                        img.src = '/frames/final/' + panel.image;
-                        img.alt = 'Comic Panel ' + (index + 1);
-                        img.onerror = function() {
-                            this.style.display = 'none';
-                            panelDiv.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666;">Image not found</div>';
-                        };
-                        panelDiv.appendChild(img);
-                        
-                        // Add speech bubbles
-                        if (data[0].bubbles && data[0].bubbles[index]) {
-                            const bubble = data[0].bubbles[index];
-                            const bubbleDiv = document.createElement('div');
-                            bubbleDiv.className = 'speech-bubble';
+                if (data && data.length > 0) {
+                    // Create multiple pages
+                    data.forEach((pageData, pageIndex) => {
+                        if (pageData.panels && pageData.panels.length > 0) {
+                            // Create page container
+                            const pageDiv = document.createElement('div');
+                            pageDiv.className = 'comic-page';
                             
-                            // Use bubble_offset_x and bubble_offset_y from the data
-                            // Fix positioning - ensure bubbles are visible within panel
-                            let x = bubble.bubble_offset_x || 50;
-                            let y = bubble.bubble_offset_y || 50;
+                            // Add page title
+                            const pageTitle = document.createElement('h2');
+                            pageTitle.className = 'page-title';
+                            pageTitle.textContent = `Page ${pageIndex + 1}`;
+                            pageDiv.appendChild(pageTitle);
                             
-                            // Clamp positions to ensure bubbles are visible
-                            x = Math.max(10, Math.min(x, 300));
-                            y = Math.max(10, Math.min(y, 200));
+                            // Create grid for this page
+                            const grid = document.createElement('div');
+                            grid.className = 'comic-grid';
                             
-                            bubbleDiv.style.left = x + 'px';
-                            bubbleDiv.style.top = y + 'px';
-                            bubbleDiv.style.maxWidth = '180px';
-                            bubbleDiv.style.minHeight = '50px';
-                            bubbleDiv.style.fontSize = '12px';
-                            bubbleDiv.style.lineHeight = '1.2';
-                            bubbleDiv.style.wordWrap = 'break-word';
+                            // Add panels to this page
+                            pageData.panels.forEach((panel, index) => {
+                                const panelDiv = document.createElement('div');
+                                panelDiv.className = 'panel';
+                                
+                                const img = document.createElement('img');
+                                img.src = '/frames/final/' + panel.image;
+                                img.alt = `Page ${pageIndex + 1} - Panel ${index + 1}`;
+                                img.onerror = function() {
+                                    this.style.display = 'none';
+                                    panelDiv.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666;">Image not found</div>';
+                                };
+                                panelDiv.appendChild(img);
+                                
+                                // Add speech bubbles
+                                if (pageData.bubbles && pageData.bubbles[index]) {
+                                    const bubble = pageData.bubbles[index];
+                                    const bubbleDiv = document.createElement('div');
+                                    bubbleDiv.className = 'speech-bubble';
+                                    
+                                    // Use bubble_offset_x and bubble_offset_y from the data
+                                    // Fix positioning - ensure bubbles are visible within panel
+                                    let x = bubble.bubble_offset_x || 50;
+                                    let y = bubble.bubble_offset_y || 50;
+                                    
+                                    // Clamp positions to ensure bubbles are visible
+                                    x = Math.max(10, Math.min(x, 300));
+                                    y = Math.max(10, Math.min(y, 200));
+                                    
+                                    bubbleDiv.style.left = x + 'px';
+                                    bubbleDiv.style.top = y + 'px';
+                                    bubbleDiv.style.maxWidth = '180px';
+                                    bubbleDiv.style.minHeight = '50px';
+                                    bubbleDiv.style.fontSize = '12px';
+                                    bubbleDiv.style.lineHeight = '1.2';
+                                    bubbleDiv.style.wordWrap = 'break-word';
+                                    
+                                    // Use dialog from the data
+                                    bubbleDiv.textContent = bubble.dialog || '((action-scene))';
+                                    panelDiv.appendChild(bubbleDiv);
+                                }
+                                
+                                grid.appendChild(panelDiv);
+                            });
                             
-                            // Use dialog from the data
-                            bubbleDiv.textContent = bubble.dialog || '((action-scene))';
-                            panelDiv.appendChild(bubbleDiv);
+                            pageDiv.appendChild(grid);
+                            pagesContainer.appendChild(pageDiv);
                         }
-                        
-                        grid.appendChild(panelDiv);
                     });
                 } else {
-                    grid.innerHTML = '<div class="loading">No comic data found</div>';
+                    pagesContainer.innerHTML = '<div class="loading">No comic data found</div>';
                 }
             })
             .catch(error => {
