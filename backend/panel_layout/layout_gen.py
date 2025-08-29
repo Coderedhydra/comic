@@ -27,12 +27,14 @@ def smart_resize(index, panel_type, img_w, img_h):
     offset_x = (wP - new_width) / 2
     offset_y = (hP - new_height) / 2
     
-    # Resize image without cropping
+    # Resize image with maximum quality settings
     img = Image.open(frame_path)
+    
+    # Use high-quality resampling for better image quality
     resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
     
-    # Save resized image
-    resized_img.save(frame_path)
+    # Save with maximum quality settings
+    resized_img.save(frame_path, quality=95, optimize=True)
     
     # Return coordinates for bubble positioning (full image area)
     return (offset_x, offset_x + new_width, offset_y, offset_y + new_height)

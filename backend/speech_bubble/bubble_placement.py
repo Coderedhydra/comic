@@ -92,15 +92,15 @@ def _get_safe_image_positions(left, right, top, bottom, image_width, image_heigh
     margin_x = BUBBLE_WIDTH / 2 + 20
     margin_y = BUBBLE_HEIGHT / 2 + 20
     
-    # Define grid within the image area
+    # Define grid within the image area - focus on upper areas
     grid_cols = 4
-    grid_rows = 3
+    grid_rows = 4  # More rows for better upper area coverage
     
     # Calculate grid cell size within image
     cell_width = image_width / grid_cols
     cell_height = image_height / grid_rows
     
-    # Generate grid positions within image
+    # Generate grid positions within image - prioritize upper areas
     for row in range(grid_rows):
         for col in range(grid_cols):
             x = left + col * cell_width + cell_width / 2
@@ -111,13 +111,38 @@ def _get_safe_image_positions(left, right, top, bottom, image_width, image_heigh
                 top + margin_y <= y <= bottom - margin_y):
                 positions.append((x, y))
     
-    # Add corner positions relative to image
+    # Add extra positions in upper areas for better coverage
+    upper_positions = []
+    upper_margin = 40
+    
+    # Top edge positions
+    for i in range(1, grid_cols):
+        x = left + i * cell_width
+        y = top + upper_margin
+        if (left + margin_x <= x <= right - margin_x and 
+            top + margin_y <= y <= bottom - margin_y):
+            upper_positions.append((x, y))
+    
+    # Upper quarter positions
+    upper_quarter_y = top + (bottom - top) * 0.25
+    for i in range(1, grid_cols):
+        x = left + i * cell_width
+        y = upper_quarter_y
+        if (left + margin_x <= x <= right - margin_x and 
+            top + margin_y <= y <= bottom - margin_y):
+            upper_positions.append((x, y))
+    
+    positions.extend(upper_positions)
+    
+    # Add corner positions relative to image - prioritize upper corners
     corner_margin = 30
     corners = [
-        (left + corner_margin, top + corner_margin),  # Top-left of image
-        (right - corner_margin, top + corner_margin),  # Top-right of image
-        (left + corner_margin, bottom - corner_margin),  # Bottom-left of image
-        (right - corner_margin, bottom - corner_margin)  # Bottom-right of image
+        (left + corner_margin, top + corner_margin),  # Top-left of image (highest priority)
+        (right - corner_margin, top + corner_margin),  # Top-right of image (highest priority)
+        (left + corner_margin, top + (bottom - top) * 0.2),  # Upper-left area
+        (right - corner_margin, top + (bottom - top) * 0.2),  # Upper-right area
+        (left + corner_margin, bottom - corner_margin),  # Bottom-left of image (lower priority)
+        (right - corner_margin, bottom - corner_margin)  # Bottom-right of image (lower priority)
     ]
     
     for corner in corners:
@@ -160,11 +185,11 @@ def _get_safe_image_positions(left, right, top, bottom, image_width, image_heigh
 def _select_best_image_position(positions, left, right, top, bottom):
     """
     Select the best position relative to image content
-    Priority: corners > edges > center
+    Priority: TOP areas > corners > edges > center
     """
     if not positions:
-        # Fallback to image center if no positions available
-        return (left + (right - left) / 2, top + (bottom - top) / 2)
+        # Fallback to upper area if no positions available
+        return (left + (right - left) / 2, top + (bottom - top) * 0.2)  # 20% from top
     
     # Score positions based on preference
     scored_positions = []
@@ -172,7 +197,17 @@ def _select_best_image_position(positions, left, right, top, bottom):
         x, y = pos
         score = 0
         
-        # Prefer corners of image (highest score)
+        # STRONGLY prefer upper areas (highest priority)
+        upper_threshold = (bottom - top) * 0.4  # Top 40% of image
+        if y < top + upper_threshold:
+            score += 200  # Much higher score for upper areas
+        
+        # Prefer top quarter (highest score)
+        top_quarter = (bottom - top) * 0.25
+        if y < top + top_quarter:
+            score += 150
+        
+        # Prefer corners of image (high score)
         corner_threshold = 50
         if (x < left + corner_threshold or x > right - corner_threshold) and \
            (y < top + corner_threshold or y > bottom - corner_threshold):
@@ -184,11 +219,14 @@ def _select_best_image_position(positions, left, right, top, bottom):
            (y < top + edge_threshold or y > bottom - edge_threshold):
             score += 50
         
-        # Prefer top and right areas (common comic bubble placement)
-        if y < top + (bottom - top) / 2:  # Top half of image
-            score += 25
-        if x > left + (right - left) / 2:  # Right half of image
-            score += 25
+        # Prefer right side (common comic bubble placement)
+        if x > left + (right - left) * 0.6:  # Right 40% of image
+            score += 30
+        
+        # Penalize lower areas
+        lower_threshold = (bottom - top) * 0.7  # Bottom 30% of image
+        if y > top + lower_threshold:
+            score -= 50  # Negative score for lower areas
         
         scored_positions.append((pos, score))
     
@@ -196,5 +234,5 @@ def _select_best_image_position(positions, left, right, top, bottom):
     scored_positions.sort(key=lambda x: x[1], reverse=True)
     best_position = scored_positions[0][0]
     
-    print(f"Selected position with score {scored_positions[0][1]}")
+    print(f"Selected position with score {scored_positions[0][1]} at y={best_position[1]:.0f} (top={top:.0f}, bottom={bottom:.0f})")
     return best_position
