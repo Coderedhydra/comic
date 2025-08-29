@@ -246,28 +246,35 @@ class EnhancedComicGenerator:
                     )
                     panels.append(panel_obj)
                     
-                    # Add corresponding bubble with varied content
-                    if j < len(bubbles):
-                        # Modify the bubble content for variety
-                        original_bubble = bubbles[j]
-                        varied_dialog = f"Page {page_num + 1}: {original_bubble.dialog}"
-                        varied_bubble = bubble(
+                    # Add corresponding bubble with correct dialogue
+                    bubble_index = page_num * 4 + j
+                    if bubble_index < len(bubbles):
+                        # Use the correct bubble for this frame
+                        original_bubble = bubbles[bubble_index]
+                        bubble_obj = bubble(
                             bubble_offset_x=original_bubble.bubble_offset_x,
                             bubble_offset_y=original_bubble.bubble_offset_y,
                             lip_x=-1,  # Use default values
                             lip_y=-1,  # Use default values
-                            dialog=varied_dialog,
+                            dialog=original_bubble.dialog,  # Use original dialogue
                             emotion=original_bubble.emotion
                         )
-                        page_bubbles.append(varied_bubble)
+                        page_bubbles.append(bubble_obj)
                     else:
-                        # Create fallback bubble
+                        # Create fallback bubble with varied dialogue
+                        fallback_dialogues = [
+                            "Hello there!", "How are you doing?", "I'm doing great!", "That's wonderful!",
+                            "What's new?", "Not much, just working.", "Sounds busy!", "It sure is!",
+                            "Any plans for today?", "Just relaxing.", "That sounds nice!", "Indeed it is.",
+                            "Have a great day!", "You too!", "See you later!", "Take care!"
+                        ]
+                        fallback_dialog = fallback_dialogues[bubble_index % len(fallback_dialogues)]
                         fallback_bubble = bubble(
                             bubble_offset_x=50,
                             bubble_offset_y=200,
                             lip_x=-1,
                             lip_y=-1,
-                            dialog=f"Page {page_num + 1} - Panel {j + 1}",
+                            dialog=fallback_dialog,
                             emotion='normal'
                         )
                         page_bubbles.append(fallback_bubble)

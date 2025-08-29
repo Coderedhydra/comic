@@ -121,32 +121,7 @@ def generate_keyframes(video):
             copy_and_rename_file(frames[0], final_dir, f"frame{frame_counter:03}.png")
             frame_counter += 1
     
-    # Extract additional frames from the entire video to get 16 total frames
-    import cv2
-    cap = cv2.VideoCapture(video)
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    duration = total_frames / fps
-    
-    # Extract 12 more frames at regular intervals
-    additional_frames_needed = 16 - frame_counter + 1
-    interval = duration / additional_frames_needed
-    
-    for i in range(additional_frames_needed):
-        target_time = i * interval
-        target_frame = int(target_time * fps)
-        
-        cap.set(cv2.CAP_PROP_POS_FRAMES, target_frame)
-        ret, frame = cap.read()
-        
-        if ret:
-            frame_path = os.path.join(final_dir, f"frame{frame_counter:03}.png")
-            cv2.imwrite(frame_path, frame)
-            print(f"Extracted additional frame {frame_counter} at {target_time:.2f}s")
-            frame_counter += 1
-    
-    cap.release()
-    print(f"✅ Generated {frame_counter-1} total frames")
+    print(f"✅ Generated {frame_counter-1} total frames from subtitle segments")
     
 
 def black_bar_crop():
