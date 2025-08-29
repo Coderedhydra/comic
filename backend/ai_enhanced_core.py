@@ -85,23 +85,17 @@ class HighQualityImageProcessor:
         # Load image
         img = Image.open(image_path)
         
-        # 1. AI-powered super resolution (if available)
-        img = self._apply_super_resolution(img)
-        
-        # 2. Advanced noise reduction
+        # 1. Quick noise reduction (faster)
         img = self._reduce_noise_advanced(img)
         
-        # 3. Color enhancement
+        # 2. Basic color enhancement
         img = self._enhance_colors(img)
         
-        # 4. Sharpness improvement
+        # 3. Quick sharpness improvement
         img = self._improve_sharpness(img)
         
-        # 5. Dynamic range optimization
-        img = self._optimize_dynamic_range(img)
-        
-        # Save with maximum quality
-        img.save(output_path, quality=100, optimize=True, subsampling=0)
+        # Save with good quality (faster)
+        img.save(output_path, quality=90, optimize=True)
         
         return output_path
     
@@ -121,18 +115,12 @@ class HighQualityImageProcessor:
         return img
     
     def _reduce_noise_advanced(self, img: Image.Image) -> Image.Image:
-        """Advanced noise reduction using multiple techniques"""
+        """Quick noise reduction for faster processing"""
         # Convert to numpy for OpenCV processing
         img_array = np.array(img)
         
-        # 1. Bilateral filter for edge-preserving smoothing
-        img_array = cv2.bilateralFilter(img_array, 9, 75, 75)
-        
-        # 2. Non-local means denoising
-        img_array = cv2.fastNlMeansDenoisingColored(img_array, None, 10, 10, 7, 21)
-        
-        # 3. Wiener filter for additional noise reduction
-        img_array = cv2.wiener(img_array, (5, 5))
+        # Quick bilateral filter only (much faster)
+        img_array = cv2.bilateralFilter(img_array, 5, 50, 50)
         
         return Image.fromarray(img_array)
     
