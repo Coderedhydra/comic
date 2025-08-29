@@ -90,10 +90,16 @@ def bubble_create(video, crop_coords, black_x, black_y):
     subs=srt.parse(data)
 
 
-    # Reading CAM data from dump
+    # Reading CAM data from dump (only for legacy mode)
+    HIGH_ACCURACY = os.getenv('HIGH_ACCURACY', '0')
     CAM_data = None
-    with open('CAM_data.pkl', 'rb') as f:
-        CAM_data = pickle.load(f)
+    if HIGH_ACCURACY not in ('1', 'true', 'True', 'YES', 'yes'):
+        try:
+            with open('CAM_data.pkl', 'rb') as f:
+                CAM_data = pickle.load(f)
+        except FileNotFoundError:
+            print("Warning: CAM_data.pkl not found, using high-accuracy mode")
+            CAM_data = None
 
     lips = get_lips(video, crop_coords,black_x,black_y)
     # Dumping lips
@@ -115,6 +121,7 @@ def bubble_create(video, crop_coords, black_x, black_y):
         lip_y = lips[sub.index][1]
 
         # Use new image-based positioning system
+        HIGH_ACCURACY = os.getenv('HIGH_ACCURACY', '0')
         if HIGH_ACCURACY in ('1', 'true', 'True', 'YES', 'yes'):
             # For high-accuracy mode, use image coordinates directly
             bubble_x, bubble_y = get_bubble_position(crop_coords[sub.index-1], None, (lip_x, lip_y))
