@@ -14,7 +14,14 @@ import requests
 from io import BytesIO
 import time
 from typing import Optional, Tuple
-from backend.ai_model_manager import get_ai_model_manager
+try:
+    from backend.ai_model_manager import get_ai_model_manager
+    AI_MODELS_AVAILABLE = True
+except ImportError:
+    AI_MODELS_AVAILABLE = False
+    print("⚠️ AI models not available, using lightweight enhancer")
+    
+from backend.lightweight_ai_enhancer import get_lightweight_enhancer
 
 class AdvancedImageEnhancer:
     """Advanced image enhancement using state-of-the-art AI models"""
@@ -23,8 +30,27 @@ class AdvancedImageEnhancer:
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         print(f"🎯 Using device: {self.device}")
         
-        # Initialize AI model manager
-        self.ai_manager = get_ai_model_manager()
+        # Check VRAM and decide which enhancer to use
+        self.use_lightweight = True
+        if self.device.type == 'cuda':
+            props = torch.cuda.get_device_properties(0)
+            vram_gb = props.total_memory / (1024**3)
+            print(f"📊 VRAM: {vram_gb:.1f} GB")
+            
+            # Use lightweight for <6GB VRAM or if heavy models not available
+            if vram_gb < 6 or not AI_MODELS_AVAILABLE:
+                self.use_lightweight = True
+                print("🚀 Using lightweight enhancer (optimized for <4GB VRAM)")
+            else:
+                self.use_lightweight = False
+        
+        # Initialize appropriate manager
+        if self.use_lightweight:
+            self.enhancer = get_lightweight_enhancer()
+            self.ai_manager = None
+        else:
+            self.ai_manager = get_ai_model_manager()
+            self.enhancer = None
         
         # Enhancement settings
         self.use_ai_models = os.getenv('USE_AI_MODELS', '1') == '1'
@@ -35,29 +61,35 @@ class AdvancedImageEnhancer:
         self._load_models()
         
     def _load_models(self):
-        """Load advanced AI enhancement models"""
+        """Load AI enhancement models"""
         try:
-            print("🚀 Loading advanced AI models...")
-            
-            if self.use_ai_models:
-                # Load Real-ESRGAN for super resolution
-                self.ai_manager.load_realesrgan('RealESRGAN_x4plus')
-                
-                # Pre-load anime model for comic style
-                self.ai_manager.load_realesrgan('RealESRGAN_x4plus_anime_6B')
-                
-                # Load GFPGAN for face enhancement
-                if self.enhance_faces:
-                    self.ai_manager.load_gfpgan()
-                
+            if self.use_lightweight:
+                print("🚀 Loading lightweight AI models...")
+                # Lightweight models load on demand
                 self.advanced_available = True
-                print("✅ AI models loaded successfully")
+                print("✅ Lightweight enhancer ready")
             else:
-                print("⚠️ AI models disabled, using traditional methods")
-                self.advanced_available = False
+                print("🚀 Loading advanced AI models...")
+                
+                if self.use_ai_models and self.ai_manager:
+                    # Load Real-ESRGAN for super resolution
+                    self.ai_manager.load_realesrgan('RealESRGAN_x4plus')
+                    
+                    # Pre-load anime model for comic style
+                    self.ai_manager.load_realesrgan('RealESRGAN_x4plus_anime_6B')
+                    
+                    # Load GFPGAN for face enhancement
+                    if self.enhance_faces:
+                        self.ai_manager.load_gfpgan()
+                    
+                    self.advanced_available = True
+                    print("✅ AI models loaded successfully")
+                else:
+                    print("⚠️ AI models disabled, using traditional methods")
+                    self.advanced_available = False
             
         except Exception as e:
-            print(f"⚠️ AI models failed to load: {e}")
+            print(f"⚠️ Models failed to load: {e}")
             print("⚠️ Falling back to traditional enhancement methods")
             self.advanced_available = False
     
@@ -99,23 +131,38 @@ class AdvancedImageEnhancer:
         
         if self.advanced_available and self.use_ai_models:
             try:
-                # 1. AI Super Resolution with Real-ESRGAN (4x upscaling)
-                print("  🚀 Applying AI super resolution...")
-                img = self.ai_manager.enhance_image_realesrgan(
-                    img, 
-                    use_anime_model=self.use_anime_model
-                )
-                
-                # 2. AI Face Enhancement with GFPGAN
-                if self.enhance_faces:
-                    print("  👤 Enhancing faces with AI...")
-                    img = self.ai_manager.enhance_face_gfpgan(img)
-                
-                # 3. Post-processing
-                img = self.ai_manager.post_process(img)
-                
-                # Clear GPU memory for RTX 3050
-                self.ai_manager.clear_memory()
+                if self.use_lightweight:
+                    # Use lightweight enhancer for <4GB VRAM
+                    print("  🚀 Applying lightweight AI super resolution...")
+                    img = self.enhancer.enhance_with_lightweight_esrgan(img)
+                    
+                    if self.enhance_faces:
+                        print("  👤 Enhancing faces with lightweight AI...")
+                        img = self.enhancer.enhance_faces_lightweight(img)
+                    
+                    # Color correction
+                    img = self.enhancer.color_correction(img)
+                    
+                    # Clear memory
+                    self.enhancer.clear_memory()
+                else:
+                    # Use full AI models for >6GB VRAM
+                    print("  🚀 Applying AI super resolution...")
+                    img = self.ai_manager.enhance_image_realesrgan(
+                        img, 
+                        use_anime_model=self.use_anime_model
+                    )
+                    
+                    # 2. AI Face Enhancement with GFPGAN
+                    if self.enhance_faces:
+                        print("  👤 Enhancing faces with AI...")
+                        img = self.ai_manager.enhance_face_gfpgan(img)
+                    
+                    # 3. Post-processing
+                    img = self.ai_manager.post_process(img)
+                    
+                    # Clear GPU memory
+                    self.ai_manager.clear_memory()
                 
                 return img
                 

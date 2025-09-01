@@ -13,12 +13,24 @@ import numpy as np
 import torch
 from PIL import Image
 import psutil
-import GPUtil
+try:
+    import GPUtil
+    GPUTIL_AVAILABLE = True
+except ImportError:
+    GPUTIL_AVAILABLE = False
+    print("⚠️ GPUtil not available for GPU monitoring")
 
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from backend.ai_model_manager import AIModelManager
+try:
+    from backend.ai_model_manager import AIModelManager
+    AI_MODELS_AVAILABLE = True
+except ImportError:
+    print("⚠️ Heavy AI models not available")
+    AI_MODELS_AVAILABLE = False
+    
+from backend.lightweight_ai_enhancer import LightweightEnhancer
 from backend.advanced_image_enhancer import AdvancedImageEnhancer
 
 def print_system_info():
@@ -40,12 +52,13 @@ def print_system_info():
         print(f"GPU Memory: {torch.cuda.get_device_properties(0).total_memory / (1024**3):.1f} GB")
         
         # Current GPU usage
-        gpus = GPUtil.getGPUs()
-        if gpus:
-            gpu = gpus[0]
-            print(f"GPU Usage: {gpu.load * 100:.1f}%")
-            print(f"GPU Memory Used: {gpu.memoryUsed:.1f} MB / {gpu.memoryTotal:.1f} MB")
-            print(f"GPU Temperature: {gpu.temperature}°C")
+        if GPUTIL_AVAILABLE:
+            gpus = GPUtil.getGPUs()
+            if gpus:
+                gpu = gpus[0]
+                print(f"GPU Usage: {gpu.load * 100:.1f}%")
+                print(f"GPU Memory Used: {gpu.memoryUsed:.1f} MB / {gpu.memoryTotal:.1f} MB")
+                print(f"GPU Temperature: {gpu.temperature}°C")
     else:
         print("\n❌ No GPU detected")
     
@@ -56,36 +69,59 @@ def test_model_loading():
     print("\n🧪 TESTING MODEL LOADING")
     print("=" * 60)
     
-    manager = AIModelManager()
+    # Check VRAM first
+    if torch.cuda.is_available():
+        props = torch.cuda.get_device_properties(0)
+        vram_gb = props.total_memory / (1024**3)
+        print(f"📊 Available VRAM: {vram_gb:.1f} GB")
+        
+        if vram_gb < 6:
+            print("🚀 Using lightweight models for <6GB VRAM")
+            enhancer = LightweightEnhancer()
+            
+            print("\n1. Testing lightweight ESRGAN...")
+            start = time.time()
+            success = enhancer.load_lightweight_esrgan()
+            load_time = time.time() - start
+            print(f"   Result: {'✅ Success' if success else '❌ Failed'}")
+            print(f"   Load time: {load_time:.2f}s")
+            
+            return enhancer
     
-    # Test Real-ESRGAN loading
-    print("\n1. Testing Real-ESRGAN...")
-    start = time.time()
-    success = manager.load_realesrgan('RealESRGAN_x4plus')
-    load_time = time.time() - start
-    print(f"   Result: {'✅ Success' if success else '❌ Failed'}")
-    print(f"   Load time: {load_time:.2f}s")
-    
-    # Test Real-ESRGAN Anime model
-    print("\n2. Testing Real-ESRGAN Anime...")
-    start = time.time()
-    success = manager.load_realesrgan('RealESRGAN_x4plus_anime_6B')
-    load_time = time.time() - start
-    print(f"   Result: {'✅ Success' if success else '❌ Failed'}")
-    print(f"   Load time: {load_time:.2f}s")
-    
-    # Test GFPGAN loading
-    print("\n3. Testing GFPGAN...")
-    start = time.time()
-    success = manager.load_gfpgan()
-    load_time = time.time() - start
-    print(f"   Result: {'✅ Success' if success else '❌ Failed'}")
-    print(f"   Load time: {load_time:.2f}s")
-    
-    # Clear GPU memory
-    manager.clear_memory()
-    
-    return manager
+    if AI_MODELS_AVAILABLE:
+        manager = AIModelManager()
+        
+        # Test Real-ESRGAN loading
+        print("\n1. Testing Real-ESRGAN...")
+        start = time.time()
+        success = manager.load_realesrgan('RealESRGAN_x4plus')
+        load_time = time.time() - start
+        print(f"   Result: {'✅ Success' if success else '❌ Failed'}")
+        print(f"   Load time: {load_time:.2f}s")
+        
+        # Test Real-ESRGAN Anime model
+        print("\n2. Testing Real-ESRGAN Anime...")
+        start = time.time()
+        success = manager.load_realesrgan('RealESRGAN_x4plus_anime_6B')
+        load_time = time.time() - start
+        print(f"   Result: {'✅ Success' if success else '❌ Failed'}")
+        print(f"   Load time: {load_time:.2f}s")
+        
+        # Test GFPGAN loading
+        print("\n3. Testing GFPGAN...")
+        start = time.time()
+        success = manager.load_gfpgan()
+        load_time = time.time() - start
+        print(f"   Result: {'✅ Success' if success else '❌ Failed'}")
+        print(f"   Load time: {load_time:.2f}s")
+        
+        # Clear GPU memory
+        manager.clear_memory()
+        
+        return manager
+    else:
+        print("⚠️ Heavy models not available, using lightweight")
+        return LightweightEnhancer()
 
 def create_test_image():
     """Create a test image with faces and details"""
@@ -117,66 +153,111 @@ def create_test_image():
     
     return test_path
 
-def test_enhancement_pipeline(manager, test_image_path):
+def test_enhancement_pipeline(enhancer, test_image_path):
     """Test the complete enhancement pipeline"""
     print("\n🔬 TESTING ENHANCEMENT PIPELINE")
     print("=" * 60)
     
-    # Test 1: Basic enhancement
-    print("\n1. Testing basic Real-ESRGAN enhancement...")
-    start = time.time()
-    
     img = cv2.imread(test_image_path)
-    enhanced = manager.enhance_image_realesrgan(img)
     
-    process_time = time.time() - start
-    
-    print(f"   Original size: {img.shape}")
-    print(f"   Enhanced size: {enhanced.shape}")
-    print(f"   Processing time: {process_time:.2f}s")
-    print(f"   Speed: {1/process_time:.2f} FPS")
-    
-    cv2.imwrite("test_enhanced_realesrgan.jpg", enhanced)
-    
-    # Test 2: Anime model enhancement
-    print("\n2. Testing anime model enhancement...")
-    start = time.time()
-    
-    enhanced_anime = manager.enhance_image_realesrgan(img, use_anime_model=True)
-    
-    process_time = time.time() - start
-    print(f"   Processing time: {process_time:.2f}s")
-    
-    cv2.imwrite("test_enhanced_anime.jpg", enhanced_anime)
-    
-    # Test 3: Face enhancement
-    print("\n3. Testing GFPGAN face enhancement...")
-    start = time.time()
-    
-    enhanced_face = manager.enhance_face_gfpgan(enhanced)
-    
-    process_time = time.time() - start
-    print(f"   Processing time: {process_time:.2f}s")
-    
-    cv2.imwrite("test_enhanced_gfpgan.jpg", enhanced_face)
-    
-    # Test 4: Complete pipeline
-    print("\n4. Testing complete enhancement pipeline...")
-    start = time.time()
-    
-    final_enhanced = manager.enhance_image_pipeline(
-        test_image_path,
-        "test_final_enhanced.jpg",
-        enhance_face=True,
-        use_anime_model=False
-    )
-    
-    process_time = time.time() - start
-    print(f"   Total processing time: {process_time:.2f}s")
-    print(f"   Output: {final_enhanced}")
-    
-    # Clear GPU memory
-    manager.clear_memory()
+    if isinstance(enhancer, LightweightEnhancer):
+        # Test lightweight pipeline
+        print("\n1. Testing lightweight enhancement...")
+        start = time.time()
+        
+        enhanced = enhancer.enhance_with_lightweight_esrgan(img)
+        
+        process_time = time.time() - start
+        
+        print(f"   Original size: {img.shape}")
+        print(f"   Enhanced size: {enhanced.shape}")
+        print(f"   Processing time: {process_time:.2f}s")
+        print(f"   Speed: {1/process_time:.2f} FPS")
+        
+        cv2.imwrite("test_enhanced_lightweight.jpg", enhanced)
+        
+        # Test 2: Face enhancement
+        print("\n2. Testing lightweight face enhancement...")
+        start = time.time()
+        
+        enhanced_face = enhancer.enhance_faces_lightweight(enhanced)
+        
+        process_time = time.time() - start
+        print(f"   Processing time: {process_time:.2f}s")
+        
+        cv2.imwrite("test_enhanced_face_lightweight.jpg", enhanced_face)
+        
+        # Test 3: Complete pipeline
+        print("\n3. Testing complete lightweight pipeline...")
+        start = time.time()
+        
+        final_enhanced = enhancer.enhance_image_pipeline(
+            test_image_path,
+            "test_final_enhanced_lightweight.jpg"
+        )
+        
+        process_time = time.time() - start
+        print(f"   Total processing time: {process_time:.2f}s")
+        print(f"   Output: {final_enhanced}")
+        
+        # Clear GPU memory
+        enhancer.clear_memory()
+        
+    else:
+        # Test heavy pipeline
+        print("\n1. Testing basic Real-ESRGAN enhancement...")
+        start = time.time()
+        
+        enhanced = enhancer.enhance_image_realesrgan(img)
+        
+        process_time = time.time() - start
+        
+        print(f"   Original size: {img.shape}")
+        print(f"   Enhanced size: {enhanced.shape}")
+        print(f"   Processing time: {process_time:.2f}s")
+        print(f"   Speed: {1/process_time:.2f} FPS")
+        
+        cv2.imwrite("test_enhanced_realesrgan.jpg", enhanced)
+        
+        # Test 2: Anime model enhancement
+        print("\n2. Testing anime model enhancement...")
+        start = time.time()
+        
+        enhanced_anime = enhancer.enhance_image_realesrgan(img, use_anime_model=True)
+        
+        process_time = time.time() - start
+        print(f"   Processing time: {process_time:.2f}s")
+        
+        cv2.imwrite("test_enhanced_anime.jpg", enhanced_anime)
+        
+        # Test 3: Face enhancement
+        print("\n3. Testing GFPGAN face enhancement...")
+        start = time.time()
+        
+        enhanced_face = enhancer.enhance_face_gfpgan(enhanced)
+        
+        process_time = time.time() - start
+        print(f"   Processing time: {process_time:.2f}s")
+        
+        cv2.imwrite("test_enhanced_gfpgan.jpg", enhanced_face)
+        
+        # Test 4: Complete pipeline
+        print("\n4. Testing complete enhancement pipeline...")
+        start = time.time()
+        
+        final_enhanced = enhancer.enhance_image_pipeline(
+            test_image_path,
+            "test_final_enhanced.jpg",
+            enhance_face=True,
+            use_anime_model=False
+        )
+        
+        process_time = time.time() - start
+        print(f"   Total processing time: {process_time:.2f}s")
+        print(f"   Output: {final_enhanced}")
+        
+        # Clear GPU memory
+        enhancer.clear_memory()
 
 def test_advanced_enhancer():
     """Test the AdvancedImageEnhancer integration"""
@@ -214,7 +295,21 @@ def test_memory_usage():
         print("❌ GPU not available for memory testing")
         return
     
-    manager = AIModelManager()
+    # Check VRAM to decide which enhancer to use
+    props = torch.cuda.get_device_properties(0)
+    vram_gb = props.total_memory / (1024**3)
+    
+    if vram_gb < 6:
+        enhancer = LightweightEnhancer()
+        model_type = "Lightweight"
+    elif AI_MODELS_AVAILABLE:
+        enhancer = AIModelManager()
+        model_type = "Full AI"
+    else:
+        enhancer = LightweightEnhancer()
+        model_type = "Lightweight (fallback)"
+    
+    print(f"Using {model_type} enhancer")
     
     # Initial memory
     torch.cuda.empty_cache()
@@ -222,22 +317,34 @@ def test_memory_usage():
     print(f"Initial GPU memory: {initial_memory:.1f} MB")
     
     # After loading models
-    manager.load_realesrgan('RealESRGAN_x4plus')
+    if isinstance(enhancer, LightweightEnhancer):
+        enhancer.load_lightweight_esrgan()
+    else:
+        enhancer.load_realesrgan('RealESRGAN_x4plus')
+        
     model_memory = torch.cuda.memory_allocated() / (1024**2)
-    print(f"After loading Real-ESRGAN: {model_memory:.1f} MB")
+    print(f"After loading model: {model_memory:.1f} MB")
     
     # After processing
     img = np.ones((512, 512, 3), dtype=np.uint8) * 255
-    enhanced = manager.enhance_image_realesrgan(img)
+    
+    if isinstance(enhancer, LightweightEnhancer):
+        enhanced = enhancer.enhance_with_lightweight_esrgan(img)
+    else:
+        enhanced = enhancer.enhance_image_realesrgan(img)
+        
     process_memory = torch.cuda.memory_allocated() / (1024**2)
     print(f"After processing: {process_memory:.1f} MB")
     
     # After cleanup
-    manager.clear_memory()
+    enhancer.clear_memory()
     cleanup_memory = torch.cuda.memory_allocated() / (1024**2)
     print(f"After cleanup: {cleanup_memory:.1f} MB")
     
-    print(f"\nMemory efficiency: {(1 - cleanup_memory/process_memory)*100:.1f}% recovered")
+    if process_memory > 0:
+        print(f"\nMemory efficiency: {(1 - cleanup_memory/process_memory)*100:.1f}% recovered")
+    else:
+        print("\nNo memory usage detected (possibly using CPU fallback)")
 
 def run_all_tests():
     """Run all tests"""
