@@ -1,7 +1,8 @@
 from backend.utils import convert_to_css_pixel, get_panel_type, types
+import math
 
 BUBBLE_WIDTH = 200
-BUUBLE_HEIGHT = 94
+BUBBLE_HEIGHT = 94
 
 def add_bubble_padding(least_roi_x, least_roi_y, crop_coord):
     left,right,top,bottom = crop_coord
@@ -39,50 +40,199 @@ def add_bubble_padding(least_roi_x, least_roi_y, crop_coord):
     return least_roi_x, least_roi_y
 
 
-def get_bubble_position(crop_coord, CAM_data):
-    left, right, top, bottom = crop_coord
-    x_ = CAM_data['x_']
-    y_ = CAM_data['y_']
-    ten_map = CAM_data['ten_map']
-    print(ten_map)
-
-    new_top = int(top / y_)
-    new_bottom = int(bottom / y_)
-    new_left = int(left / x_)
-    new_right = int(right / x_)
-    print(new_top, new_bottom, new_left, new_right)
-
-    # Initialize variables to store the minimum value and its corresponding index
-    min_value = float('inf')  # Initialize min value to positive infinity
-    min_point = None  # Initialize min point to None
-
-    # Top
-    found = False
-    for i in range(new_left, new_right + 1):
-        for j in range(new_top, new_bottom + 1):
-            if (i < ten_map.shape[0] and j < ten_map.shape[1]) and ten_map[i][j] < min_value:
-                min_point = (i, j)
-                min_value = ten_map[i][j]
-
-    least_roi_x = min_point[0] * x_
-    least_roi_y = min_point[1] * y_
-
-    if least_roi_x < left:
-        least_roi_x = left
-    elif least_roi_x > right:
-        least_roi_x = right
-    if least_roi_y < top:
-        least_roi_y = top
-    elif least_roi_y > bottom:
-        least_roi_y = bottom
-
-    least_roi_x -= left
-    least_roi_y -= top
-    print("Least ROI coords: ", least_roi_x, least_roi_y)
+def get_bubble_position(image_coords, CAM_data=None, lip_coords=None):
+    """
+    Redesigned bubble placement for smart resize - positions relative to actual image content
+    """
+    left, right, top, bottom = image_coords
     
-    least_roi_x, least_roi_y = convert_to_css_pixel(least_roi_x,least_roi_y,crop_coord)
-    print("Least ROI coords after scaling: ", least_roi_x, least_roi_y)
+    # Calculate image dimensions within panel
+    image_width = right - left
+    image_height = bottom - top
+    
+    print(f"Image area: {image_width:.0f}x{image_height:.0f} at ({left:.0f}, {top:.0f})")
+    
+    # Define safe bubble positions relative to the actual image content
+    safe_positions = _get_safe_image_positions(left, right, top, bottom, image_width, image_height)
+    
+    # If we have lip coordinates, create face exclusion zones
+    if lip_coords and lip_coords[0] != -1 and lip_coords[1] != -1:
+        lip_x, lip_y = lip_coords
+        # Lip coordinates are already in panel coordinate system
+        print(f"Lip detected at coords: ({lip_x}, {lip_y})")
+        
+        # Filter out positions too close to the face
+        face_exclusion_radius = 60  # Standard exclusion radius
+        filtered_positions = []
+        
+        for pos in safe_positions:
+            distance = math.sqrt((pos[0] - lip_x)**2 + (pos[1] - lip_y)**2)
+            if distance > face_exclusion_radius:
+                filtered_positions.append(pos)
+        
+        if filtered_positions:
+            safe_positions = filtered_positions
+            print(f"Filtered to {len(safe_positions)} face-safe positions")
+        else:
+            print("Warning: No face-safe positions found, using all safe positions")
+    
+    # Select the best position (prefer corners and edges of image)
+    best_position = _select_best_image_position(safe_positions, left, right, top, bottom)
+    
+    print(f"Selected bubble position: {best_position}")
+    return best_position
 
-    least_roi_x, least_roi_y = add_bubble_padding(least_roi_x, least_roi_y, crop_coord)
+def _get_safe_image_positions(left, right, top, bottom, image_width, image_height):
+    """
+    Generate safe bubble positions relative to the actual image content
+    """
+    positions = []
+    
+    # Calculate margins to keep bubbles within image bounds
+    margin_x = BUBBLE_WIDTH / 2 + 20
+    margin_y = BUBBLE_HEIGHT / 2 + 20
+    
+    # Define grid within the image area - focus on upper areas
+    grid_cols = 4
+    grid_rows = 4  # More rows for better upper area coverage
+    
+    # Calculate grid cell size within image
+    cell_width = image_width / grid_cols
+    cell_height = image_height / grid_rows
+    
+    # Generate grid positions within image - prioritize upper areas
+    for row in range(grid_rows):
+        for col in range(grid_cols):
+            x = left + col * cell_width + cell_width / 2
+            y = top + row * cell_height + cell_height / 2
+            
+            # Ensure bubble fits within image bounds
+            if (left + margin_x <= x <= right - margin_x and 
+                top + margin_y <= y <= bottom - margin_y):
+                positions.append((x, y))
+    
+    # Add extra positions in upper areas for better coverage
+    upper_positions = []
+    upper_margin = 40
+    
+    # Top edge positions
+    for i in range(1, grid_cols):
+        x = left + i * cell_width
+        y = top + upper_margin
+        if (left + margin_x <= x <= right - margin_x and 
+            top + margin_y <= y <= bottom - margin_y):
+            upper_positions.append((x, y))
+    
+    # Upper quarter positions
+    upper_quarter_y = top + (bottom - top) * 0.25
+    for i in range(1, grid_cols):
+        x = left + i * cell_width
+        y = upper_quarter_y
+        if (left + margin_x <= x <= right - margin_x and 
+            top + margin_y <= y <= bottom - margin_y):
+            upper_positions.append((x, y))
+    
+    positions.extend(upper_positions)
+    
+    # Add corner positions relative to image - prioritize upper corners
+    corner_margin = 30
+    corners = [
+        (left + corner_margin, top + corner_margin),  # Top-left of image (highest priority)
+        (right - corner_margin, top + corner_margin),  # Top-right of image (highest priority)
+        (left + corner_margin, top + (bottom - top) * 0.2),  # Upper-left area
+        (right - corner_margin, top + (bottom - top) * 0.2),  # Upper-right area
+        (left + corner_margin, bottom - corner_margin),  # Bottom-left of image (lower priority)
+        (right - corner_margin, bottom - corner_margin)  # Bottom-right of image (lower priority)
+    ]
+    
+    for corner in corners:
+        if (left + margin_x <= corner[0] <= right - margin_x and 
+            top + margin_y <= corner[1] <= bottom - margin_y):
+            positions.append(corner)
+    
+    # Add edge positions along image boundaries
+    edge_positions = []
+    edge_margin = 50
+    
+    # Top edge of image
+    for i in range(1, grid_cols):
+        x = left + i * cell_width
+        y = top + edge_margin
+        if (left + margin_x <= x <= right - margin_x and 
+            top + margin_y <= y <= bottom - margin_y):
+            edge_positions.append((x, y))
+    
+    # Right edge of image
+    for i in range(1, grid_rows):
+        x = right - edge_margin
+        y = top + i * cell_height
+        if (left + margin_x <= x <= right - margin_x and 
+            top + margin_y <= y <= bottom - margin_y):
+            edge_positions.append((x, y))
+    
+    positions.extend(edge_positions)
+    
+    # If still no positions, use image center
+    if len(positions) == 0:
+        center_x = left + image_width / 2
+        center_y = top + image_height / 2
+        positions.append((center_x, center_y))
+        print(f"Warning: Image too small, using center position only")
+    
+    print(f"Generated {len(positions)} safe positions for image area {image_width:.0f}x{image_height:.0f}")
+    return positions
 
-    return least_roi_x, least_roi_y
+def _select_best_image_position(positions, left, right, top, bottom):
+    """
+    Select the best position relative to image content
+    Priority: TOP areas > corners > edges > center
+    """
+    if not positions:
+        # Fallback to upper area if no positions available
+        return (left + (right - left) / 2, top + (bottom - top) * 0.2)  # 20% from top
+    
+    # Score positions based on preference
+    scored_positions = []
+    for pos in positions:
+        x, y = pos
+        score = 0
+        
+        # STRONGLY prefer upper areas (highest priority)
+        upper_threshold = (bottom - top) * 0.4  # Top 40% of image
+        if y < top + upper_threshold:
+            score += 200  # Much higher score for upper areas
+        
+        # Prefer top quarter (highest score)
+        top_quarter = (bottom - top) * 0.25
+        if y < top + top_quarter:
+            score += 150
+        
+        # Prefer corners of image (high score)
+        corner_threshold = 50
+        if (x < left + corner_threshold or x > right - corner_threshold) and \
+           (y < top + corner_threshold or y > bottom - corner_threshold):
+            score += 100
+        
+        # Prefer edges of image (medium score)
+        edge_threshold = 80
+        if (x < left + edge_threshold or x > right - edge_threshold) or \
+           (y < top + edge_threshold or y > bottom - edge_threshold):
+            score += 50
+        
+        # Prefer right side (common comic bubble placement)
+        if x > left + (right - left) * 0.6:  # Right 40% of image
+            score += 30
+        
+        # Penalize lower areas
+        lower_threshold = (bottom - top) * 0.7  # Bottom 30% of image
+        if y > top + lower_threshold:
+            score -= 50  # Negative score for lower areas
+        
+        scored_positions.append((pos, score))
+    
+    # Sort by score (highest first) and return the best
+    scored_positions.sort(key=lambda x: x[1], reverse=True)
+    best_position = scored_positions[0][0]
+    
+    print(f"Selected position with score {scored_positions[0][1]} at y={best_position[1]:.0f} (top={top:.0f}, bottom={bottom:.0f})")
+    return best_position

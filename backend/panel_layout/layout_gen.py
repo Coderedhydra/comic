@@ -7,93 +7,85 @@ from backend.utils import get_panel_type, types
 from PIL import Image
 
 
-def centroid_crop(index, panel_type, cam_coords, img_w, img_h):
-
-    left, right, top, bottom = cam_coords[0], cam_coords[1], cam_coords[2], cam_coords[3]
-    xC, yC = (right + left)/2, (bottom + top)/2
-    w, h = right-left, bottom-top
-    wP, hP = types[panel_type]['width'], types[panel_type]['height']
-
-    if wP < hP:
-        S = h / hP
-        new_width = wP * S
-        crop_left = xC - (new_width/2)
-        crop_right = xC + (new_width/2)
-        crop_top = top
-        crop_bottom = bottom
-
-    else:
-        S = w / wP
-        new_height = hP * S
-        crop_top = yC - (new_height/2)
-        crop_bottom = yC + (new_height/2)
-        crop_left = left
-        crop_right = right
-
-    # Crop image
+def smart_resize(index, panel_type, img_w, img_h):
+    """
+    Smart resize without cropping - maintains full image visibility and quality
+    """
     frame_path = os.path.join("frames",'final',f"frame{index+1:03d}.png")
+    wP, hP = types[panel_type]['width'], types[panel_type]['height']
     
-    # Reposition if it exceeds image boundary
-    if crop_right - crop_left > img_w :
-        crop_w = crop_right - crop_left
-        crop_h = crop_bottom - crop_top
-        S = img_w / crop_w
-
-        new_width = S * crop_w 
-        new_height = S * crop_h
-
-        crop_left = xC - (new_width/2)
-        crop_right = xC + (new_width/2)
-        crop_top = yC - (new_height/2)
-        crop_bottom = yC + (new_height/2)
-
-    elif crop_bottom - crop_top > img_h:
-        crop_w = crop_right - crop_left
-        crop_h = crop_bottom - crop_top
-        S = img_h / crop_h
-
-        new_width = S * crop_w 
-        new_height = S * crop_h
-
-        crop_left = xC - (new_width/2)
-        crop_right = xC + (new_width/2)
-        crop_top = yC - (new_height/2)
-        crop_bottom = yC + (new_height/2)
-
-    crop_coords = crop_image(frame_path, crop_left,crop_right,crop_top, crop_bottom)
-    return crop_coords
+    # Calculate scaling to fit image within panel while maintaining aspect ratio
+    scale_w = wP / img_w
+    scale_h = hP / img_h
+    scale = min(scale_w, scale_h)  # Use smaller scale to fit entire image
+    
+    # Calculate new dimensions
+    new_width = int(img_w * scale)
+    new_height = int(img_h * scale)
+    
+    # Calculate centering offsets
+    offset_x = (wP - new_width) / 2
+    offset_y = (hP - new_height) / 2
+    
+    # Resize image with maximum quality settings
+    img = Image.open(frame_path)
+    
+    # Use high-quality resampling for better image quality
+    resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+    
+    # Save with maximum quality settings
+    resized_img.save(frame_path, quality=95, optimize=True)
+    
+    # Return coordinates for bubble positioning (full image area)
+    return (offset_x, offset_x + new_width, offset_y, offset_y + new_height)
 
 
 def generate_layout():
-    input_seq = ""
-    cam_coords = []
-    #Get dimensions of images
+    """
+    Redesigned layout generation - no cropping, smart resizing, proper bubble alignment
+    """
+    # Get dimensions of images
     img = Image.open(os.path.join("frames",'final',f"frame001.png"))
     width, height = img.size
     
-    # Loop through images and get type
-    folder_dir = "frames/final"
-    for image in os.listdir(folder_dir):
-
-        frame_path = os.path.join("frames",'final',image)
-        left, right, top, bottom = get_coordinates(frame_path)
-        input_seq += get_panel_type(left, right, top, bottom)
-
-        cam_coords.append((left, right, top, bottom))
+    # For high-accuracy mode, use simple panel type assignment
+    HIGH_ACCURACY = os.getenv('HIGH_ACCURACY', '0')
+    if HIGH_ACCURACY in ('1', 'true', 'True', 'YES', 'yes'):
+        # Use panel type 6 (2x2) for all images in high-accuracy mode
+        input_seq = ""
+        folder_dir = "frames/final"
+        for image in os.listdir(folder_dir):
+            input_seq += "6"  # Always use panel type 6 for 2x2 grid
+    else:
+        # Original logic for non-high-accuracy mode
+        input_seq = ""
+        cam_coords = []
+        folder_dir = "frames/final"
+        for image in os.listdir(folder_dir):
+            frame_path = os.path.join("frames",'final',image)
+            left, right, top, bottom = get_coordinates(frame_path)
+            input_seq += get_panel_type(left, right, top, bottom)
+            cam_coords.append((left, right, top, bottom))
     
     page_templates = get_templates(input_seq)
-    print(page_templates)
+    print(f"Page templates: {page_templates}")
+    
     i = 0
-    crop_coords = []
+    image_coords = []
     try:
         for page in page_templates:
             for panel in page:
-                origin = centroid_crop(i, panel, cam_coords[i], width, height)
-                crop_coords.append(origin)
+                # Use smart resize instead of cropping
+                coords = smart_resize(i, panel, width, height)
+                image_coords.append(coords)
                 i += 1
     except(IndexError):
         pass
 
     panels = panel_create(page_templates)
-    dump_CAM_data()
-    return crop_coords, page_templates, panels
+    
+    # For high-accuracy mode, skip CAM data (not needed for smart resize)
+    if HIGH_ACCURACY not in ('1', 'true', 'True', 'YES', 'yes'):
+        dump_CAM_data()
+    
+    return image_coords, page_templates, panels
