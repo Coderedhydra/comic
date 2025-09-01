@@ -26,6 +26,16 @@ from backend.keyframes.keyframes_simple import generate_keyframes_simple
 from backend.keyframes.keyframes import black_bar_crop
 from backend.class_def import bubble, panel, Page
 
+# Import smart comic generation
+try:
+    from backend.emotion_aware_comic import EmotionAwareComicGenerator
+    from backend.story_analyzer import SmartComicGenerator
+    SMART_COMIC_AVAILABLE = True
+    print("✅ Smart comic generation available!")
+except Exception as e:
+    SMART_COMIC_AVAILABLE = False
+    print(f"⚠️ Smart comic generation not available: {e}")
+
 app = Flask(__name__)
 
 # Import editor routes
@@ -62,11 +72,18 @@ class EnhancedComicGenerator:
         except:
             print("💻 Using CPU processing")
         
-    def generate_comic(self):
-        """Main comic generation pipeline"""
+    def generate_comic(self, smart_mode=False, emotion_match=False):
+        """Main comic generation pipeline
+        
+        Args:
+            smart_mode: If True, generates 10-15 panel summary
+            emotion_match: If True, matches facial expressions with dialogue
+        """
         start_time = time.time()
         
         print("🎬 Starting Enhanced Comic Generation...")
+        if smart_mode:
+            print("🎭 Smart mode enabled: Will create 10-15 panel summary with emotion matching")
         
         try:
             # 1. Extract real subtitles from video audio
@@ -105,6 +122,11 @@ class EnhancedComicGenerator:
             # 9. Save results
             print("💾 Saving results...")
             self._save_results(pages)
+            
+            # 10. Generate smart comic if requested
+            if smart_mode and SMART_COMIC_AVAILABLE:
+                print("\n🎭 Generating smart comic with emotion matching...")
+                self._generate_smart_comic(emotion_match)
             
             execution_time = (time.time() - start_time) / 60
             print(f"✅ Comic generation completed in {execution_time:.2f} minutes")
@@ -366,6 +388,76 @@ class EnhancedComicGenerator:
         except Exception as e:
             print(f"Save results failed: {e}")
     
+    def _generate_smart_comic(self, emotion_match=True):
+        """Generate smart comic with emotion matching"""
+        try:
+            if emotion_match:
+                # Use emotion-aware generator
+                generator = EmotionAwareComicGenerator()
+                comic_data = generator.generate_emotion_comic(self.video_path)
+            else:
+                # Use story analyzer
+                generator = SmartComicGenerator()
+                comic_data = generator.generate_smart_comic(self.video_path)
+            
+            # Generate viewer HTML
+            if comic_data:
+                self._generate_smart_viewer(comic_data)
+                print("✅ Smart comic generated: output/smart_comic_viewer.html")
+                
+        except Exception as e:
+            print(f"⚠️ Smart comic generation failed: {e}")
+    
+    def _generate_smart_viewer(self, comic_data):
+        """Generate HTML viewer for smart comic"""
+        html = '''<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart Comic - Emotion Matched</title>
+    <style>
+        body { margin: 0; padding: 20px; background: #2c3e50; color: white; font-family: Arial, sans-serif; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .comic-page { position: relative; background: white; margin: 20px auto; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        .comic-panel { position: absolute; border: 3px solid #333; overflow: hidden; }
+        .comic-panel img { width: 100%; height: 100%; object-fit: cover; }
+        .speech-bubble { position: absolute; border-radius: 20px; padding: 12px; font-family: "Comic Sans MS", cursive; font-weight: bold; text-align: center; z-index: 10; }
+        .emotion-happy { border: 3px solid #4CAF50; background: #E8F5E9; }
+        .emotion-sad { border: 3px solid #2196F3; background: #E3F2FD; }
+        .emotion-angry { border: 4px solid #F44336; background: #FFEBEE; }
+        .emotion-surprised { border: 3px solid #FF9800; background: #FFF3E0; }
+        .emotion-neutral { border: 2px solid #333; background: #FFF; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎭 Smart Comic Summary</h1>
+        <p>AI-generated comic with emotion matching (10-15 key panels)</p>
+    </div>
+'''
+        
+        for page in comic_data.get('pages', []):
+            html += f'<div class="comic-page" style="width:{page["width"]}px;height:{page["height"]}px;margin:20px auto;">\n'
+            
+            for panel in page.get('panels', []):
+                html += f'<div class="comic-panel" style="left:{panel["x"]}px;top:{panel["y"]}px;width:{panel["width"]}px;height:{panel["height"]}px;">'
+                html += f'<img src="{panel["image"]}">'
+                html += '</div>\n'
+            
+            for bubble in page.get('bubbles', []):
+                emotion = bubble.get('emotion', 'neutral')
+                style = bubble.get('style', {})
+                html += f'<div class="speech-bubble emotion-{emotion}" style="'
+                html += f'left:{bubble["x"]}px;top:{bubble["y"]}px;width:{bubble["width"]}px;min-height:{bubble["height"]}px;">'
+                html += bubble["text"]
+                html += '</div>\n'
+            
+            html += '</div>\n'
+        
+        html += '</body></html>'
+        
+        with open('output/smart_comic_viewer.html', 'w', encoding='utf-8') as f:
+            f.write(html)
+    
     def _copy_template_files(self):
         """Copy template files to output directory"""
         try:
@@ -548,8 +640,12 @@ def upload_file():
             f.save("video/uploaded.mp4")
             print(f"✅ File saved: {f.filename}")
             
+            # Get smart comic options
+            smart_mode = request.form.get('smart_mode', 'false').lower() == 'true'
+            emotion_match = request.form.get('emotion_match', 'false').lower() == 'true'
+            
             # Generate comic
-            success = comic_generator.generate_comic()
+            success = comic_generator.generate_comic(smart_mode=smart_mode, emotion_match=emotion_match)
             
             if success:
                 # Open result in browser through Flask
@@ -597,8 +693,12 @@ def handle_link():
                 print(f"❌ Video download failed: {e}")
                 return f"❌ Failed to download video: {str(e)}"
             
+            # Get smart comic options
+            smart_mode = request.form.get('smart_mode', 'false').lower() == 'true'
+            emotion_match = request.form.get('emotion_match', 'false').lower() == 'true'
+            
             # Generate comic
-            success = comic_generator.generate_comic()
+            success = comic_generator.generate_comic(smart_mode=smart_mode, emotion_match=emotion_match)
             
             if success:
                 # Open result in browser through Flask
@@ -642,7 +742,17 @@ def frame_file(filename):
 @app.route('/comic')
 def view_comic():
     """Serve the generated comic page"""
+    # Check if smart comic exists
+    smart_comic_path = os.path.join('output', 'smart_comic_viewer.html')
+    if os.path.exists(smart_comic_path):
+        return send_from_directory('output', 'smart_comic_viewer.html')
+    # Otherwise serve regular comic
     return send_from_directory('output', 'page.html')
+
+@app.route('/smart_comic')
+def view_smart_comic():
+    """Serve the smart comic viewer"""
+    return send_from_directory('output', 'smart_comic_viewer.html')
 
 if __name__ == '__main__':
     print("🚀 Starting Enhanced Comic Generator...")
