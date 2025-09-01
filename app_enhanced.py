@@ -111,11 +111,50 @@ class EnhancedComicGenerator:
             print("📝 Extracting real subtitles from video...")
             get_real_subtitles(self.video_path)
             
-            # 2. Filter subtitles for meaningful story moments first
-            print("📖 Analyzing story structure...")
+            # 2. Extract FULL story (don't skip important parts)
+            print("📖 Extracting complete story...")
             filtered_subs = None
-            if STORY_EXTRACTOR_AVAILABLE and os.path.exists('test1.srt'):
-                filtered_subs = self._filter_meaningful_subtitles('test1.srt')
+            if os.path.exists('test1.srt'):
+                try:
+                    from backend.full_story_extractor import FullStoryExtractor
+                    extractor = FullStoryExtractor()
+                    
+                    # Get all subtitles first
+                    with open('test1.srt', 'r', encoding='utf-8') as f:
+                        all_subs = list(srt.parse(f.read()))
+                    
+                    # Convert to dict format
+                    sub_list = []
+                    for sub in all_subs:
+                        sub_list.append({
+                            'index': sub.index,
+                            'text': sub.content,
+                            'start': sub.start.total_seconds(),
+                            'end': sub.end.total_seconds()
+                        })
+                    
+                    # Save temp file
+                    os.makedirs('temp', exist_ok=True)
+                    with open('temp/all_subs.json', 'w') as f:
+                        json.dump(sub_list, f)
+                    
+                    # Extract full story (up to 48 panels)
+                    story_subs = extractor.extract_full_story('temp/all_subs.json')
+                    
+                    # Convert back to srt format
+                    filtered_subs = []
+                    for s in story_subs:
+                        # Find matching subtitle
+                        for sub in all_subs:
+                            if sub.index == s.get('index', -1):
+                                filtered_subs.append(sub)
+                                break
+                    
+                    print(f"📚 Full story: {len(filtered_subs)} key moments from {len(all_subs)} total")
+                    
+                except Exception as e:
+                    print(f"⚠️ Full story extraction failed: {e}")
+                    filtered_subs = None
             
             # 3. Generate keyframes based on story moments
             print("🎯 Generating keyframes...")
@@ -136,7 +175,11 @@ class EnhancedComicGenerator:
                 print("✨ Enhancing image quality with advanced AI models...")
                 self._enhance_all_images_advanced()
             
-            # 6. Apply comic styling
+            # 6. Apply quality and color enhancement
+            print("🎨 Enhancing quality and colors...")
+            self._enhance_quality_colors()
+            
+            # 7. Apply comic styling (if enabled)
             print("🎨 Applying AI-enhanced comic styling...")
             self._apply_comic_styling()
             
@@ -234,6 +277,15 @@ class EnhancedComicGenerator:
             print(f"❌ Advanced enhancement system failed: {e}")
             print("🔄 Falling back to basic enhancement...")
             self._enhance_all_images()
+    
+    def _enhance_quality_colors(self):
+        """Enhance image quality and colors"""
+        try:
+            from backend.quality_color_enhancer import QualityColorEnhancer
+            enhancer = QualityColorEnhancer()
+            enhancer.batch_enhance(self.frames_dir)
+        except Exception as e:
+            print(f"⚠️ Quality enhancement failed: {e}")
     
     def _apply_comic_styling(self):
         """Apply comic styling to all frames"""

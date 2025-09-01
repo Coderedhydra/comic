@@ -83,12 +83,13 @@ def generate_12_pages_2x2_grid(frame_files, bubbles):
     return pages
 
 def select_meaningful_frames(all_frames, target_count):
-    """Select meaningful frames for story summarization"""
+    """Select frames to tell complete story"""
     
     if len(all_frames) <= target_count:
+        print(f"📚 Using all {len(all_frames)} frames (complete story)")
         return all_frames
     
-    print(f"🎯 Selecting {target_count} meaningful frames for story summary")
+    print(f"📚 Selecting {target_count} frames from {len(all_frames)} to tell complete story")
     
     # Smart selection based on story phases
     # Allocate frames to different story parts:
