@@ -1,0 +1,58 @@
+# AI Model Requirements for State-of-the-Art Enhancement
+# Optimized for NVIDIA RTX 3050
+
+# Core dependencies from original requirements
+-r requirements_enhanced.txt
+
+# Real-ESRGAN dependencies
+basicsr>=1.4.2
+realesrgan>=0.3.0
+facexlib>=0.3.0
+gfpgan>=1.3.8
+
+# PyTorch with CUDA support for RTX 3050 (CUDA 11.8)
+--index-url https://download.pytorch.org/whl/cu118
+torch==2.1.0+cu118
+torchvision==0.16.0+cu118
+torchaudio==2.1.0+cu118
+
+# Additional image processing
+opencv-python>=4.8.0
+opencv-contrib-python>=4.8.0
+albumentations>=1.3.1
+
+# SwinIR dependencies (optional - for highest quality)
+timm>=0.9.0
+einops>=0.7.0
+
+# Video processing
+ffmpeg-python>=0.2.0
+moviepy>=1.0.3
+
+# Optimization libraries
+tensorrt>=8.6.0  # Optional: For TensorRT optimization
+onnx>=1.14.0
+onnxruntime-gpu>=1.16.0
+
+# Face detection and enhancement
+dlib>=19.24.0
+face-alignment>=1.3.5
+insightface>=0.7.0
+
+# Utilities
+psutil>=5.9.0
+gpustat>=1.1.0
+py3nvml>=0.2.7  # For GPU monitoring
+
+# Colorization models (optional)
+colorization-pytorch>=0.1.0
+deoldify>=1.0.0
+
+# Super resolution alternatives
+waifu2x-ncnn-vulkan-python>=1.0.0  # Fast anime upscaling
+sr-pytorch>=0.1.0  # Various SR models
+
+# Development tools
+pytest>=7.4.0
+black>=23.0.0
+flake8>=6.0.0

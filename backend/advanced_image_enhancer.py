@@ -1,6 +1,7 @@
 """
-Advanced Image Enhancement using State-of-the-Art Techniques
-Enhanced version with significant improvements even without external models
+Advanced Image Enhancement using State-of-the-Art AI Models
+Real-ESRGAN, GFPGAN, and other cutting-edge models
+Optimized for NVIDIA RTX 3050
 """
 
 import cv2
@@ -13,31 +14,51 @@ import requests
 from io import BytesIO
 import time
 from typing import Optional, Tuple
+from backend.ai_model_manager import get_ai_model_manager
 
 class AdvancedImageEnhancer:
-    """Advanced image enhancement using state-of-the-art techniques"""
+    """Advanced image enhancement using state-of-the-art AI models"""
     
     def __init__(self):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         print(f"🎯 Using device: {self.device}")
         
+        # Initialize AI model manager
+        self.ai_manager = get_ai_model_manager()
+        
+        # Enhancement settings
+        self.use_ai_models = os.getenv('USE_AI_MODELS', '1') == '1'
+        self.enhance_faces = os.getenv('ENHANCE_FACES', '1') == '1'
+        self.use_anime_model = False  # Will be set based on content
+        
         # Initialize models
         self._load_models()
         
     def _load_models(self):
-        """Load advanced enhancement models"""
+        """Load advanced AI enhancement models"""
         try:
-            # For now, we'll use advanced OpenCV and PIL techniques
-            # These provide significant improvements over basic methods
-            print("🚀 Loading advanced enhancement techniques...")
+            print("🚀 Loading advanced AI models...")
             
-            # Initialize advanced processing capabilities
-            self.advanced_available = True
-            
-            print("✅ Advanced enhancement techniques loaded successfully")
+            if self.use_ai_models:
+                # Load Real-ESRGAN for super resolution
+                self.ai_manager.load_realesrgan('RealESRGAN_x4plus')
+                
+                # Pre-load anime model for comic style
+                self.ai_manager.load_realesrgan('RealESRGAN_x4plus_anime_6B')
+                
+                # Load GFPGAN for face enhancement
+                if self.enhance_faces:
+                    self.ai_manager.load_gfpgan()
+                
+                self.advanced_available = True
+                print("✅ AI models loaded successfully")
+            else:
+                print("⚠️ AI models disabled, using traditional methods")
+                self.advanced_available = False
             
         except Exception as e:
-            print(f"⚠️ Advanced techniques failed to load: {e}")
+            print(f"⚠️ AI models failed to load: {e}")
+            print("⚠️ Falling back to traditional enhancement methods")
             self.advanced_available = False
     
     def enhance_image(self, image_path: str, output_path: str = None) -> str:
@@ -68,12 +89,44 @@ class AdvancedImageEnhancer:
             return image_path
     
     def _apply_enhancement_pipeline(self, img: np.ndarray) -> np.ndarray:
-        """Apply complete enhancement pipeline with advanced techniques"""
+        """Apply complete enhancement pipeline with AI models"""
         original_img = img.copy()
         
-        print("🎨 Applying advanced enhancement pipeline...")
+        print("🎨 Applying AI-powered enhancement pipeline...")
         
-        # 1. Advanced Super Resolution (4x upscaling)
+        # Detect if image is anime/comic style
+        self.use_anime_model = self._detect_anime_style(img)
+        
+        if self.advanced_available and self.use_ai_models:
+            try:
+                # 1. AI Super Resolution with Real-ESRGAN (4x upscaling)
+                print("  🚀 Applying AI super resolution...")
+                img = self.ai_manager.enhance_image_realesrgan(
+                    img, 
+                    use_anime_model=self.use_anime_model
+                )
+                
+                # 2. AI Face Enhancement with GFPGAN
+                if self.enhance_faces:
+                    print("  👤 Enhancing faces with AI...")
+                    img = self.ai_manager.enhance_face_gfpgan(img)
+                
+                # 3. Post-processing
+                img = self.ai_manager.post_process(img)
+                
+                # Clear GPU memory for RTX 3050
+                self.ai_manager.clear_memory()
+                
+                return img
+                
+            except Exception as e:
+                print(f"⚠️ AI enhancement failed: {e}, using fallback")
+                img = original_img
+        
+        # Fallback to traditional methods if AI models not available
+        print("  📈 Using traditional enhancement methods...")
+        
+        # 1. Traditional Super Resolution
         img = self._apply_super_resolution_advanced(img)
         
         # 2. Advanced Color Enhancement
@@ -88,7 +141,7 @@ class AdvancedImageEnhancer:
         # 5. Advanced Dynamic Range Optimization
         img = self._optimize_dynamic_range_advanced(img)
         
-        # 6. Advanced Face Enhancement (if faces detected)
+        # 6. Traditional Face Enhancement
         img = self._enhance_faces_advanced(img)
         
         return img
@@ -281,6 +334,39 @@ class AdvancedImageEnhancer:
             enhanced = face_img
         
         return enhanced
+    
+    def _detect_anime_style(self, img: np.ndarray) -> bool:
+        """Detect if image is anime/manga/comic style"""
+        try:
+            # Convert to grayscale
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            
+            # 1. Edge density check - anime has cleaner edges
+            edges = cv2.Canny(gray, 50, 150)
+            edge_density = np.sum(edges > 0) / edges.size
+            
+            # 2. Color count check - anime has fewer unique colors
+            unique_colors = len(np.unique(img.reshape(-1, img.shape[2]), axis=0))
+            
+            # 3. Gradient smoothness - anime has smoother gradients
+            laplacian = cv2.Laplacian(gray, cv2.CV_64F)
+            gradient_variance = np.var(laplacian)
+            
+            # Decision logic
+            is_anime = (
+                edge_density < 0.15 and  # Clean edges
+                unique_colors < 10000 and  # Limited color palette
+                gradient_variance < 1000  # Smooth gradients
+            )
+            
+            if is_anime:
+                print("  🎌 Detected anime/comic style - using specialized model")
+            
+            return is_anime
+            
+        except Exception as e:
+            print(f"⚠️ Style detection failed: {e}")
+            return False
     
     def enhance_batch(self, image_paths: list, output_dir: str = None) -> list:
         """Enhance multiple images"""
