@@ -79,7 +79,7 @@ class EnhancedComicGenerator:
         self.output_dir = 'output'
         self.quality_mode = os.getenv('HIGH_QUALITY', '1')
         self.ai_mode = os.getenv('AI_ENHANCED', '1')
-        self.apply_comic_style = True  # Can be set to False to preserve original colors
+        self.apply_comic_style = False  # Disabled to preserve original colors
         self.preserve_colors = True  # Preserve more original colors in comic style
         
         # Check for GPU
@@ -423,26 +423,37 @@ class EnhancedComicGenerator:
         return bubbles
     
     def _generate_pages(self, layout_data, bubbles):
-        """Generate final pages"""
+        """Generate final pages based on story-aware layout"""
         pages = []
         
         try:
             frame_files = sorted([f for f in os.listdir(self.frames_dir) if f.endswith('.png')])
             
-            # Create 4 pages with different frame combinations
-            for page_num in range(4):
-                # Create panels for this page
+            # If we have story-based layout, use it
+            if hasattr(self, '_filtered_count') and self._filtered_count:
+                return self._generate_story_pages(frame_files, bubbles)
+            
+            # Otherwise, create simple layout based on available frames
+            num_frames = len(frame_files)
+            frames_per_page = 6 if num_frames > 9 else (4 if num_frames > 4 else num_frames)
+            num_pages = (num_frames + frames_per_page - 1) // frames_per_page
+            
+            frame_idx = 0
+            for page_num in range(num_pages):
                 panels = []
                 page_bubbles = []
                 
-                for j in range(4):
-                    # Use unique frames for each page (16 total frames, 4 per page)
-                    frame_index = page_num * 4 + j
-                    if frame_index < len(frame_files):
-                        frame_file = frame_files[frame_index]
-                    else:
-                        # Fallback to first frame if we don't have enough
-                        frame_file = frame_files[0]
+                # Calculate grid layout for this page
+                if frames_per_page <= 4:
+                    rows, cols = 2, 2
+                elif frames_per_page <= 6:
+                    rows, cols = 2, 3
+                else:
+                    rows, cols = 3, 3
+                
+                for j in range(frames_per_page):
+                    if frame_idx < len(frame_files):
+                        frame_file = frame_files[frame_idx]
                     
                     panel_obj = panel(
                         image=frame_file,
@@ -492,6 +503,82 @@ class EnhancedComicGenerator:
             print(f"Page generation failed: {e}")
         
         return pages
+    
+    def _generate_story_pages(self, frame_files, bubbles):
+        """Generate pages based on story extraction"""
+        pages = []
+        
+        print(f"📖 Generating story-based layout for {len(frame_files)} frames")
+        
+        # Get adaptive layout configuration
+        if STORY_EXTRACTOR_AVAILABLE:
+            extractor = SmartStoryExtractor()
+            layouts = extractor.get_adaptive_layout(len(frame_files))
+        else:
+            # Fallback layout
+            layouts = [{'panels_per_page': 6, 'rows': 2, 'cols': 3}]
+        
+        frame_idx = 0
+        bubble_idx = 0
+        
+        for page_num, layout_config in enumerate(layouts):
+            panels = []
+            page_bubbles = []
+            
+            panels_on_page = layout_config['panels_per_page']
+            rows = layout_config['rows']
+            cols = layout_config['cols']
+            
+            # Calculate panel dimensions
+            row_span = 12 // rows
+            col_span = 12 // cols
+            
+            for panel_num in range(panels_on_page):
+                if frame_idx < len(frame_files):
+                    # Create panel
+                    panel_obj = panel(
+                        image=frame_files[frame_idx],
+                        row_span=row_span,
+                        col_span=col_span
+                    )
+                    panels.append(panel_obj)
+                    
+                    # Add corresponding bubble if available
+                    if bubble_idx < len(bubbles):
+                        bubble_obj = bubbles[bubble_idx]
+                        page_bubbles.append(bubble_obj)
+                        bubble_idx += 1
+                    
+                    frame_idx += 1
+                
+                if frame_idx >= len(frame_files):
+                    break
+            
+            # Create page
+            page = Page(
+                panels=panels,
+                bubbles=page_bubbles,
+                panel_arrangement=self._generate_arrangement(rows, cols)
+            )
+            pages.append(page)
+            
+            print(f"📄 Page {page_num + 1}: {len(panels)} panels in {rows}x{cols} grid")
+        
+        return pages
+    
+    def _generate_arrangement(self, rows, cols):
+        """Generate panel arrangement string for given rows and cols"""
+        arrangement = []
+        panel_num = 0
+        
+        for r in range(rows):
+            row_str = ""
+            for c in range(cols):
+                row_str += str(panel_num % 10)
+                panel_num += 1
+            arrangement.append(row_str)
+        
+        return arrangement
     
     def _save_results(self, pages):
         """Save results to output directory"""
