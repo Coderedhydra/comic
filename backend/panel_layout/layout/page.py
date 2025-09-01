@@ -71,7 +71,7 @@ templates = ['14124114','312341' , '4432111' , '21411241' , '3241141' , '1341114
 HIGH_ACCURACY = os.getenv('HIGH_ACCURACY', '0')
 if HIGH_ACCURACY in ('1', 'true', 'True', 'YES', 'yes'):
     # Use templates with 2x2 grid layout (4 equal squares per page)
-    templates = ['6666', '6666', '6666', '6666']  # Always 2x2 grid
+    templates = ['333333333333']  # 12 panels in 3x4 grid  # Always 2x2 grid
     print("Using HIGH_ACCURACY mode with 2x2 grid layout (4 equal squares per page)")
 else:
     # Optional grid layout for efficiency: when GRID_LAYOUT is set, prefer uniform grids

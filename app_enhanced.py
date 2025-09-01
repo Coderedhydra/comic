@@ -429,9 +429,11 @@ class EnhancedComicGenerator:
         try:
             frame_files = sorted([f for f in os.listdir(self.frames_dir) if f.endswith('.png')])
             
-            # If we have story-based layout, use it
-            if hasattr(self, '_filtered_count') and self._filtered_count:
-                return self._generate_story_pages(frame_files, bubbles)
+            # Always use story-based layout for proper grid
+            # Force 12 panels for meaningful story
+            if not hasattr(self, '_filtered_count'):
+                self._filtered_count = min(12, len(frame_files))
+            return self._generate_story_pages(frame_files, bubbles)
             
             # Otherwise, create simple layout based on available frames
             num_frames = len(frame_files)
@@ -443,22 +445,28 @@ class EnhancedComicGenerator:
                 panels = []
                 page_bubbles = []
                 
-                # Calculate grid layout for this page
-                if frames_per_page <= 4:
-                    rows, cols = 2, 2
-                elif frames_per_page <= 6:
+                # Force proper grid layout for 12 panels
+                if num_frames <= 6:
                     rows, cols = 2, 3
-                else:
+                elif num_frames <= 9:
                     rows, cols = 3, 3
+                elif num_frames <= 12:
+                    rows, cols = 3, 4
+                else:
+                    rows, cols = 4, 4
                 
                 for j in range(frames_per_page):
                     if frame_idx < len(frame_files):
                         frame_file = frame_files[frame_idx]
                     
+                    # Calculate proper span for grid
+                    row_span = 12 // rows
+                    col_span = 12 // cols
+                    
                     panel_obj = panel(
                         image=frame_file,
-                        row_span=2,
-                        col_span=2
+                        row_span=row_span,
+                        col_span=col_span
                     )
                     panels.append(panel_obj)
                     
@@ -506,9 +514,16 @@ class EnhancedComicGenerator:
     
     def _generate_story_pages(self, frame_files, bubbles):
         """Generate pages based on story extraction"""
-        pages = []
+        # Use fixed 12-panel generator
+        from backend.fixed_page_generator import generate_12_panel_pages
         
-        print(f"📖 Generating story-based layout for {len(frame_files)} frames")
+        # Limit to 12 most important frames
+        selected_frames = frame_files[:12]
+        selected_bubbles = bubbles[:12] if bubbles else []
+        
+        print(f"📖 Generating 12-panel comic (3x4 grid) from {len(frame_files)} frames")
+        
+        return generate_12_panel_pages(selected_frames, selected_bubbles)
         
         # Get adaptive layout configuration
         if STORY_EXTRACTOR_AVAILABLE:
