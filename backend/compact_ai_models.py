@@ -428,8 +428,11 @@ class CompactAIEnhancer:
         """High-quality fallback upscaling"""
         h, w = img.shape[:2]
         
-        # EDSR-inspired upscaling
-        upscaled = cv2.resize(img, (w * 4, h * 4), interpolation=cv2.INTER_CUBIC)
+        # EDSR-inspired upscaling (max 2K)
+        scale = min(2, 2048/w, 1080/h)
+        new_w = int(w * scale)
+        new_h = int(h * scale)
+        upscaled = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
         
         # Enhance sharpness
         kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]]) / 1

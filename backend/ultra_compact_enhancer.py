@@ -14,7 +14,7 @@ import gc
 
 class UltraCompactESRGAN(nn.Module):
     """Ultra lightweight ESRGAN - only 200MB VRAM usage"""
-    def __init__(self, scale=4):
+    def __init__(self, scale=2):
         super().__init__()
         self.scale = scale
         
@@ -49,7 +49,7 @@ class MemorySafeEnhancer:
         self.device = self._setup_device()
         self.model = None
         self.tile_size = 64  # Very small tiles
-        self.scale = 4
+        self.scale = 2  # 2x max for 2K output
         
         # Load model
         self._load_model()
@@ -123,6 +123,15 @@ class MemorySafeEnhancer:
                 enhanced = self._enhance_with_model(img)
             else:
                 enhanced = self._cpu_upscale(img)
+            
+            # Ensure 2K limit
+            h, w = enhanced.shape[:2]
+            if w > 2048 or h > 1080:
+                scale = min(2048/w, 1080/h)
+                new_w = int(w * scale)
+                new_h = int(h * scale)
+                enhanced = cv2.resize(enhanced, (new_w, new_h), interpolation=cv2.INTER_LANCZOS4)
+                print(f"  📐 Resizing from {w}x{h} to {new_w}x{new_h} (2K limit)")
             
             # Save result
             cv2.imwrite(output_path, enhanced, [cv2.IMWRITE_JPEG_QUALITY, 95])
@@ -228,9 +237,11 @@ class MemorySafeEnhancer:
         """CPU-only upscaling fallback"""
         print("  📈 Using CPU upscaling...")
         
-        # High-quality CPU upscaling
+        # High-quality CPU upscaling (max 2K)
         h, w = img.shape[:2]
-        new_h, new_w = h * self.scale, w * self.scale
+        scale_factor = min(self.scale, 2048/w, 1080/h)
+        new_w = int(w * scale_factor)
+        new_h = int(h * scale_factor)
         
         # Use multiple interpolation methods and blend
         cubic = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_CUBIC)

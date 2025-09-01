@@ -119,14 +119,14 @@ class LightweightEnhancer:
         """Enhance using lightweight ESRGAN with tiling"""
         if self.esrgan_model is None:
             if not self.load_lightweight_esrgan():
-                return self.fallback_upscale(img, 4)
+                return self.fallback_upscale(img, 2)
                 
         try:
             # Convert to tensor
             img_tensor = self.img_to_tensor(img)
             
             # Process with tiling for low VRAM
-            result = self.process_with_tiles(img_tensor, self.esrgan_model, scale=4)
+            result = self.process_with_tiles(img_tensor, self.esrgan_model, scale=2)
             
             # Convert back to numpy
             result = self.tensor_to_img(result)
@@ -135,14 +135,24 @@ class LightweightEnhancer:
             
         except Exception as e:
             print(f"❌ Enhancement failed: {e}")
-            return self.fallback_upscale(img, 4)
+            return self.fallback_upscale(img, 2)
             
-    def process_with_tiles(self, img_tensor, model, scale=4):
+    def process_with_tiles(self, img_tensor, model, scale=2):
         """Process image in tiles to save VRAM"""
         _, _, h, w = img_tensor.shape
         
-        # Calculate output size
-        out_h, out_w = h * scale, w * scale
+        # Calculate output size (max 2K)
+        target_h = h * scale
+        target_w = w * scale
+        
+        # Apply 2K limit
+        if target_w > 2048 or target_h > 1080:
+            limit_scale = min(2048/target_w, 1080/target_h)
+            out_w = int(target_w * limit_scale)
+            out_h = int(target_h * limit_scale)
+            print(f"  📐 Limiting output to {out_w}x{out_h} (2K max)")
+        else:
+            out_h, out_w = target_h, target_w
         output = torch.zeros((1, 3, out_h, out_w), device=self.device)
         
         # Tile processing
@@ -208,11 +218,15 @@ class LightweightEnhancer:
         return cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         
     def fallback_upscale(self, img, scale):
-        """Fallback upscaling using OpenCV"""
+        """Fallback upscaling using OpenCV with 2K limit"""
         print("  📈 Using optimized fallback upscaling...")
         
         h, w = img.shape[:2]
-        new_h, new_w = h * scale, w * scale
+        
+        # Calculate new size with 2K limit
+        target_scale = min(scale, 2048/w, 1080/h)
+        new_w = int(w * target_scale)
+        new_h = int(h * target_scale)
         
         # Use EDSR-inspired upscaling
         # First, upscale with CUBIC
@@ -300,6 +314,7 @@ class LightweightEnhancer:
             
             # Step 1: Lightweight super resolution
             print("  🚀 Applying lightweight upscaling (max 2K)...")
+            print(f"  📐 Input: {img.shape[1]}x{img.shape[0]}")
             enhanced = self.enhance_with_lightweight_esrgan(img)
             
             # Step 2: Face enhancement
