@@ -22,6 +22,7 @@ except ImportError:
     print("⚠️ AI models not available, using lightweight enhancer")
     
 from backend.lightweight_ai_enhancer import get_lightweight_enhancer
+from backend.compact_ai_models import CompactAIEnhancer
 
 class AdvancedImageEnhancer:
     """Advanced image enhancement using state-of-the-art AI models"""
@@ -46,11 +47,17 @@ class AdvancedImageEnhancer:
         
         # Initialize appropriate manager
         if self.use_lightweight:
-            self.enhancer = get_lightweight_enhancer()
+            # Use compact AI models for <6GB VRAM
+            print("🚀 Using compact AI models (SwinIR/Real-ESRGAN)")
+            self.enhancer = CompactAIEnhancer(model_type='swinir')  # or 'realesrgan'
             self.ai_manager = None
+            
+            # Also create secondary enhancer for comparison
+            self.compact_realesrgan = CompactAIEnhancer(model_type='realesrgan')
         else:
             self.ai_manager = get_ai_model_manager()
             self.enhancer = None
+            self.compact_realesrgan = None
         
         # Enhancement settings
         self.use_ai_models = os.getenv('USE_AI_MODELS', '1') == '1'
@@ -107,8 +114,8 @@ class AdvancedImageEnhancer:
                 print(f"❌ Failed to load image: {image_path}")
                 return image_path
             
-            # Apply enhancement pipeline
-            enhanced_img = self._apply_enhancement_pipeline(img)
+            # Apply enhancement pipeline - pass image_path for compact models
+            enhanced_img = self._apply_enhancement_pipeline(img, image_path)
             
             # Save enhanced image with maximum quality
             cv2.imwrite(output_path, enhanced_img, [cv2.IMWRITE_JPEG_QUALITY, 100])
@@ -120,7 +127,7 @@ class AdvancedImageEnhancer:
             print(f"❌ Enhancement failed: {e}")
             return image_path
     
-    def _apply_enhancement_pipeline(self, img: np.ndarray) -> np.ndarray:
+    def _apply_enhancement_pipeline(self, img: np.ndarray, image_path: str = None) -> np.ndarray:
         """Apply complete enhancement pipeline with AI models"""
         original_img = img.copy()
         
@@ -132,19 +139,35 @@ class AdvancedImageEnhancer:
         if self.advanced_available and self.use_ai_models:
             try:
                 if self.use_lightweight:
-                    # Use lightweight enhancer for <4GB VRAM
-                    print("  🚀 Applying lightweight AI super resolution...")
-                    img = self.enhancer.enhance_with_lightweight_esrgan(img)
+                    # Use compact AI models for <4GB VRAM
+                    print("  🚀 Applying compact AI super resolution...")
                     
-                    if self.enhance_faces:
-                        print("  👤 Enhancing faces with lightweight AI...")
-                        img = self.enhancer.enhance_faces_lightweight(img)
+                    # Use SwinIR for general images, Real-ESRGAN for anime/comics
+                    if self.use_anime_model:
+                        print("  🎌 Using compact Real-ESRGAN for anime/comic style")
+                        # Process image directly without tensor conversion
+                        enhanced_path = self.compact_realesrgan.enhance_image(
+                            image_path, 
+                            image_path.replace('.', '_temp.')
+                        )
+                        img = cv2.imread(enhanced_path)
+                        os.remove(enhanced_path)  # Clean up temp file
+                    else:
+                        print("  🖼️ Using SwinIR for photorealistic enhancement")
+                        # Process with SwinIR
+                        enhanced_path = self.enhancer.enhance_image(
+                            image_path,
+                            image_path.replace('.', '_temp.')
+                        )
+                        img = cv2.imread(enhanced_path)
+                        os.remove(enhanced_path)  # Clean up temp file
                     
-                    # Color correction
-                    img = self.enhancer.color_correction(img)
+                    # Face enhancement is already included in the models
+                    print("  ✅ Compact AI enhancement complete")
                     
                     # Clear memory
-                    self.enhancer.clear_memory()
+                    if hasattr(self.enhancer, 'get_memory_usage'):
+                        print(f"  💾 Memory: {self.enhancer.get_memory_usage()}")
                 else:
                     # Use full AI models for >6GB VRAM
                     print("  🚀 Applying AI super resolution...")
