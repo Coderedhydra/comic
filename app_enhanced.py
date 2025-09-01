@@ -15,6 +15,7 @@ from PIL import Image
 import srt
 import json
 import shutil
+from typing import List
 
 # Import enhanced modules
 from backend.ai_enhanced_core import (
