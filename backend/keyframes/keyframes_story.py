@@ -89,9 +89,9 @@ def generate_keyframes_story(video_path: str, filtered_subtitles: List = None, m
                 
                 # Copy to final directory
                 src = os.path.join(sub_dir, best_frame)
-                dst = os.path.join(final_dir, f"frame{frame_counter:03d}.png")
+                dst_filename = f"frame{frame_counter:03d}.png"
                 
-                copy_and_rename_file(src, dst)
+                copy_and_rename_file(src, final_dir, dst_filename)
                 frame_counter += 1
                 
                 print(f"✅ Selected frame for segment {i+1}")
