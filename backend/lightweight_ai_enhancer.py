@@ -299,7 +299,7 @@ class LightweightEnhancer:
             print(f"  Original: {original_shape[1]}x{original_shape[0]}")
             
             # Step 1: Lightweight super resolution
-            print("  🚀 Applying lightweight 4x upscaling...")
+            print("  🚀 Applying lightweight upscaling (max 2K)...")
             enhanced = self.enhance_with_lightweight_esrgan(img)
             
             # Step 2: Face enhancement

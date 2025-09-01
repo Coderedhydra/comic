@@ -221,9 +221,10 @@ class AdvancedImageEnhancer:
             # Get original dimensions
             height, width = img.shape[:2]
             
-            # Calculate target dimensions (4x upscaling)
-            target_width = width * 4
-            target_height = height * 4
+            # Calculate target dimensions (max 2K - 2048x1080)
+            scale_factor = min(2048 / width, 1080 / height, 2.0)  # Max 2x upscaling
+            target_width = int(width * scale_factor)
+            target_height = int(height * scale_factor)
             
             # Use LANCZOS interpolation for highest quality
             img = cv2.resize(img, (target_width, target_height), 

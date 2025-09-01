@@ -207,8 +207,17 @@ class AIModelManager:
                 
             # Enhance
             with torch.no_grad():
-                output, _ = upsampler.enhance(image, outscale=4)
-                
+                            output, _ = upsampler.enhance(image, outscale=4)
+            
+            # Limit to 2K resolution
+            h, w = output.shape[:2]
+            if w > 2048 or h > 1080:
+                scale = min(2048/w, 1080/h)
+                new_w = int(w * scale)
+                new_h = int(h * scale)
+                output = cv2.resize(output, (new_w, new_h), interpolation=cv2.INTER_LANCZOS4)
+                print(f"  📐 Resized from {w}x{h} to {new_w}x{new_h} (2K limit)")
+            
             return output
             
         except Exception as e:
@@ -265,8 +274,8 @@ class AIModelManager:
                 
             original_shape = image.shape[:2]
             
-            # Step 1: Super-resolution with Real-ESRGAN
-            print("  📈 Applying 4x super-resolution...")
+            # Step 1: Super-resolution with Real-ESRGAN (max 2K)
+            print("  📈 Applying super-resolution (max 2K)...")
             enhanced = self.enhance_image_realesrgan(image, use_anime_model)
             
             # Step 2: Face enhancement with GFPGAN (if faces detected)

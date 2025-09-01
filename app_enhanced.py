@@ -36,6 +36,15 @@ except Exception as e:
     SMART_COMIC_AVAILABLE = False
     print(f"⚠️ Smart comic generation not available: {e}")
 
+# Import panel extractor
+try:
+    from backend.panel_extractor import PanelExtractor
+    PANEL_EXTRACTOR_AVAILABLE = True
+    print("✅ Panel extractor available!")
+except Exception as e:
+    PANEL_EXTRACTOR_AVAILABLE = False
+    print(f"⚠️ Panel extractor not available: {e}")
+
 app = Flask(__name__)
 
 # Import editor routes
@@ -127,6 +136,10 @@ class EnhancedComicGenerator:
             if smart_mode and SMART_COMIC_AVAILABLE:
                 print("\n🎭 Generating smart comic with emotion matching...")
                 self._generate_smart_comic(emotion_match)
+            
+            # 11. Extract individual panels as 640x800 images
+            print("\n📸 Extracting individual panels...")
+            self._extract_panels()
             
             execution_time = (time.time() - start_time) / 60
             print(f"✅ Comic generation completed in {execution_time:.2f} minutes")
@@ -458,6 +471,26 @@ class EnhancedComicGenerator:
         with open('output/smart_comic_viewer.html', 'w', encoding='utf-8') as f:
             f.write(html)
     
+    def _extract_panels(self):
+        """Extract individual panels as 640x800 images"""
+        if not PANEL_EXTRACTOR_AVAILABLE:
+            print("⚠️ Panel extractor not available, skipping...")
+            return
+            
+        try:
+            extractor = PanelExtractor(output_dir="output/panels")
+            saved_panels = extractor.extract_panels_from_comic(
+                pages_json_path="output/pages.json",
+                frames_dir="frames/final"
+            )
+            
+            if saved_panels:
+                print(f"✅ Extracted {len(saved_panels)} panels to output/panels/")
+                print("📄 Panel viewer available at: output/panels/panel_viewer.html")
+            
+        except Exception as e:
+            print(f"⚠️ Panel extraction failed: {e}")
+    
     def _copy_template_files(self):
         """Copy template files to output directory"""
         try:
@@ -753,6 +786,16 @@ def view_comic():
 def view_smart_comic():
     """Serve the smart comic viewer"""
     return send_from_directory('output', 'smart_comic_viewer.html')
+
+@app.route('/panels')
+def view_panels():
+    """Serve the panel viewer"""
+    return send_from_directory('output/panels', 'panel_viewer.html')
+
+@app.route('/output/panels/<path:filename>')
+def panel_file(filename):
+    """Serve individual panel files"""
+    return send_from_directory('output/panels', filename)
 
 if __name__ == '__main__':
     print("🚀 Starting Enhanced Comic Generator...")
