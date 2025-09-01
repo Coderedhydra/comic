@@ -28,6 +28,14 @@ from backend.class_def import bubble, panel, Page
 
 app = Flask(__name__)
 
+# Import editor routes
+try:
+    from comic_editor_server import add_editor_routes
+    add_editor_routes(app)
+    print("✅ Comic editor integrated!")
+except Exception as e:
+    print(f"⚠️ Could not load comic editor: {e}")
+
 # Ensure directories exist
 os.makedirs('video', exist_ok=True)
 os.makedirs('frames/final', exist_ok=True)

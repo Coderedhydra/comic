@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comic Editor - Drag & Edit</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #2c3e50;
+            font-family: Arial, sans-serif;
+            overflow-x: auto;
+        }
+        
+        .header {
+            background: #34495e;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.8;
+        }
+        
+        #comic-editor {
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .loading {
+            text-align: center;
+            color: white;
+            padding: 50px;
+            font-size: 20px;
+        }
+        
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .editor-toolbar {
+                position: static !important;
+                margin: 20px;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .toolbar-btn {
+                width: auto !important;
+                padding: 8px 15px !important;
+                margin: 5px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎨 Interactive Comic Editor</h1>
+        <p>Drag bubbles to reposition • Double-click to edit text • Add new bubbles anytime</p>
+    </div>
+    
+    <div id="comic-editor">
+        <div class="loading">Loading comic...</div>
+    </div>
+    
+    <script src="/static/comic_editor.js"></script>
+</body>
+</html>

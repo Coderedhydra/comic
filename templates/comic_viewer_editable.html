@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comic Viewer - Editable</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #2c3e50;
+            font-family: Arial, sans-serif;
+        }
+        
+        .comic-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        
+        .comic-page {
+            position: relative;
+            margin: 20px 0;
+            background: #f9f9f9;
+            border: 2px solid #333;
+        }
+        
+        .panel-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .panel {
+            position: relative;
+            border: 3px solid #333;
+            background: white;
+            overflow: hidden;
+            aspect-ratio: 4/3;
+        }
+        
+        .panel img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .speech-bubble {
+            position: absolute;
+            background: white;
+            border: 3px solid #333;
+            border-radius: 20px;
+            padding: 10px 15px;
+            font-family: 'Comic Sans MS', cursive;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            cursor: move;
+            min-width: 100px;
+            max-width: 200px;
+            word-wrap: break-word;
+            user-select: none;
+            z-index: 10;
+        }
+        
+        .speech-bubble:hover {
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transform: scale(1.02);
+        }
+        
+        .speech-bubble.editing {
+            cursor: text;
+            background: #fffacd;
+        }
+        
+        .bubble-tail {
+            position: absolute;
+            bottom: -12px;
+            left: 20px;
+            width: 0;
+            height: 0;
+            border-left: 12px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 15px solid #333;
+        }
+        
+        .bubble-tail::after {
+            content: '';
+            position: absolute;
+            bottom: 3px;
+            left: -9px;
+            width: 0;
+            height: 0;
+            border-left: 9px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 11px solid white;
+        }
+        
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: #ecf0f1;
+            border-radius: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            margin: 0 5px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+        }
+        
+        .btn.success {
+            background: #27ae60;
+        }
+        
+        .btn.success:hover {
+            background: #229954;
+        }
+        
+        .instructions {
+            background: #f39c12;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="comic-container">
+        <h1 style="text-align: center; color: #2c3e50;">📚 Interactive Comic Editor</h1>
+        
+        <div class="instructions">
+            💡 <strong>How to use:</strong> Drag bubbles to move them | Double-click to edit text | Click "Add Bubble" to create new ones
+        </div>
+        
+        <div class="controls">
+            <button class="btn" onclick="addNewBubble()">➕ Add Bubble</button>
+            <button class="btn success" onclick="saveComic()">💾 Save Changes</button>
+            <button class="btn" onclick="resetPositions()">🔄 Reset</button>
+        </div>
+        
+        <div id="comic-pages">
+            <!-- Comic pages will be inserted here -->
+        </div>
+    </div>
+    
+    <script>
+        let bubbles = [];
+        let currentBubble = null;
+        let isDragging = false;
+        let dragOffset = {x: 0, y: 0};
+        let isEditing = false;
+        
+        // Sample comic data - replace with your actual data
+        const comicData = {
+            pages: [
+                {
+                    panels: [
+                        {image: '/frames/frame000.png', bubbles: [{id: 1, x: 20, y: 20, text: 'Hello!'}]},
+                        {image: '/frames/frame001.png', bubbles: [{id: 2, x: 20, y: 20, text: 'How are you?'}]},
+                        {image: '/frames/frame002.png', bubbles: [{id: 3, x: 20, y: 20, text: 'Great!'}]},
+                        {image: '/frames/frame003.png', bubbles: [{id: 4, x: 20, y: 20, text: 'See you!'}]}
+                    ]
+                }
+            ]
+        };
+        
+        function initComic() {
+            const container = document.getElementById('comic-pages');
+            container.innerHTML = '';
+            
+            comicData.pages.forEach((page, pageIdx) => {
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'comic-page';
+                pageDiv.innerHTML = '<div class="panel-grid"></div>';
+                
+                const grid = pageDiv.querySelector('.panel-grid');
+                
+                page.panels.forEach((panel, panelIdx) => {
+                    const panelDiv = document.createElement('div');
+                    panelDiv.className = 'panel';
+                    panelDiv.dataset.panelIdx = panelIdx;
+                    panelDiv.innerHTML = `<img src="${panel.image}" alt="Panel ${panelIdx + 1}">`;
+                    
+                    // Add bubbles
+                    panel.bubbles.forEach(bubble => {
+                        createBubble(panelDiv, bubble);
+                    });
+                    
+                    grid.appendChild(panelDiv);
+                });
+                
+                container.appendChild(pageDiv);
+            });
+            
+            // Setup event listeners
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        }
+        
+        function createBubble(panel, bubbleData) {
+            const bubble = document.createElement('div');
+            bubble.className = 'speech-bubble';
+            bubble.dataset.id = bubbleData.id;
+            bubble.style.left = bubbleData.x + 'px';
+            bubble.style.top = bubbleData.y + 'px';
+            bubble.innerHTML = `
+                <span class="bubble-text">${bubbleData.text}</span>
+                <div class="bubble-tail"></div>
+            `;
+            
+            // Make draggable
+            bubble.addEventListener('mousedown', startDrag);
+            
+            // Make editable
+            bubble.addEventListener('dblclick', startEdit);
+            
+            panel.appendChild(bubble);
+            bubbles.push(bubble);
+        }
+        
+        function startDrag(e) {
+            if (isEditing) return;
+            
+            currentBubble = e.currentTarget;
+            isDragging = true;
+            
+            const rect = currentBubble.getBoundingClientRect();
+            const parentRect = currentBubble.parentElement.getBoundingClientRect();
+            
+            dragOffset.x = e.clientX - rect.left;
+            dragOffset.y = e.clientY - rect.top;
+            
+            currentBubble.style.zIndex = 1000;
+            e.preventDefault();
+        }
+        
+        function handleMouseMove(e) {
+            if (!isDragging || !currentBubble) return;
+            
+            const parent = currentBubble.parentElement;
+            const parentRect = parent.getBoundingClientRect();
+            
+            let newX = e.clientX - parentRect.left - dragOffset.x;
+            let newY = e.clientY - parentRect.top - dragOffset.y;
+            
+            // Keep within bounds
+            newX = Math.max(0, Math.min(newX, parentRect.width - currentBubble.offsetWidth));
+            newY = Math.max(0, Math.min(newY, parentRect.height - currentBubble.offsetHeight));
+            
+            currentBubble.style.left = newX + 'px';
+            currentBubble.style.top = newY + 'px';
+        }
+        
+        function handleMouseUp() {
+            if (currentBubble) {
+                currentBubble.style.zIndex = 10;
+            }
+            isDragging = false;
+            currentBubble = null;
+        }
+        
+        function startEdit(e) {
+            const bubble = e.currentTarget;
+            const textSpan = bubble.querySelector('.bubble-text');
+            
+            isEditing = true;
+            bubble.classList.add('editing');
+            
+            // Make editable
+            textSpan.contentEditable = true;
+            textSpan.focus();
+            
+            // Select all text
+            const range = document.createRange();
+            range.selectNodeContents(textSpan);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            
+            // Stop editing on blur or enter
+            textSpan.addEventListener('blur', () => stopEdit(bubble, textSpan), {once: true});
+            textSpan.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    textSpan.blur();
+                }
+            });
+        }
+        
+        function stopEdit(bubble, textSpan) {
+            isEditing = false;
+            bubble.classList.remove('editing');
+            textSpan.contentEditable = false;
+        }
+        
+        function addNewBubble() {
+            const panels = document.querySelectorAll('.panel');
+            if (panels.length === 0) return;
+            
+            // Add to first panel by default
+            const panel = panels[0];
+            const newBubble = {
+                id: Date.now(),
+                x: 50,
+                y: 50,
+                text: 'New text!'
+            };
+            
+            createBubble(panel, newBubble);
+        }
+        
+        function saveComic() {
+            const data = {
+                pages: []
+            };
+            
+            // Collect all bubble positions and text
+            document.querySelectorAll('.comic-page').forEach(page => {
+                const pageData = {panels: []};
+                
+                page.querySelectorAll('.panel').forEach(panel => {
+                    const panelData = {
+                        image: panel.querySelector('img').src,
+                        bubbles: []
+                    };
+                    
+                    panel.querySelectorAll('.speech-bubble').forEach(bubble => {
+                        panelData.bubbles.push({
+                            id: bubble.dataset.id,
+                            x: parseInt(bubble.style.left),
+                            y: parseInt(bubble.style.top),
+                            text: bubble.querySelector('.bubble-text').textContent
+                        });
+                    });
+                    
+                    pageData.panels.push(panelData);
+                });
+                
+                data.pages.push(pageData);
+            });
+            
+            // Save to localStorage
+            localStorage.setItem('comicData', JSON.stringify(data));
+            
+            // Show success message
+            alert('Comic saved! Your changes have been stored.');
+            
+            console.log('Saved data:', data);
+        }
+        
+        function resetPositions() {
+            if (confirm('Reset all bubble positions to default?')) {
+                initComic();
+            }
+        }
+        
+        // Load saved data if exists
+        const savedData = localStorage.getItem('comicData');
+        if (savedData) {
+            Object.assign(comicData, JSON.parse(savedData));
+        }
+        
+        // Initialize
+        initComic();
+    </script>
+</body>
+</html>
