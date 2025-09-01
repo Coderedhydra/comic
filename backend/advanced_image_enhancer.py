@@ -23,6 +23,7 @@ except ImportError:
     
 from backend.lightweight_ai_enhancer import get_lightweight_enhancer
 from backend.compact_ai_models import CompactAIEnhancer
+from backend.ultra_compact_enhancer import get_memory_safe_enhancer
 
 class AdvancedImageEnhancer:
     """Advanced image enhancement using state-of-the-art AI models"""
@@ -47,13 +48,11 @@ class AdvancedImageEnhancer:
         
         # Initialize appropriate manager
         if self.use_lightweight:
-            # Use compact AI models for <6GB VRAM
-            print("🚀 Using compact AI models (SwinIR/Real-ESRGAN)")
-            self.enhancer = CompactAIEnhancer(model_type='swinir')  # or 'realesrgan'
+            # Use memory-safe enhancer for <6GB VRAM
+            print("🚀 Using memory-safe AI enhancer (<1GB VRAM)")
+            self.enhancer = get_memory_safe_enhancer()
             self.ai_manager = None
-            
-            # Also create secondary enhancer for comparison
-            self.compact_realesrgan = CompactAIEnhancer(model_type='realesrgan')
+            self.compact_realesrgan = None
         else:
             self.ai_manager = get_ai_model_manager()
             self.enhancer = None
@@ -139,33 +138,31 @@ class AdvancedImageEnhancer:
         if self.advanced_available and self.use_ai_models:
             try:
                 if self.use_lightweight:
-                    # Use compact AI models for <4GB VRAM
-                    print("  🚀 Applying compact AI super resolution...")
+                    # Use memory-safe enhancer for <4GB VRAM
+                    print("  🚀 Applying memory-safe AI enhancement...")
                     
-                    # Use SwinIR for general images, Real-ESRGAN for anime/comics
-                    if self.use_anime_model:
-                        print("  🎌 Using compact Real-ESRGAN for anime/comic style")
-                        # Process image directly without tensor conversion
-                        enhanced_path = self.compact_realesrgan.enhance_image(
-                            image_path, 
-                            image_path.replace('.', '_temp.')
-                        )
-                        img = cv2.imread(enhanced_path)
-                        os.remove(enhanced_path)  # Clean up temp file
-                    else:
-                        print("  🖼️ Using SwinIR for photorealistic enhancement")
-                        # Process with SwinIR
-                        enhanced_path = self.enhancer.enhance_image(
-                            image_path,
-                            image_path.replace('.', '_temp.')
-                        )
-                        img = cv2.imread(enhanced_path)
-                        os.remove(enhanced_path)  # Clean up temp file
+                    # Save current image temporarily
+                    temp_path = image_path.replace('.', '_temp.')
+                    cv2.imwrite(temp_path, img)
                     
-                    # Face enhancement is already included in the models
-                    print("  ✅ Compact AI enhancement complete")
+                    # Process with memory-safe enhancer
+                    enhanced_path = self.enhancer.enhance_image(
+                        temp_path,
+                        temp_path.replace('_temp.', '_enhanced.')
+                    )
                     
-                    # Clear memory
+                    # Read enhanced image
+                    img = cv2.imread(enhanced_path)
+                    
+                    # Clean up temp files
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+                    if os.path.exists(enhanced_path) and enhanced_path != image_path:
+                        os.remove(enhanced_path)
+                    
+                    print("  ✅ Memory-safe enhancement complete")
+                    
+                    # Show memory usage
                     if hasattr(self.enhancer, 'get_memory_usage'):
                         print(f"  💾 Memory: {self.enhancer.get_memory_usage()}")
                 else:
