@@ -396,6 +396,14 @@ class EnhancedComicGenerator:
             # Store filtered count for layout generation
             self._filtered_count = len(filtered_subs)
             
+            # Update to ensure we use the full story extraction count
+            if hasattr(self, '_filtered_count') and self._filtered_count > 12:
+                # We have full story extraction
+                pass
+            else:
+                # Old filtering is being used, update it
+                self._filtered_count = min(48, len(all_subs))
+            
             return filtered_subs
             
         except Exception as e:
@@ -410,15 +418,25 @@ class EnhancedComicGenerator:
             # Read and filter subtitles
             srt_path = 'test1.srt'
             
-            # Try to filter for meaningful moments
-            filtered_subs = self._filter_meaningful_subtitles(srt_path)
+            # DISABLED: Don't filter in bubble generation - use all selected frames
+            # filtered_subs = self._filter_meaningful_subtitles(srt_path)
             
-            if filtered_subs:
+            # Use all subtitles that were selected for frames
+            with open(srt_path, 'r', encoding='utf-8') as f:
+                subs = list(srt.parse(f.read()))
+            
+            # If we have the full story count, use only those
+            if hasattr(self, '_filtered_count') and self._filtered_count > 0:
+                # Take only the subtitles that correspond to our frames
+                # This should match the 48 selected in story extraction
+                step = len(subs) / self._filtered_count if len(subs) > self._filtered_count else 1
+                filtered_subs = []
+                for i in range(min(self._filtered_count, len(subs))):
+                    idx = int(i * step) if step > 1 else i
+                    if idx < len(subs):
+                        filtered_subs.append(subs[idx])
                 subs = filtered_subs
-            else:
-                # Fallback to all subtitles
-                with open(srt_path, 'r', encoding='utf-8') as f:
-                    subs = list(srt.parse(f.read()))
+                print(f"💬 Using {len(subs)} subtitles for bubbles (matching frame count)")
             
             frame_files = sorted([f for f in os.listdir(self.frames_dir) if f.endswith('.png')])
             

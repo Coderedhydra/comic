@@ -108,7 +108,11 @@ def generate_keyframes_story(video_path: str, filtered_subtitles: List = None, m
         # Extract additional frames from video directly
         _extract_backup_frames(video_path, final_dir, frame_counter, min(10, max_frames))
     
-    print(f"✅ Generated {frame_counter} keyframes")
+    print(f"✅ Generated {frame_counter} keyframes in {final_dir}")
+    
+    # List the generated files
+    generated_files = [f for f in os.listdir(final_dir) if f.endswith('.png')]
+    print(f"📁 Frame files: {len(generated_files)} files in frames/final/")
     
     # Save frame metadata
     _save_frame_metadata(final_dir, subs[:frame_counter])
