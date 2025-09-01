@@ -514,16 +514,15 @@ class EnhancedComicGenerator:
     
     def _generate_story_pages(self, frame_files, bubbles):
         """Generate pages based on story extraction"""
-        # Use fixed 12-panel generator
-        from backend.fixed_page_generator import generate_12_panel_pages
+        # Use 2x2 grid with 12 panels total (3 pages)
+        from backend.fixed_2x2_pages import generate_12_panels_2x2_grid, extract_12_meaningful_frames
         
-        # Limit to 12 most important frames
-        selected_frames = frame_files[:12]
-        selected_bubbles = bubbles[:12] if bubbles else []
+        # Extract only 12 most meaningful frames
+        selected_frames, selected_bubbles = extract_12_meaningful_frames(frame_files, bubbles)
         
-        print(f"📖 Generating 12-panel comic (3x4 grid) from {len(frame_files)} frames")
+        print(f"📖 Generating 12 meaningful panels in 2x2 grid format")
         
-        return generate_12_panel_pages(selected_frames, selected_bubbles)
+        return generate_12_panels_2x2_grid(selected_frames, selected_bubbles)
         
         # Get adaptive layout configuration
         if STORY_EXTRACTOR_AVAILABLE:

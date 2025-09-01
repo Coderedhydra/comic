@@ -12,7 +12,7 @@ from typing import List, Dict
 from backend.keyframes.extract_frames import extract_frames
 from backend.utils import copy_and_rename_file
 
-def generate_keyframes_story(video_path: str, filtered_subtitles: List = None, max_frames: int = 15):
+def generate_keyframes_story(video_path: str, filtered_subtitles: List = None, max_frames: int = 12):
     """Generate keyframes based on story moments
     
     Args:
