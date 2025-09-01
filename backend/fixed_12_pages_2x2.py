@@ -67,11 +67,10 @@ def generate_12_pages_2x2_grid(frame_files, bubbles):
             '2233'   # Row 6: Panel 2, Panel 3
         ]
         
-        # Create page
+        # Create page (Page class doesn't take panel_arrangement parameter)
         page = Page(
             panels=page_panels,
-            bubbles=page_bubbles,
-            panel_arrangement=arrangement
+            bubbles=page_bubbles
         )
         pages.append(page)
         

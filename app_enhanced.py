@@ -295,8 +295,9 @@ class EnhancedComicGenerator:
                 print(f"✅ Generated adaptive layout for {self._filtered_count} story panels")
                 return layout_strings
             else:
-                # Use default layout optimizer
-                layout_data = layout_optimizer.optimize_layout(self.frames_dir)
+                # Use default layout optimizer with frame paths
+                frame_paths = [os.path.join(self.frames_dir, f) for f in os.listdir(self.frames_dir) if f.endswith('.png')]
+                layout_data = layout_optimizer.optimize_layout(frame_paths)
                 return layout_data
                 
         except Exception as e:
@@ -325,6 +326,7 @@ class EnhancedComicGenerator:
                 })
             
             # Save temporarily
+            os.makedirs('audio', exist_ok=True)
             temp_json = 'audio/temp_subtitles.json'
             with open(temp_json, 'w') as f:
                 json.dump(sub_json, f)
@@ -569,8 +571,7 @@ class EnhancedComicGenerator:
             # Create page
             page = Page(
                 panels=panels,
-                bubbles=page_bubbles,
-                panel_arrangement=self._generate_arrangement(rows, cols)
+                bubbles=page_bubbles
             )
             pages.append(page)
             
