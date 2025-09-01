@@ -79,6 +79,8 @@ class EnhancedComicGenerator:
         self.output_dir = 'output'
         self.quality_mode = os.getenv('HIGH_QUALITY', '1')
         self.ai_mode = os.getenv('AI_ENHANCED', '1')
+        self.apply_comic_style = True  # Can be set to False to preserve original colors
+        self.preserve_colors = True  # Preserve more original colors in comic style
         
         # Check for GPU
         try:
@@ -235,12 +237,21 @@ class EnhancedComicGenerator:
     
     def _apply_comic_styling(self):
         """Apply comic styling to all frames"""
+        if not self.apply_comic_style:
+            print("⏭️ Skipping comic styling to preserve original colors")
+            return
+            
         if not os.path.exists(self.frames_dir):
             print(f"❌ Frames directory not found: {self.frames_dir}")
             return
             
         frame_files = [f for f in os.listdir(self.frames_dir) if f.endswith('.png')]
         print(f"Found {len(frame_files)} frames to style")
+        
+        # Set color preservation mode
+        if hasattr(comic_styler, 'preserve_colors'):
+            comic_styler.preserve_colors = self.preserve_colors
+            print(f"🎨 Comic styling with color preservation: {self.preserve_colors}")
         
         for i, frame_file in enumerate(frame_files, 1):
             try:

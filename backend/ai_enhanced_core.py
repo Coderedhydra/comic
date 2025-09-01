@@ -191,6 +191,7 @@ class AIComicStyler:
     
     def __init__(self):
         self.core = AIEnhancedCore()
+        self.preserve_colors = True  # New setting to preserve original colors
         
     def apply_comic_style(self, image_path: str, style_type: str = "modern") -> str:
         """Apply high-quality comic styling"""
@@ -221,7 +222,11 @@ class AIComicStyler:
         data = np.float32(data)
         
         # Determine optimal number of colors based on image complexity
-        optimal_k = self._determine_optimal_colors(img)
+        if self.preserve_colors:
+            # Use more colors to preserve original appearance
+            optimal_k = min(32, self._determine_optimal_colors(img) * 2)
+        else:
+            optimal_k = self._determine_optimal_colors(img)
         
         criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 20, 1.0)
         _, labels, centers = cv2.kmeans(data, optimal_k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
@@ -229,6 +234,10 @@ class AIComicStyler:
         centers = np.uint8(centers)
         quantized = centers[labels.flatten()]
         quantized = quantized.reshape(img.shape)
+        
+        # If preserving colors, blend with original
+        if self.preserve_colors:
+            quantized = cv2.addWeighted(img, 0.3, quantized, 0.7, 0)
         
         # 3. Advanced smoothing with edge preservation
         # Bilateral filter for edge-preserving smoothing
@@ -247,8 +256,15 @@ class AIComicStyler:
         # 6. Final enhancement
         comic = self._final_enhancement(comic)
         
+        # 7. If preserving colors, blend final result with original
+        if self.preserve_colors:
+            # Preserve more of the original image
+            final = cv2.addWeighted(img, 0.4, comic, 0.6, 0)
+        else:
+            final = comic
+        
         # Save with maximum quality
-        cv2.imwrite(image_path, comic, [cv2.IMWRITE_JPEG_QUALITY, 100, cv2.IMWRITE_PNG_COMPRESSION, 0])
+        cv2.imwrite(image_path, final, [cv2.IMWRITE_JPEG_QUALITY, 100, cv2.IMWRITE_PNG_COMPRESSION, 0])
         
         return image_path
     
