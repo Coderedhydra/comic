@@ -20,7 +20,7 @@ class SmartStoryExtractor:
             'resolution': ['end', 'finally', 'resolve', 'solve', 'peace', 'happy', 'conclude', 'finish', 'done']
         }
         
-    def extract_meaningful_story(self, subtitles_file: str, target_panels: int = 12) -> List[Dict]:
+    def extract_meaningful_story(self, subtitles_file: str, target_panels: int = 48) -> List[Dict]:
         """Extract meaningful story moments for comic panels
         
         Args:
