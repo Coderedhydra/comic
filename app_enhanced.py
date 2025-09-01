@@ -45,6 +45,15 @@ except Exception as e:
     PANEL_EXTRACTOR_AVAILABLE = False
     print(f"⚠️ Panel extractor not available: {e}")
 
+# Import smart story extractor
+try:
+    from backend.smart_story_extractor import SmartStoryExtractor
+    STORY_EXTRACTOR_AVAILABLE = True
+    print("✅ Smart story extractor available!")
+except Exception as e:
+    STORY_EXTRACTOR_AVAILABLE = False
+    print(f"⚠️ Smart story extractor not available: {e}")
+
 app = Flask(__name__)
 
 # Import editor routes
@@ -99,45 +108,57 @@ class EnhancedComicGenerator:
             print("📝 Extracting real subtitles from video...")
             get_real_subtitles(self.video_path)
             
-            # 2. Generate keyframes with simplified method (avoids infinite loops)
-            print("🎯 Generating keyframes...")
-            generate_keyframes_simple(self.video_path)
+            # 2. Filter subtitles for meaningful story moments first
+            print("📖 Analyzing story structure...")
+            filtered_subs = None
+            if STORY_EXTRACTOR_AVAILABLE and os.path.exists('test1.srt'):
+                filtered_subs = self._filter_meaningful_subtitles('test1.srt')
             
-            # 3. Remove black bars
+            # 3. Generate keyframes based on story moments
+            print("🎯 Generating keyframes...")
+            if filtered_subs:
+                # Use story-based keyframe generation
+                from backend.keyframes.keyframes_story import generate_keyframes_story
+                generate_keyframes_story(self.video_path, filtered_subs)
+            else:
+                # Fallback to simple method
+                generate_keyframes_simple(self.video_path)
+            
+            # 4. Remove black bars
             print("✂️ Removing black bars...")
             black_x, black_y, _, _ = black_bar_crop()
             
-            # 4. Enhance image quality with advanced models
+            # 5. Enhance image quality with advanced models
             if self.quality_mode == '1':
                 print("✨ Enhancing image quality with advanced AI models...")
                 self._enhance_all_images_advanced()
             
-            # 5. Apply comic styling
+            # 6. Apply comic styling
             print("🎨 Applying AI-enhanced comic styling...")
             self._apply_comic_styling()
             
-            # 6. Generate optimized layout
+            # 7. Generate optimized layout
             print("📐 Generating AI-optimized layout...")
             layout_data = self._generate_optimized_layout()
             
-            # 7. Create AI-powered speech bubbles
+            # 8. Create AI-powered speech bubbles
             print("💬 Creating AI-powered speech bubbles...")
             bubbles = self._create_ai_bubbles(black_x, black_y)
             
-            # 8. Generate final pages
+            # 9. Generate final pages
             print("📄 Generating final pages...")
             pages = self._generate_pages(layout_data, bubbles)
             
-            # 9. Save results
+            # 10. Save results
             print("💾 Saving results...")
             self._save_results(pages)
             
-            # 10. Generate smart comic if requested
+            # 11. Generate smart comic if requested
             if smart_mode and SMART_COMIC_AVAILABLE:
                 print("\n🎭 Generating smart comic with emotion matching...")
                 self._generate_smart_comic(emotion_match)
             
-            # 11. Extract individual panels as 640x800 images
+            # 12. Extract individual panels as 640x800 images
             print("\n📸 Extracting individual panels...")
             self._extract_panels()
             
@@ -231,21 +252,107 @@ class EnhancedComicGenerator:
     def _generate_optimized_layout(self):
         """Generate AI-optimized layout"""
         try:
-            layout_data = layout_optimizer.optimize_layout(self.frames_dir)
-            return layout_data
+            # Count frames
+            frame_count = len([f for f in os.listdir(self.frames_dir) if f.endswith('.png')])
+            
+            # If we have filtered story moments, use adaptive layout
+            if STORY_EXTRACTOR_AVAILABLE and hasattr(self, '_filtered_count'):
+                extractor = SmartStoryExtractor()
+                layouts = extractor.get_adaptive_layout(self._filtered_count)
+                
+                # Generate layout strings based on adaptive layout
+                layout_strings = []
+                panel_idx = 0
+                
+                for page_layout in layouts:
+                    panels_on_page = page_layout['panels_per_page']
+                    rows = page_layout['rows']
+                    cols = page_layout['cols']
+                    
+                    # Create rows for this page
+                    for row in range(rows):
+                        row_string = ""
+                        for col in range(cols):
+                            if panel_idx < self._filtered_count:
+                                row_string += str(panel_idx % 10)  # Use single digit
+                                panel_idx += 1
+                            else:
+                                row_string += "0"  # Empty panel
+                        layout_strings.append(row_string)
+                
+                print(f"✅ Generated adaptive layout for {self._filtered_count} story panels")
+                return layout_strings
+            else:
+                # Use default layout optimizer
+                layout_data = layout_optimizer.optimize_layout(self.frames_dir)
+                return layout_data
+                
         except Exception as e:
             print(f"Layout generation failed: {e}")
             # Fallback to simple 2x2 layout
             return ['6666', '6666', '6666', '6666']
+    
+    def _filter_meaningful_subtitles(self, srt_path: str) -> List:
+        """Filter subtitles to keep only meaningful story moments"""
+        if not STORY_EXTRACTOR_AVAILABLE:
+            return None
+            
+        try:
+            # Read all subtitles
+            with open(srt_path, 'r', encoding='utf-8') as f:
+                all_subs = list(srt.parse(f.read()))
+            
+            # Convert to JSON format for extractor
+            sub_json = []
+            for sub in all_subs:
+                sub_json.append({
+                    'text': sub.content,
+                    'start': str(sub.start),
+                    'end': str(sub.end),
+                    'index': sub.index
+                })
+            
+            # Save temporarily
+            temp_json = 'audio/temp_subtitles.json'
+            with open(temp_json, 'w') as f:
+                json.dump(sub_json, f)
+            
+            # Extract meaningful moments
+            extractor = SmartStoryExtractor()
+            meaningful = extractor.extract_meaningful_story(temp_json, target_panels=12)
+            
+            # Convert back to SRT objects
+            meaningful_indices = [m['index'] for m in meaningful]
+            filtered_subs = [sub for sub in all_subs if sub.index in meaningful_indices]
+            
+            print(f"📖 Filtered {len(all_subs)} subtitles to {len(filtered_subs)} key moments")
+            
+            # Store filtered count for layout generation
+            self._filtered_count = len(filtered_subs)
+            
+            return filtered_subs
+            
+        except Exception as e:
+            print(f"⚠️ Subtitle filtering failed: {e}")
+            return None
     
     def _create_ai_bubbles(self, black_x, black_y):
         """Create AI-powered speech bubbles"""
         bubbles = []
         
         try:
-            # Read subtitles
-            with open('test1.srt', 'r', encoding='utf-8') as f:
-                subs = list(srt.parse(f.read()))
+            # Read and filter subtitles
+            srt_path = 'test1.srt'
+            
+            # Try to filter for meaningful moments
+            filtered_subs = self._filter_meaningful_subtitles(srt_path)
+            
+            if filtered_subs:
+                subs = filtered_subs
+            else:
+                # Fallback to all subtitles
+                with open(srt_path, 'r', encoding='utf-8') as f:
+                    subs = list(srt.parse(f.read()))
             
             frame_files = sorted([f for f in os.listdir(self.frames_dir) if f.endswith('.png')])
             
