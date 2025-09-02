@@ -144,20 +144,60 @@ class PageImageGenerator:
         }}
         
         @media print {{
+            /* Remove all margins and UI elements */
+            * {{
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }}
+            
             body {{
-                margin: 0;
-                background: white;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
             }}
+            
             .download-btn {{
-                display: none;
+                display: none !important;
             }}
+            
+            /* Set exact page size for printing */
+            @page {{
+                /* 800x1080 pixels = 8.33x11.25 inches at 96 DPI */
+                /* For better print quality, we'll use 150 DPI */
+                size: 5.33in 7.2in;  /* 800px/150dpi x 1080px/150dpi */
+                margin: 0;
+            }}
+            
+            /* Alternative page sizes you can use: */
+            /* @page {{ size: A5 portrait; margin: 0; }} */  /* Close to 800x1080 ratio */
+            /* @page {{ size: 8.5in 11in; margin: 0.5in; }} */ /* US Letter with margins */
+            
             .page-container {{
-                box-shadow: none;
-                width: 100%;
-                height: 100vh;
-                max-width: 800px;
-                max-height: 1080px;
-                margin: 0 auto;
+                box-shadow: none !important;
+                /* Exact pixel dimensions */
+                width: 800px !important;
+                height: 1080px !important;
+                max-width: 800px !important;
+                max-height: 1080px !important;
+                /* Center on page */
+                margin: 0 auto !important;
+                padding: 0 !important;
+                /* Ensure it fits on one page */
+                page-break-inside: avoid !important;
+                page-break-after: avoid !important;
+            }}
+            
+            /* Ensure grid maintains proportions */
+            .comic-grid {{
+                width: 100% !important;
+                height: calc(100% - 40px) !important;
+            }}
+            
+            /* Force panel borders to print */
+            .panel {{
+                border: 3px solid black !important;
+                -webkit-print-color-adjust: exact !important;
             }}
         }}
     </style>
@@ -176,7 +216,16 @@ class PageImageGenerator:
     
     <script>
         function downloadAsImage() {{
-            // Use browser print to PDF as image alternative
+            // Show print instructions
+            alert('🖨️ Print Settings for 800x1080 Image:\\n\\n' +
+                  '1. Paper Size: "A5" or "5.33 x 7.2 inches"\\n' +
+                  '2. Orientation: Portrait\\n' +
+                  '3. Margins: None (0)\\n' +
+                  '4. Scale: 100% or "Actual size"\\n' +
+                  '5. Destination: "Save as PDF" for digital\\n' +
+                  '\\nThe page will print at exactly 800x1080 pixels!');
+            
+            // Trigger print dialog
             window.print();
         }}
         
