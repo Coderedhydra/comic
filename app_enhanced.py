@@ -178,8 +178,12 @@ class EnhancedComicGenerator:
             
             # 5. Enhance image quality with advanced models
             if self.quality_mode == '1':
-                print("✨ Enhancing image quality with advanced AI models...")
-                self._enhance_all_images_advanced()
+                print("✨ Using simple quality enhancement to avoid color issues...")
+                # Skip AI enhancement that causes green tint
+                # self._enhance_all_images_advanced()
+                
+                # Use simple enhancement instead
+                self._enhance_all_images()
             
             # 6. Apply quality and color enhancement
             print("🎨 Enhancing quality and colors...")
@@ -226,21 +230,17 @@ class EnhancedComicGenerator:
             return False
     
     def _enhance_all_images(self):
-        """Enhance quality of all extracted frames (legacy method)"""
+        """Enhance quality of all extracted frames (simple color-preserving method)"""
         if not os.path.exists(self.frames_dir):
             print(f"❌ Frames directory not found: {self.frames_dir}")
             return
-            
-        frame_files = [f for f in os.listdir(self.frames_dir) if f.endswith('.png')]
-        print(f"Found {len(frame_files)} frames to enhance")
         
-        for i, frame_file in enumerate(frame_files, 1):
-            try:
-                frame_path = os.path.join(self.frames_dir, frame_file)
-                image_processor.enhance_image_quality(frame_path, frame_path)
-                print(f"Enhanced: {frame_file} ({i}/{len(frame_files)})")
-            except Exception as e:
-                print(f"Failed to enhance {frame_file}: {e}")
+        try:
+            from backend.simple_color_enhancer import SimpleColorEnhancer
+            enhancer = SimpleColorEnhancer()
+            enhancer.enhance_batch(self.frames_dir)
+        except Exception as e:
+            print(f"❌ Simple enhancement failed: {e}")
     
     def _enhance_all_images_advanced(self):
         """Enhance quality using advanced AI models (Real-ESRGAN, GFPGAN, etc.)"""
@@ -264,10 +264,8 @@ class EnhancedComicGenerator:
                     # Apply advanced enhancement
                     enhanced_path = enhancer.enhance_image(frame_path, frame_path)
                     
-                    if enhanced_path != frame_path:
-                        print(f"✅ Advanced enhancement completed: {frame_file}")
-                    else:
-                        print(f"⚠️ Using fallback enhancement for: {frame_file}")
+                    # The enhancement is successful if no exception was thrown
+                    print(f"✅ Advanced enhancement completed: {frame_file}")
                         
                 except Exception as e:
                     print(f"❌ Advanced enhancement failed for {frame_file}: {e}")

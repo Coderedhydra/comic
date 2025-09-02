@@ -250,10 +250,10 @@ class MemorySafeEnhancer:
         # Blend for better quality
         result = cv2.addWeighted(cubic, 0.5, lanczos, 0.5, 0)
         
-        # Sharpen
-        kernel = np.array([[-0.5,-0.5,-0.5], 
-                          [-0.5, 5,-0.5], 
-                          [-0.5,-0.5,-0.5]]) / 1
+        # Mild sharpening (properly normalized)
+        kernel = np.array([[0, -1, 0], 
+                          [-1, 5, -1], 
+                          [0, -1, 0]], dtype=np.float32)
         result = cv2.filter2D(result, -1, kernel)
         
         return result
