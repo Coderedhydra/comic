@@ -1045,6 +1045,17 @@ class EnhancedComicGenerator:
         .panel { border: none !important; }
         .comic-grid { border: 2px solid #333; }
         */
+        
+        /* Unity export mode - no borders, clean images */
+        .unity-export .panel { 
+            border: none !important; 
+        }
+        .unity-export .comic-grid { 
+            border: none !important; 
+        }
+        .unity-export .page-info {
+            display: none !important;
+        }
         .speech-bubble { 
             position: absolute; 
             background: white; 
@@ -1133,6 +1144,9 @@ class EnhancedComicGenerator:
            </button>
            <button onclick="viewPageImages()" style="margin-top: 5px; padding: 8px 15px; background: #9C27B0; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
                🖼️ View Page Images
+           </button>
+           <button onclick="toggleUnityMode()" style="margin-top: 5px; padding: 8px 15px; background: #FF5722; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
+               🎮 Unity Mode (No Borders)
            </button>
     </div>
     <script>
@@ -1384,6 +1398,29 @@ class EnhancedComicGenerator:
         // View page images gallery
         function viewPageImages() {
             window.open('/output/page_images/index.html', '_blank');
+        }
+        
+        // Toggle Unity export mode (no borders)
+        let unityMode = false;
+        function toggleUnityMode() {
+            unityMode = !unityMode;
+            const container = document.querySelector('.comic-container');
+            
+            if (unityMode) {
+                container.classList.add('unity-export');
+                showSaveMessage('🎮 Unity Mode ON - Borders hidden for clean export');
+                
+                // Update button text
+                event.target.innerHTML = '🎮 Unity Mode ON (Click to disable)';
+                event.target.style.background = '#4CAF50';
+            } else {
+                container.classList.remove('unity-export');
+                showSaveMessage('📚 Normal Mode - Borders visible');
+                
+                // Update button text
+                event.target.innerHTML = '🎮 Unity Mode (No Borders)';
+                event.target.style.background = '#FF5722';
+            }
         }
         
         function exportToPDF() {
