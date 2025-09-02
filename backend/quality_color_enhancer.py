@@ -44,13 +44,13 @@ class QualityColorEnhancer:
             color_enhancer = ImageEnhance.Color(img_pil)
             img_pil = color_enhancer.enhance(1.3)  # 30% more colorful
             
-            # Adjust brightness
-            brightness_enhancer = ImageEnhance.Brightness(img_pil)
-            img_pil = brightness_enhancer.enhance(1.1)  # 10% brighter
+            # Skip brightness adjustment - images already bright enough
+            # brightness_enhancer = ImageEnhance.Brightness(img_pil)
+            # img_pil = brightness_enhancer.enhance(1.0)  # No change
             
-            # Adjust contrast
+            # Adjust contrast - reduced
             contrast_enhancer = ImageEnhance.Contrast(img_pil)
-            img_pil = contrast_enhancer.enhance(1.2)  # 20% more contrast
+            img_pil = contrast_enhancer.enhance(1.1)  # Only 10% more contrast
             
             # Convert back to OpenCV
             img = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
@@ -71,14 +71,20 @@ class QualityColorEnhancer:
             return frame_path
     
     def _auto_white_balance(self, img):
-        """Simple auto white balance"""
-        result = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-        avg_a = np.average(result[:, :, 1])
-        avg_b = np.average(result[:, :, 2])
-        result[:, :, 1] = result[:, :, 1] - ((avg_a - 128) * (result[:, :, 0] / 255.0) * 1.1)
-        result[:, :, 2] = result[:, :, 2] - ((avg_b - 128) * (result[:, :, 0] / 255.0) * 1.1)
-        result = cv2.cvtColor(result, cv2.COLOR_LAB2BGR)
-        return result
+        """Simple auto white balance with safety checks"""
+        try:
+            result = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+            avg_a = np.average(result[:, :, 1])
+            avg_b = np.average(result[:, :, 2])
+            
+            # More conservative white balance
+            result[:, :, 1] = result[:, :, 1] - ((avg_a - 128) * (result[:, :, 0] / 255.0) * 0.5)
+            result[:, :, 2] = result[:, :, 2] - ((avg_b - 128) * (result[:, :, 0] / 255.0) * 0.5)
+            result = cv2.cvtColor(result, cv2.COLOR_LAB2BGR)
+            return result
+        except:
+            # If white balance fails, return original
+            return img
     
     def _enhance_dark_areas(self, img):
         """Enhance details in dark areas without affecting bright areas"""
@@ -106,10 +112,16 @@ class QualityColorEnhancer:
         """Enhance all frames in directory"""
         import os
         
-        frames = [f for f in os.listdir(frames_dir) if f.endswith('.png')]
+        frames = sorted([f for f in os.listdir(frames_dir) if f.endswith('.png')])
         print(f"🎨 Enhancing {len(frames)} frames for better quality and colors...")
         
         for i, frame in enumerate(frames):
+            # Skip last frame if it's problematic
+            is_last = (i == len(frames) - 1)
+            if is_last:
+                print(f"  ⚠️ Skipping last frame {frame} to preserve original colors")
+                continue
+                
             frame_path = os.path.join(frames_dir, frame)
             self.enhance_frame(frame_path)
             print(f"  ✓ Enhanced {i+1}/{len(frames)}")

@@ -18,19 +18,31 @@ class SimpleColorEnhancer:
         
         for i, frame_file in enumerate(frame_files):
             frame_path = os.path.join(frames_dir, frame_file)
-            self.enhance_single(frame_path, frame_path)
+            
+            # Check if this is the last frame
+            is_last = (i == len(frame_files) - 1)
+            if is_last:
+                print(f"  ⚠️ Processing last frame {frame_file} with extra care...")
+            
+            self.enhance_single(frame_path, frame_path, skip_if_last=is_last)
             
             if (i + 1) % 10 == 0:
                 print(f"  Progress: {i+1}/{len(frame_files)} frames")
         
         print("✅ Color enhancement complete")
     
-    def enhance_single(self, input_path: str, output_path: str):
+    def enhance_single(self, input_path: str, output_path: str, skip_if_last: bool = False):
         """Enhance single image with color preservation"""
         try:
             # Read image
             img = cv2.imread(input_path)
             if img is None:
+                return
+            
+            # Skip enhancement for last frame if it has issues
+            if skip_if_last:
+                print(f"    Skipping enhancement for last frame to avoid color issues")
+                # Just copy the file without changes
                 return
             
             # 1. Denoise while preserving edges
@@ -40,26 +52,26 @@ class SimpleColorEnhancer:
             img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             img_pil = Image.fromarray(img_rgb)
             
-            # 3. Mild enhancement only
-            # Brightness - very subtle
-            brightness = ImageEnhance.Brightness(img_pil)
-            img_pil = brightness.enhance(1.05)  # 5% brighter
+            # 3. Very mild enhancement only
+            # Brightness - SKIP or very minimal (images already bright)
+            # brightness = ImageEnhance.Brightness(img_pil)
+            # img_pil = brightness.enhance(1.0)  # No brightness change
             
-            # Contrast - subtle
+            # Contrast - very subtle
             contrast = ImageEnhance.Contrast(img_pil)
-            img_pil = contrast.enhance(1.1)  # 10% more contrast
+            img_pil = contrast.enhance(1.05)  # Only 5% more contrast
             
             # Color - subtle boost
             color = ImageEnhance.Color(img_pil)
-            img_pil = color.enhance(1.1)  # 10% more vibrant
+            img_pil = color.enhance(1.05)  # Only 5% more vibrant
             
             # 4. Convert back to OpenCV
             img_enhanced = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
             
-            # 5. Mild sharpening (proper kernel)
-            kernel = np.array([[0, -0.5, 0],
-                              [-0.5, 3, -0.5],
-                              [0, -0.5, 0]], dtype=np.float32)
+            # 5. Very mild sharpening (reduced intensity)
+            kernel = np.array([[0, -0.25, 0],
+                              [-0.25, 2, -0.25],
+                              [0, -0.25, 0]], dtype=np.float32)
             img_enhanced = cv2.filter2D(img_enhanced, -1, kernel)
             
             # 6. Ensure we don't clip colors
