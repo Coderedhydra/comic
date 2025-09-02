@@ -162,12 +162,12 @@ class EnhancedComicGenerator:
             # 3. Generate keyframes based on story moments
             print("🎯 Generating keyframes...")
             if filtered_subs and smart_mode:
-                # Use EMOTION-BASED frame selection when smart mode is enabled
-                print("🎭 Using emotion-based frame selection...")
-                from backend.keyframes.keyframes_emotion_based import generate_keyframes_emotion_based
-                success = generate_keyframes_emotion_based(self.video_path, filtered_subs, max_frames=48)
+                # Use ENGAGING frame selection when smart mode is enabled
+                print("✨ Selecting most engaging frames...")
+                from backend.keyframes.keyframes_engaging import generate_keyframes_engaging
+                success = generate_keyframes_engaging(self.video_path, filtered_subs, max_frames=48)
                 if not success:
-                    print("⚠️ Emotion-based selection failed, trying smart method...")
+                    print("⚠️ Engaging selection failed, trying smart method...")
                     from backend.keyframes.keyframes_smart import generate_keyframes_smart
                     success = generate_keyframes_smart(self.video_path, filtered_subs, max_frames=48)
                     if not success:
@@ -222,10 +222,9 @@ class EnhancedComicGenerator:
             print("💾 Saving results...")
             self._save_results(pages)
             
-            # 11. Generate smart comic if requested
-            if smart_mode and SMART_COMIC_AVAILABLE:
-                print("\n🎭 Generating smart comic with emotion matching...")
-                self._generate_smart_comic(emotion_match)
+            # 11. Smart mode already applied during frame selection
+            if smart_mode:
+                print("✅ Smart frame selection completed")
             
             # 12. Extract individual panels as 640x800 images
             print("\n📸 Extracting individual panels...")

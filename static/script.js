@@ -99,14 +99,14 @@ function addSmartComicOptions() {
     optionsDiv.id = 'smart-options';
     optionsDiv.style.cssText = 'margin: 20px 0; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 10px;';
     optionsDiv.innerHTML = `
-        <h3 style="margin: 0 0 10px 0; font-size: 18px;">🎭 Smart Comic Options</h3>
-        <label style="display: block; margin: 5px 0; text-align: left;">
-            <input type="checkbox" id="smart-mode" style="margin-right: 8px;">
-            <span>Smart Mode (10-15 panel story summary)</span>
-        </label>
-        <label style="display: block; margin: 5px 0; text-align: left;">
-            <input type="checkbox" id="emotion-match" checked style="margin-right: 8px;">
-            <span>Match facial expressions with dialogue</span>
+        <h3 style="margin: 0 0 10px 0; font-size: 18px;">✨ Enhanced Comic Options</h3>
+        <label style="display: block; margin: 5px 0; text-align: left; cursor: pointer;">
+            <input type="checkbox" id="smart-mode" checked style="margin-right: 8px;">
+            <span style="font-weight: bold;">Smart Frame Selection</span>
+            <br>
+            <span style="font-size: 12px; color: #aaa; margin-left: 25px;">
+                Automatically selects the most engaging frames with perfect expressions
+            </span>
         </label>
     `;
     
@@ -120,7 +120,6 @@ document.addEventListener('DOMContentLoaded', addSmartComicOptions);
 function submitForm() {
   // Get smart comic options
   const smartMode = document.getElementById('smart-mode').checked;
-  const emotionMatch = document.getElementById('emotion-match').checked;
   
   // If file is selected
   if (selectedFile !== null && selectedLink === "") {
@@ -128,7 +127,6 @@ function submitForm() {
     var formdata = new FormData();
     formdata.append("file", selectedFile);
     formdata.append("smart_mode", smartMode);
-    formdata.append("emotion_match", emotionMatch);
 
     var requestOptions = {
       method: "POST",
@@ -155,7 +153,6 @@ function submitForm() {
     var formdata = new FormData();
     formdata.append("link", linkInput.value);
     formdata.append("smart_mode", smartMode);
-    formdata.append("emotion_match", emotionMatch);
 
     var requestOptions = {
       method: "POST",
