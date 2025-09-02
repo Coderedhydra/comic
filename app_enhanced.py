@@ -1256,29 +1256,101 @@ class EnhancedComicGenerator:
             const printStyles = document.createElement('style');
             printStyles.innerHTML = `
                 @media print {
-                    body { margin: 0; background: white; }
-                    .edit-controls { display: none !important; }
-                    .comic-title { page-break-after: avoid; }
+                    /* Reset all margins and padding */
+                    * {
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                        color-adjust: exact !important;
+                    }
+                    
+                    body { 
+                        margin: 0 !important; 
+                        padding: 0 !important;
+                        background: white !important;
+                    }
+                    
+                    /* Hide non-comic elements */
+                    .edit-controls, .comic-title, .save-notice { 
+                        display: none !important; 
+                    }
+                    
+                    /* Full page for comic container */
+                    .comic-container {
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        max-width: none !important;
+                        width: 100% !important;
+                    }
+                    
+                    /* Each comic page takes full print page */
                     .comic-page { 
-                        page-break-inside: avoid; 
-                        page-break-after: always;
-                        margin: 0;
-                        box-shadow: none;
+                        page-break-inside: avoid !important;
+                        page-break-after: always !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        box-shadow: none !important;
+                        background: white !important;
+                        width: 100vw !important;
+                        height: 100vh !important;
+                        display: flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
                     }
+                    
+                    /* Comic grid fills the page */
+                    .comic-grid {
+                        width: calc(100vw - 20mm) !important;
+                        height: calc(100vh - 20mm) !important;
+                        margin: 0 !important;
+                        gap: 10px !important;
+                    }
+                    
+                    /* Panels scale properly */
+                    .panel {
+                        width: 100% !important;
+                        height: 100% !important;
+                        border: 3px solid #000 !important;
+                        overflow: hidden !important;
+                        position: relative !important;
+                    }
+                    
+                    .panel img {
+                        width: 100% !important;
+                        height: 100% !important;
+                        object-fit: cover !important;
+                    }
+                    
+                    /* Speech bubbles maintain position */
                     .speech-bubble { 
-                        -webkit-print-color-adjust: exact;
-                        print-color-adjust: exact;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                        background: white !important;
+                        border: 3px solid black !important;
                     }
+                    
+                    /* Page settings */
                     @page { 
-                        size: A4; 
+                        size: A4 landscape;
                         margin: 10mm;
+                    }
+                    
+                    /* Remove last page break */
+                    .comic-page:last-child {
+                        page-break-after: avoid !important;
                     }
                 }
             `;
             document.head.appendChild(printStyles);
             
-            // Show instructions
-            alert('📄 Export to PDF\\n\\n1. In the print dialog, select "Save as PDF"\\n2. Choose your settings\\n3. Click Save\\n\\nYour edited comic will be saved as PDF!');
+            // Show instructions with recommended settings
+            alert('📄 Export to PDF - Recommended Settings\\n\\n' +
+                  '1. Destination: "Save as PDF"\\n' +
+                  '2. Layout: "Landscape" (for better fit)\\n' +
+                  '3. Paper size: "A4" or "Letter"\\n' +
+                  '4. Margins: "Default" or "None"\\n' +
+                  '5. Scale: "Default (100%)" or "Fit to page"\\n' +
+                  '6. Options: ✓ "Background graphics"\\n\\n' +
+                  'Click Save to create your PDF!');
             
             // Trigger print
             printComic();
