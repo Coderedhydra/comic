@@ -956,9 +956,9 @@ class EnhancedComicGenerator:
             width: 800px; /* Exact image width */
             height: 1080px; /* Exact image height */
             padding: 0; /* No padding */
+            margin: 0; /* No margin */
             box-shadow: 0 0 10px rgba(0,0,0,0.1); 
-            margin: 30px auto; 
-            box-sizing: border-box;
+            box-sizing: content-box; /* Don't include border in size */
             position: relative;
             overflow: hidden;
         }
@@ -978,6 +978,9 @@ class EnhancedComicGenerator:
         .page-wrapper {
             margin: 30px auto;
             width: 800px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         .page-title { 
             text-align: center; 
@@ -1020,16 +1023,27 @@ class EnhancedComicGenerator:
             overflow: hidden; 
             width: 400px;
             height: 540px;
-            box-sizing: border-box;
+            box-sizing: border-box; /* Border included in dimensions */
             margin: 0;
             padding: 0;
+            flex-shrink: 0; /* Don't shrink */
         }
         /* Remove double borders between adjacent panels */
-        .panel:nth-child(1), .panel:nth-child(3) {
+        .panel:nth-child(1) {
             border-right: none;
-        }
-        .panel:nth-child(1), .panel:nth-child(2) {
             border-bottom: none;
+        }
+        .panel:nth-child(2) {
+            border-left: 1px solid #333;
+            border-bottom: none;
+        }
+        .panel:nth-child(3) {
+            border-right: none;
+            border-top: 1px solid #333;
+        }
+        .panel:nth-child(4) {
+            border-left: 1px solid #333;
+            border-top: 1px solid #333;
         }
         .panel img { 
             width: 100%; 
@@ -1044,11 +1058,14 @@ class EnhancedComicGenerator:
         /* .panel img { object-fit: fill; } */ /* Stretch to fit (may distort) */
         /* .panel img { object-fit: scale-down; } */ /* Shrink if needed */
         
-        /* No borders style - uncomment to remove all panel borders */
-        /*
-        .panel { border: none !important; }
-        .comic-grid { border: 2px solid #333; }
-        */
+        /* Exact 800x1080 mode - no individual borders */
+        .exact-size .panel { 
+            border: none !important; 
+        }
+        .exact-size .comic-grid { 
+            border: 1px solid #333;
+            box-sizing: border-box;
+        }
         
         /* Unity export mode - no borders, clean images */
         .unity-export .panel { 
@@ -1059,6 +1076,26 @@ class EnhancedComicGenerator:
         }
         .unity-export .page-info {
             display: none !important;
+        }
+        
+        /* Debug mode - shows exact dimensions */
+        .debug-mode .comic-page {
+            outline: 2px solid red;
+        }
+        .debug-mode .comic-page::before {
+            content: "Page: 800×1080";
+            position: absolute;
+            top: -25px;
+            left: 0;
+            color: red;
+            font-size: 12px;
+            z-index: 100;
+        }
+        .debug-mode .comic-grid {
+            outline: 2px solid blue;
+        }
+        .debug-mode .panel {
+            outline: 1px solid green;
         }
         .speech-bubble { 
             position: absolute; 
@@ -1151,6 +1188,9 @@ class EnhancedComicGenerator:
            </button>
            <button onclick="toggleUnityMode()" style="margin-top: 5px; padding: 8px 15px; background: #FF5722; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
                🎮 Unity Mode (No Borders)
+           </button>
+           <button onclick="checkDimensions()" style="margin-top: 5px; padding: 8px 15px; background: #607D8B; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
+               📏 Check Dimensions
            </button>
     </div>
     <script>
@@ -1431,6 +1471,47 @@ class EnhancedComicGenerator:
                 // Update button text
                 event.target.innerHTML = '🎮 Unity Mode (No Borders)';
                 event.target.style.background = '#FF5722';
+            }
+        }
+        
+        // Check exact dimensions
+        function checkDimensions() {
+            const pages = document.querySelectorAll('.comic-page');
+            const container = document.querySelector('.comic-container');
+            
+            // Toggle debug mode and exact-size mode
+            container.classList.toggle('debug-mode');
+            container.classList.toggle('exact-size');
+            
+            // Get first page dimensions
+            if (pages.length > 0) {
+                const page = pages[0];
+                const grid = page.querySelector('.comic-grid');
+                const pageRect = page.getBoundingClientRect();
+                const gridRect = grid ? grid.getBoundingClientRect() : null;
+                const computed = window.getComputedStyle(page);
+                
+                const info = `📏 Page Dimensions Check:\n\n` +
+                    `Page Width: ${pageRect.width}px (should be 800)\n` +
+                    `Page Height: ${pageRect.height}px (should be 1080)\n` +
+                    `Grid Width: ${gridRect ? gridRect.width : 'N/A'}px\n` +
+                    `Grid Height: ${gridRect ? gridRect.height : 'N/A'}px\n` +
+                    `Padding: ${computed.padding}\n` +
+                    `Box-sizing: ${computed.boxSizing}\n\n` +
+                    `${pageRect.width === 800 && pageRect.height === 1080 ? '✅ EXACT MATCH!' : '❌ Size mismatch!'}\n\n` +
+                    `Exact-size mode: ${container.classList.contains('exact-size') ? 'ON' : 'OFF'}`;
+                
+                alert(info);
+                
+                // Update button text
+                const btn = event.target;
+                if (container.classList.contains('exact-size')) {
+                    btn.innerHTML = '📏 Exact Mode ON';
+                    btn.style.background = '#4CAF50';
+                } else {
+                    btn.innerHTML = '📏 Check Dimensions';
+                    btn.style.background = '#607D8B';
+                }
             }
         }
         
