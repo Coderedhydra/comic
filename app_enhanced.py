@@ -606,13 +606,13 @@ class EnhancedComicGenerator:
     
     def _generate_story_pages(self, frame_files, bubbles):
         """Generate pages based on story extraction"""
-        # Use 2x2 grid with 12 PAGES (48 panels total)
-        from backend.fixed_12_pages_2x2 import generate_12_pages_2x2_grid
+        # Use 2x2 grid with 12 PAGES at 800x1080 resolution
+        from backend.fixed_12_pages_800x1080 import generate_12_pages_800x1080
         
-        print(f"📖 Generating 12-page comic summary (2x2 grid per page)")
+        print(f"📖 Generating 12-page comic (800x1080 resolution)")
         print(f"📊 Target: 48 meaningful panels from {len(frame_files)} frames")
         
-        return generate_12_pages_2x2_grid(frame_files, bubbles)
+        return generate_12_pages_800x1080(frame_files, bubbles)
         
         # Get adaptive layout configuration
         if STORY_EXTRACTOR_AVAILABLE:
@@ -951,9 +951,36 @@ class EnhancedComicGenerator:
     <style>
         body { margin: 0; padding: 20px; background: #f0f0f0; font-family: Arial, sans-serif; }
         .comic-container { max-width: 1200px; margin: 0 auto; }
-        .comic-page { background: white; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-bottom: 30px; }
-        .comic-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; height: 600px; }
-        .page-title { text-align: center; color: #333; margin-bottom: 15px; font-size: 18px; font-weight: bold; }
+        .comic-page { 
+            background: white; 
+            width: 800px; 
+            height: 1080px; 
+            padding: 20px; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+            margin: 30px auto; 
+            box-sizing: border-box;
+        }
+        .comic-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            grid-template-rows: 1fr 1fr; 
+            gap: 10px; 
+            height: calc(100% - 50px); 
+            width: 100%;
+        }
+        .page-title { 
+            text-align: center; 
+            color: #333; 
+            margin-bottom: 15px; 
+            font-size: 18px; 
+            font-weight: bold; 
+        }
+        .page-info {
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
         .panel { position: relative; border: 2px solid #333; overflow: hidden; }
         .panel img { width: 100%; height: 100%; object-fit: cover; }
         .speech-bubble { 
@@ -1072,6 +1099,12 @@ class EnhancedComicGenerator:
                             pageTitle.className = 'page-title';
                             pageTitle.textContent = `Page ${pageIndex + 1}`;
                             pageDiv.appendChild(pageTitle);
+                            
+                            // Add page info (resolution)
+                            const pageInfo = document.createElement('div');
+                            pageInfo.className = 'page-info';
+                            pageInfo.textContent = '800x1080 resolution';
+                            pageDiv.appendChild(pageInfo);
                             
                             // Create grid for this page
                             const grid = document.createElement('div');
@@ -1325,27 +1358,30 @@ class EnhancedComicGenerator:
                         width: 100% !important;
                     }
                     
-                    /* Each comic page takes full print page */
+                    /* Each comic page at 800x1080 */
                     .comic-page { 
                         page-break-inside: avoid !important;
                         page-break-after: always !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
+                        margin: 0 auto !important;
+                        padding: 20px !important;
                         box-shadow: none !important;
                         background: white !important;
-                        width: 100vw !important;
-                        height: 100vh !important;
-                        display: flex !important;
-                        align-items: center !important;
-                        justify-content: center !important;
+                        width: 800px !important;
+                        height: 1080px !important;
+                        box-sizing: border-box !important;
                     }
                     
-                    /* Comic grid fills the page */
+                    /* Comic grid fills the 800x1080 page */
                     .comic-grid {
-                        width: calc(100vw - 20mm) !important;
-                        height: calc(100vh - 20mm) !important;
+                        width: 100% !important;
+                        height: calc(100% - 70px) !important;
                         margin: 0 !important;
                         gap: 10px !important;
+                    }
+                    
+                    /* Hide page info in print */
+                    .page-info {
+                        display: none !important;
                     }
                     
                     /* Panels scale properly */

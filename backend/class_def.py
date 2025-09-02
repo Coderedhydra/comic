@@ -1,10 +1,11 @@
 import math
 import numpy as np
 class panel:
-    def __init__(self,image,row_span,col_span):
+    def __init__(self,image,row_span,col_span,metadata=None):
        self.image = image
        self.row_span = row_span
        self.col_span = col_span
+       self.metadata = metadata or {}
 
 
 # class bubble:
@@ -113,9 +114,10 @@ class bubble:
 
 
 class Page:
-    def __init__(self,panels,bubbles):
+    def __init__(self,panels,bubbles,metadata=None):
         self.panels = []
         self.bubbles = []
+        self.metadata = metadata or {}
 
         for i in range(len(panels)):
             self.panels.append(panels[i].__dict__)
