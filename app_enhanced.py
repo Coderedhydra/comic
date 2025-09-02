@@ -152,6 +152,9 @@ class EnhancedComicGenerator:
                     
                     print(f"📚 Full story: {len(filtered_subs)} key moments from {len(all_subs)} total")
                     
+                    # Store the count for later use
+                    self._filtered_count = len(filtered_subs)
+                    
                 except Exception as e:
                     print(f"⚠️ Full story extraction failed: {e}")
                     filtered_subs = None
@@ -159,9 +162,12 @@ class EnhancedComicGenerator:
             # 3. Generate keyframes based on story moments
             print("🎯 Generating keyframes...")
             if filtered_subs:
-                # Use story-based keyframe generation
-                from backend.keyframes.keyframes_story import generate_keyframes_story
-                generate_keyframes_story(self.video_path, filtered_subs)
+                # Use FIXED story-based keyframe generation
+                from backend.keyframes.keyframes_fixed import generate_keyframes_fixed
+                success = generate_keyframes_fixed(self.video_path, filtered_subs, max_frames=48)
+                if not success:
+                    print("⚠️ Frame extraction failed, trying fallback...")
+                    generate_keyframes_simple(self.video_path)
             else:
                 # Fallback to simple method
                 generate_keyframes_simple(self.video_path)
