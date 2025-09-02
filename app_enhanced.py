@@ -998,6 +998,12 @@ class EnhancedComicGenerator:
         <p>• <strong>Drag</strong> speech bubbles to move</p>
         <p>• <strong>Double-click</strong> to edit text</p>
         <p>• Changes auto-save locally</p>
+        <button onclick="exportToPDF()" style="margin-top: 10px; padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
+            📄 Export to PDF
+        </button>
+        <button onclick="printComic()" style="margin-top: 5px; padding: 8px 15px; background: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
+            🖨️ Print Comic
+        </button>
     </div>
     <script>
         // Load comic data
@@ -1224,6 +1230,64 @@ class EnhancedComicGenerator:
                 console.error('Failed to load saved state:', e);
             }
         }
+        
+        // Export functions
+        function printComic() {
+            // Hide edit controls for printing
+            document.querySelector('.edit-controls').style.display = 'none';
+            
+            // Use browser's print function
+            window.print();
+            
+            // Show edit controls again
+            setTimeout(() => {
+                document.querySelector('.edit-controls').style.display = 'block';
+            }, 100);
+        }
+        
+        function exportToPDF() {
+            // For basic PDF export, we'll use the print dialog with PDF option
+            // Most browsers support "Save as PDF" in print dialog
+            
+            // First, add print-specific styles
+            const printStyles = document.createElement('style');
+            printStyles.innerHTML = `
+                @media print {
+                    body { margin: 0; background: white; }
+                    .edit-controls { display: none !important; }
+                    .comic-title { page-break-after: avoid; }
+                    .comic-page { 
+                        page-break-inside: avoid; 
+                        page-break-after: always;
+                        margin: 0;
+                        box-shadow: none;
+                    }
+                    .speech-bubble { 
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                    @page { 
+                        size: A4; 
+                        margin: 10mm;
+                    }
+                }
+            `;
+            document.head.appendChild(printStyles);
+            
+            // Show instructions
+            alert('📄 Export to PDF\\n\\n1. In the print dialog, select "Save as PDF"\\n2. Choose your settings\\n3. Click Save\\n\\nYour edited comic will be saved as PDF!');
+            
+            // Trigger print
+            printComic();
+        }
+        
+        // Add keyboard shortcut for export
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                e.preventDefault();
+                exportToPDF();
+            }
+        });
     </script>
 </body>
 </html>'''
@@ -1387,6 +1451,25 @@ def view_panels():
 def panel_file(filename):
     """Serve individual panel files"""
     return send_from_directory('output/panels', filename)
+
+@app.route('/generate-pdf', methods=['POST'])
+def generate_pdf():
+    """Generate PDF from edited comic data"""
+    try:
+        from backend.pdf_generator import generate_edited_pdf
+        
+        # Get edited data from request
+        edited_data = request.get_json()
+        
+        # Generate PDF
+        pdf_path = generate_edited_pdf(edited_data)
+        
+        # Send PDF file
+        return send_file(pdf_path, as_attachment=True, download_name='comic_edited.pdf', mimetype='application/pdf')
+        
+    except Exception as e:
+        print(f"PDF generation error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     print("🚀 Starting Enhanced Comic Generator...")
