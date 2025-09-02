@@ -792,43 +792,85 @@ class EnhancedComicGenerator:
     <style>
         body { margin: 0; padding: 20px; background: #2c3e50; color: white; font-family: Arial, sans-serif; }
         .header { text-align: center; margin-bottom: 30px; }
-        .comic-page { position: relative; background: white; margin: 20px auto; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-        .comic-panel { position: absolute; border: 3px solid #333; overflow: hidden; }
-        .comic-panel img { width: 100%; height: 100%; object-fit: cover; }
-        .speech-bubble { position: absolute; border-radius: 20px; padding: 12px; font-family: "Comic Sans MS", cursive; font-weight: bold; text-align: center; z-index: 10; }
-        .emotion-happy { border: 3px solid #4CAF50; background: #E8F5E9; }
-        .emotion-sad { border: 3px solid #2196F3; background: #E3F2FD; }
-        .emotion-angry { border: 4px solid #F44336; background: #FFEBEE; }
-        .emotion-surprised { border: 3px solid #FF9800; background: #FFF3E0; }
-        .emotion-neutral { border: 2px solid #333; background: #FFF; }
+        .comic-container { max-width: 1200px; margin: 0 auto; }
+        .comic-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; margin-top: 30px; }
+        .comic-panel { background: white; border: 4px solid #333; box-shadow: 0 5px 20px rgba(0,0,0,0.3); position: relative; overflow: hidden; }
+        .comic-panel img { width: 100%; height: 400px; object-fit: cover; display: block; }
+        .panel-info { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.8); color: white; padding: 15px; }
+        .panel-text { font-size: 14px; margin-bottom: 8px; line-height: 1.4; }
+        .emotion-badges { display: flex; gap: 10px; font-size: 12px; }
+        .emotion-badge { padding: 4px 8px; border-radius: 12px; font-weight: bold; }
+        .emotion-happy { background: #4CAF50; color: white; }
+        .emotion-sad { background: #2196F3; color: white; }
+        .emotion-angry { background: #F44336; color: white; }
+        .emotion-surprised { background: #FF9800; color: white; }
+        .emotion-scared { background: #9C27B0; color: white; }
+        .emotion-neutral { background: #666; color: white; }
+        .match-score { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px; }
+        .good-match { background: #4CAF50; }
+        .medium-match { background: #FF9800; }
+        .poor-match { background: #F44336; }
+        h2 { text-align: center; margin: 30px 0 20px; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>🎭 Smart Comic Summary</h1>
-        <p>AI-generated comic with emotion matching (10-15 key panels)</p>
+        <p>AI-generated comic with emotion matching and eye quality detection</p>
+        <p style="font-size: 14px; color: #bbb;">''' + str(len(comic_data.get('panels', []))) + ''' key panels selected from the story</p>
     </div>
+    
+    <div class="comic-container">
+        <div class="comic-grid">
 '''
         
-        for page in comic_data.get('pages', []):
-            html += f'<div class="comic-page" style="width:{page["width"]}px;height:{page["height"]}px;margin:20px auto;">\n'
+        # Generate panels in grid layout
+        panels = comic_data.get('panels', [])
+        for i, panel in enumerate(panels):
+            # Determine match quality
+            match_score = panel.get('match_score', 0)
+            match_class = 'good-match' if match_score > 0.7 else 'medium-match' if match_score > 0.4 else 'poor-match'
             
-            for panel in page.get('panels', []):
-                html += f'<div class="comic-panel" style="left:{panel["x"]}px;top:{panel["y"]}px;width:{panel["width"]}px;height:{panel["height"]}px;">'
-                html += f'<img src="{panel["image"]}">'
-                html += '</div>\n'
-            
-            for bubble in page.get('bubbles', []):
-                emotion = bubble.get('emotion', 'neutral')
-                style = bubble.get('style', {})
-                html += f'<div class="speech-bubble emotion-{emotion}" style="'
-                html += f'left:{bubble["x"]}px;top:{bubble["y"]}px;width:{bubble["width"]}px;min-height:{bubble["height"]}px;">'
-                html += bubble["text"]
-                html += '</div>\n'
-            
-            html += '</div>\n'
+            html += f'''
+            <div class="comic-panel">
+                <img src="/frames/final/{panel['frame']}" alt="Panel {i+1}" onerror="this.src='/frames/final/frame{i:03d}.png'">
+                <div class="match-score {match_class}">
+                    Match: {match_score:.1%} | Eyes: {panel.get('eye_score', 1.0):.1%}
+                </div>
+                <div class="panel-info">
+                    <div class="panel-text">{panel['text']}</div>
+                    <div class="emotion-badges">
+                        <span class="emotion-badge emotion-{panel['text_emotion']}">Text: {panel['text_emotion']}</span>
+                        <span class="emotion-badge emotion-{panel['face_emotion']}">Face: {panel['face_emotion']}</span>
+                    </div>
+                </div>
+            </div>
+'''
         
-        html += '</body></html>'
+        html += '''
+        </div>
+        
+        <h2>📊 Emotion Analysis Summary</h2>
+        <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin: 20px 0;">
+'''
+        
+        # Add summary statistics
+        if panels:
+            # Count emotion matches
+            perfect_matches = sum(1 for p in panels if p['text_emotion'] == p['face_emotion'])
+            good_eye_scores = sum(1 for p in panels if p.get('eye_score', 0) > 0.8)
+            
+            html += f'''
+            <p>✅ Perfect emotion matches: {perfect_matches}/{len(panels)} ({perfect_matches/len(panels)*100:.0f}%)</p>
+            <p>👁️ Panels with open eyes: {good_eye_scores}/{len(panels)} ({good_eye_scores/len(panels)*100:.0f}%)</p>
+            <p>📈 Average match score: {sum(p.get('match_score', 0) for p in panels)/len(panels):.1%}</p>
+'''
+        
+        html += '''
+        </div>
+    </div>
+</body>
+</html>'''
         
         with open('output/smart_comic_viewer.html', 'w', encoding='utf-8') as f:
             f.write(html)
