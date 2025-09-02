@@ -968,10 +968,12 @@ class EnhancedComicGenerator:
             display: grid; 
             grid-template-columns: 400px 400px; 
             grid-template-rows: 540px 540px; 
-            gap: 0; /* No gap for exact sizing */
+            gap: 0; /* No gap between panels */
             width: 800px;
             height: 1080px;
             margin: 0 auto;
+            padding: 0;
+            border-collapse: collapse; /* Collapse borders */
         }
         .page-title { 
             text-align: center; 
@@ -1010,11 +1012,20 @@ class EnhancedComicGenerator:
         }
         .panel { 
             position: relative; 
-            border: 2px solid #333; 
+            border: 1px solid #333;
             overflow: hidden; 
             width: 400px;
             height: 540px;
             box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        /* Remove double borders between adjacent panels */
+        .panel:nth-child(1), .panel:nth-child(3) {
+            border-right: none;
+        }
+        .panel:nth-child(1), .panel:nth-child(2) {
+            border-bottom: none;
         }
         .panel img { 
             width: 100%; 
@@ -1028,6 +1039,12 @@ class EnhancedComicGenerator:
         /* .panel img { object-fit: cover; } */ /* Zoom to fill (crops edges) */
         /* .panel img { object-fit: fill; } */ /* Stretch to fit (may distort) */
         /* .panel img { object-fit: scale-down; } */ /* Shrink if needed */
+        
+        /* No borders style - uncomment to remove all panel borders */
+        /*
+        .panel { border: none !important; }
+        .comic-grid { border: 2px solid #333; }
+        */
         .speech-bubble { 
             position: absolute; 
             background: white; 
@@ -1438,16 +1455,23 @@ class EnhancedComicGenerator:
                         color: #999 !important;
                     }
                     
-                    /* Panels exact 400x540 each */
+                    /* Panels exact 400x540 each - no gaps */
                     .panel {
                         width: 400px !important;
                         height: 540px !important;
-                        border: 2px solid #000 !important;
+                        border: 1px solid #000 !important;
                         overflow: hidden !important;
                         position: relative !important;
                         box-sizing: border-box !important;
                         margin: 0 !important;
                         padding: 0 !important;
+                    }
+                    /* Remove double borders in print */
+                    .panel:nth-child(1), .panel:nth-child(3) {
+                        border-right: none !important;
+                    }
+                    .panel:nth-child(1), .panel:nth-child(2) {
+                        border-bottom: none !important;
                     }
                     
                     .panel img {
