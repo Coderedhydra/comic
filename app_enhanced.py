@@ -953,21 +953,25 @@ class EnhancedComicGenerator:
         .comic-container { max-width: 1200px; margin: 0 auto; }
         .comic-page { 
             background: white; 
-            width: 800px; 
-            height: 1080px; 
+            width: 840px; /* 800px content + padding */
+            height: 1120px; /* 1080px content + padding */
             padding: 20px; 
             box-shadow: 0 0 10px rgba(0,0,0,0.1); 
             margin: 30px auto; 
             box-sizing: border-box;
             position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         .comic-grid { 
             display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            grid-template-rows: 1fr 1fr; 
-            gap: 10px; 
-            height: calc(100% - 50px); 
-            width: 100%;
+            grid-template-columns: 400px 400px; 
+            grid-template-rows: 540px 540px; 
+            gap: 0; /* No gap for exact sizing */
+            width: 800px;
+            height: 1080px;
+            margin: 0 auto;
         }
         .page-title { 
             text-align: center; 
@@ -1004,8 +1008,19 @@ class EnhancedComicGenerator:
             right: auto;
             left: 15px;
         }
-        .panel { position: relative; border: 2px solid #333; overflow: hidden; }
-        .panel img { width: 100%; height: 100%; object-fit: cover; }
+        .panel { 
+            position: relative; 
+            border: 2px solid #333; 
+            overflow: hidden; 
+            width: 400px;
+            height: 540px;
+            box-sizing: border-box;
+        }
+        .panel img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+        }
         .speech-bubble { 
             position: absolute; 
             background: white; 
@@ -1394,12 +1409,16 @@ class EnhancedComicGenerator:
                         box-sizing: border-box !important;
                     }
                     
-                    /* Comic grid fills the 800x1080 page */
+                    /* Comic grid exact 800x1080 with 4 panels */
                     .comic-grid {
-                        width: 100% !important;
-                        height: calc(100% - 70px) !important;
+                        width: 800px !important;
+                        height: 1080px !important;
                         margin: 0 !important;
-                        gap: 10px !important;
+                        padding: 0 !important;
+                        gap: 0 !important; /* No gap for exact panel sizing */
+                        display: grid !important;
+                        grid-template-columns: 400px 400px !important;
+                        grid-template-rows: 540px 540px !important;
                     }
                     
                     /* Show page info in print */
@@ -1412,13 +1431,16 @@ class EnhancedComicGenerator:
                         color: #999 !important;
                     }
                     
-                    /* Panels scale properly */
+                    /* Panels exact 400x540 each */
                     .panel {
-                        width: 100% !important;
-                        height: 100% !important;
-                        border: 3px solid #000 !important;
+                        width: 400px !important;
+                        height: 540px !important;
+                        border: 2px solid #000 !important;
                         overflow: hidden !important;
                         position: relative !important;
+                        box-sizing: border-box !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
                     }
                     
                     .panel img {
