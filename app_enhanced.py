@@ -998,7 +998,10 @@ class EnhancedComicGenerator:
         <p>• <strong>Drag</strong> speech bubbles to move</p>
         <p>• <strong>Double-click</strong> to edit text</p>
         <p>• Changes auto-save locally</p>
-        <button onclick="exportToPDF()" style="margin-top: 10px; padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
+        <button onclick="saveEditableHTML()" style="margin-top: 10px; padding: 8px 15px; background: #FF9800; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
+            💾 Save Editable Comic
+        </button>
+        <button onclick="exportToPDF()" style="margin-top: 5px; padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
             📄 Export to PDF
         </button>
         <button onclick="printComic()" style="margin-top: 5px; padding: 8px 15px; background: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
@@ -1287,7 +1290,98 @@ class EnhancedComicGenerator:
                 e.preventDefault();
                 exportToPDF();
             }
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                saveEditableHTML();
+            }
         });
+        
+        // Save editable HTML with all current edits
+        function saveEditableHTML() {
+            // Update the current DOM with edited content
+            const currentState = {
+                bubbles: [],
+                timestamp: new Date().toISOString()
+            };
+            
+            // Collect current bubble states
+            document.querySelectorAll('.speech-bubble').forEach((bubble, index) => {
+                currentState.bubbles.push({
+                    text: bubble.innerText,
+                    left: bubble.style.left,
+                    top: bubble.style.top
+                });
+            });
+            
+            // Clone the current document
+            const docClone = document.documentElement.cloneNode(true);
+            
+            // Remove the loading message from clone
+            const loadingDiv = docClone.querySelector('.loading');
+            if (loadingDiv) loadingDiv.remove();
+            
+            // Add a marker to show this is a saved version
+            const savedNotice = docClone.createElement('div');
+            savedNotice.style.cssText = 'position: fixed; top: 10px; left: 10px; background: #4CAF50; color: white; padding: 10px; border-radius: 5px; z-index: 1000;';
+            savedNotice.innerHTML = '✅ This is a saved editable comic - Continue editing anytime!';
+            docClone.body.insertBefore(savedNotice, docClone.body.firstChild);
+            
+            // Inject the current state into the saved file
+            const stateScript = docClone.createElement('script');
+            stateScript.innerHTML = `
+                // Saved state from ${new Date().toLocaleString()}
+                const savedState = ${JSON.stringify(currentState)};
+                
+                // Auto-restore saved state when file opens
+                window.addEventListener('load', () => {
+                    setTimeout(() => {
+                        const bubbles = document.querySelectorAll('.speech-bubble');
+                        savedState.bubbles.forEach((state, index) => {
+                            if (bubbles[index]) {
+                                bubbles[index].innerText = state.text;
+                                if (state.left) bubbles[index].style.left = state.left;
+                                if (state.top) bubbles[index].style.top = state.top;
+                            }
+                        });
+                        console.log('✅ Restored saved edits from', savedState.timestamp);
+                    }, 1500);
+                });
+            `;
+            docClone.head.appendChild(stateScript);
+            
+            // Convert to string
+            const htmlContent = '<!DOCTYPE html>\\n' + docClone.outerHTML;
+            
+            // Create blob and download
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            // Generate filename with timestamp
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            a.download = `comic_editable_${timestamp}.html`;
+            
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            // Show success message
+            showSaveMessage('✅ Comic saved! You can open this HTML file anytime to continue editing.');
+        }
+        
+        // Show temporary save message
+        function showSaveMessage(message) {
+            const msgDiv = document.createElement('div');
+            msgDiv.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #4CAF50; color: white; padding: 20px 30px; border-radius: 10px; font-size: 16px; z-index: 10000; box-shadow: 0 4px 20px rgba(0,0,0,0.3);';
+            msgDiv.innerHTML = message;
+            document.body.appendChild(msgDiv);
+            
+            setTimeout(() => {
+                msgDiv.style.transition = 'opacity 0.5s';
+                msgDiv.style.opacity = '0';
+                setTimeout(() => msgDiv.remove(), 500);
+            }, 3000);
+        }
     </script>
 </body>
 </html>'''
@@ -1469,6 +1563,22 @@ def generate_pdf():
         
     except Exception as e:
         print(f"PDF generation error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/create-portable')
+def create_portable():
+    """Create a self-contained HTML file with embedded images"""
+    try:
+        from backend.html_packager import create_portable_comic
+        
+        # Create portable version
+        portable_path = create_portable_comic()
+        
+        # Send file
+        return send_file(portable_path, as_attachment=True, download_name='comic_portable.html', mimetype='text/html')
+        
+    except Exception as e:
+        print(f"Portable creation error: {e}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
