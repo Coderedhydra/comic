@@ -161,17 +161,26 @@ class EnhancedComicGenerator:
             
             # 3. Generate keyframes based on story moments
             print("🎯 Generating keyframes...")
-            if filtered_subs:
-                # Use SMART keyframe generation (avoids half-closed eyes)
+            if filtered_subs and smart_mode:
+                # Use EMOTION-BASED frame selection when smart mode is enabled
+                print("🎭 Using emotion-based frame selection...")
+                from backend.keyframes.keyframes_emotion_based import generate_keyframes_emotion_based
+                success = generate_keyframes_emotion_based(self.video_path, filtered_subs, max_frames=48)
+                if not success:
+                    print("⚠️ Emotion-based selection failed, trying smart method...")
+                    from backend.keyframes.keyframes_smart import generate_keyframes_smart
+                    success = generate_keyframes_smart(self.video_path, filtered_subs, max_frames=48)
+                    if not success:
+                        print("⚠️ Smart extraction failed, trying fixed method...")
+                        from backend.keyframes.keyframes_fixed import generate_keyframes_fixed
+                        generate_keyframes_fixed(self.video_path, filtered_subs, max_frames=48)
+            elif filtered_subs:
+                # Use regular smart extraction (checks eyes but not emotions)
                 from backend.keyframes.keyframes_smart import generate_keyframes_smart
                 success = generate_keyframes_smart(self.video_path, filtered_subs, max_frames=48)
                 if not success:
-                    print("⚠️ Smart extraction failed, trying fixed method...")
                     from backend.keyframes.keyframes_fixed import generate_keyframes_fixed
-                    success = generate_keyframes_fixed(self.video_path, filtered_subs, max_frames=48)
-                    if not success:
-                        print("⚠️ Frame extraction failed, trying fallback...")
-                        generate_keyframes_simple(self.video_path)
+                    generate_keyframes_fixed(self.video_path, filtered_subs, max_frames=48)
             else:
                 # Fallback to simple method
                 generate_keyframes_simple(self.video_path)
