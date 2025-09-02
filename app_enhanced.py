@@ -1019,8 +1019,15 @@ class EnhancedComicGenerator:
         .panel img { 
             width: 100%; 
             height: 100%; 
-            object-fit: cover; 
+            object-fit: contain; /* No zooming - shows entire image */
+            object-position: center; /* Center the image */
+            background-color: #fff; /* White background for letterbox areas */
         }
+        
+        /* Alternative modes - uncomment one to use */
+        /* .panel img { object-fit: cover; } */ /* Zoom to fill (crops edges) */
+        /* .panel img { object-fit: fill; } */ /* Stretch to fit (may distort) */
+        /* .panel img { object-fit: scale-down; } */ /* Shrink if needed */
         .speech-bubble { 
             position: absolute; 
             background: white; 
@@ -1446,7 +1453,8 @@ class EnhancedComicGenerator:
                     .panel img {
                         width: 100% !important;
                         height: 100% !important;
-                        object-fit: cover !important;
+                        object-fit: contain !important; /* No zooming/cropping */
+                        background-color: white !important;
                     }
                     
                     /* Speech bubbles maintain position */
