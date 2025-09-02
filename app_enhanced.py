@@ -230,6 +230,10 @@ class EnhancedComicGenerator:
             print("\n📸 Extracting individual panels...")
             self._extract_panels()
             
+            # 13. Generate page images at 800x1080
+            print("\n📄 Generating page images (800x1080)...")
+            self._generate_page_images()
+            
             execution_time = (time.time() - start_time) / 60
             print(f"✅ Comic generation completed in {execution_time:.2f} minutes")
             
@@ -903,6 +907,37 @@ class EnhancedComicGenerator:
         except Exception as e:
             print(f"⚠️ Panel extraction failed: {e}")
     
+    def _generate_page_images(self):
+        """Generate page images at 800x1080 resolution"""
+        try:
+            from backend.page_image_generator import PageImageGenerator
+            
+            # Create generator
+            generator = PageImageGenerator(output_dir="output/page_images")
+            
+            # Load pages data
+            pages_json_path = "output/pages.json"
+            if not os.path.exists(pages_json_path):
+                print("⚠️ Pages JSON not found, skipping page image generation")
+                return
+            
+            with open(pages_json_path, 'r') as f:
+                pages_data = json.load(f)
+            
+            # Generate images
+            saved_pages = generator.generate_page_images(pages_data, "frames/final")
+            
+            if saved_pages:
+                print(f"✅ Generated {len(saved_pages)} page images (800x1080)")
+                print("📄 Page gallery available at: output/page_images/index.html")
+                
+                # Open the gallery in browser
+                gallery_url = f"http://localhost:5000/output/page_images/index.html"
+                print(f"🌐 View page images at: {gallery_url}")
+        
+        except Exception as e:
+            print(f"⚠️ Page image generation failed: {e}")
+    
     def _copy_template_files(self):
         """Copy template files to output directory"""
         try:
@@ -1004,9 +1039,12 @@ class EnhancedComicGenerator:
         <button onclick="exportToPDF()" style="margin-top: 5px; padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
             📄 Export to PDF
         </button>
-        <button onclick="printComic()" style="margin-top: 5px; padding: 8px 15px; background: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
-            🖨️ Print Comic
-        </button>
+                   <button onclick="printComic()" style="margin-top: 5px; padding: 8px 15px; background: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
+               🖨️ Print Comic
+           </button>
+           <button onclick="viewPageImages()" style="margin-top: 5px; padding: 8px 15px; background: #9C27B0; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
+               🖼️ View Page Images
+           </button>
     </div>
     <script>
         // Load comic data
@@ -1246,6 +1284,11 @@ class EnhancedComicGenerator:
             setTimeout(() => {
                 document.querySelector('.edit-controls').style.display = 'block';
             }, 100);
+        }
+        
+        // View page images gallery
+        function viewPageImages() {
+            window.open('/output/page_images/index.html', '_blank');
         }
         
         function exportToPDF() {
@@ -1586,6 +1629,9 @@ def status():
 @app.route('/output/<path:filename>')
 def output_file(filename):
     """Serve output files"""
+    # Handle nested paths for page_images
+    if filename.startswith('page_images/'):
+        return send_from_directory('output', filename)
     return send_from_directory('output', filename)
 
 @app.route('/frames/final/<path:filename>')
