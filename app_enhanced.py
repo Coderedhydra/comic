@@ -953,16 +953,14 @@ class EnhancedComicGenerator:
         .comic-container { max-width: 1200px; margin: 0 auto; }
         .comic-page { 
             background: white; 
-            width: 840px; /* 800px content + padding */
-            height: 1120px; /* 1080px content + padding */
-            padding: 20px; 
+            width: 800px; /* Exact image width */
+            height: 1080px; /* Exact image height */
+            padding: 0; /* No padding */
             box-shadow: 0 0 10px rgba(0,0,0,0.1); 
             margin: 30px auto; 
             box-sizing: border-box;
             position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            overflow: hidden;
         }
         .comic-grid { 
             display: grid; 
@@ -971,14 +969,20 @@ class EnhancedComicGenerator:
             gap: 0; /* No gap between panels */
             width: 800px;
             height: 1080px;
-            margin: 0 auto;
+            margin: 0;
             padding: 0;
-            border-collapse: collapse; /* Collapse borders */
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .page-wrapper {
+            margin: 30px auto;
+            width: 800px;
         }
         .page-title { 
             text-align: center; 
             color: #333; 
-            margin-bottom: 15px; 
+            margin-bottom: 10px; 
             font-size: 18px; 
             font-weight: bold; 
         }
@@ -1166,15 +1170,19 @@ class EnhancedComicGenerator:
                     // Create multiple pages
                     data.forEach((pageData, pageIndex) => {
                         if (pageData.panels && pageData.panels.length > 0) {
-                            // Create page container
-                            const pageDiv = document.createElement('div');
-                            pageDiv.className = 'comic-page';
+                            // Create wrapper for title and page
+                            const pageWrapper = document.createElement('div');
+                            pageWrapper.className = 'page-wrapper';
                             
-                            // Add page title
+                            // Add page title outside the page
                             const pageTitle = document.createElement('h2');
                             pageTitle.className = 'page-title';
                             pageTitle.textContent = `Page ${pageIndex + 1}`;
-                            pageDiv.appendChild(pageTitle);
+                            pageWrapper.appendChild(pageTitle);
+                            
+                            // Create page container (exact 800x1080)
+                            const pageDiv = document.createElement('div');
+                            pageDiv.className = 'comic-page';
                             
                             // Add page info (resolution)
                             const pageInfo = document.createElement('div');
@@ -1232,7 +1240,10 @@ class EnhancedComicGenerator:
                             });
                             
                             pageDiv.appendChild(grid);
-                            pagesContainer.appendChild(pageDiv);
+                            
+                            // Add page to wrapper, then wrapper to container
+                            pageWrapper.appendChild(pageDiv);
+                            pagesContainer.appendChild(pageWrapper);
                         }
                     });
                 } else {
@@ -1457,17 +1468,26 @@ class EnhancedComicGenerator:
                         width: 100% !important;
                     }
                     
-                    /* Each comic page at 800x1080 */
+                    /* Each comic page exactly 800x1080 */
                     .comic-page { 
                         page-break-inside: avoid !important;
                         page-break-after: always !important;
-                        margin: 0 auto !important;
-                        padding: 20px !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
                         box-shadow: none !important;
                         background: white !important;
                         width: 800px !important;
                         height: 1080px !important;
                         box-sizing: border-box !important;
+                        position: relative !important;
+                    }
+                    
+                    /* Hide wrapper elements in print */
+                    .page-wrapper {
+                        page-break-inside: avoid !important;
+                    }
+                    .page-title {
+                        display: none !important;
                     }
                     
                     /* Comic grid exact 800x1080 with 4 panels */
