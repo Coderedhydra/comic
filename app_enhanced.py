@@ -959,6 +959,7 @@ class EnhancedComicGenerator:
             box-shadow: 0 0 10px rgba(0,0,0,0.1); 
             margin: 30px auto; 
             box-sizing: border-box;
+            position: relative;
         }
         .comic-grid { 
             display: grid; 
@@ -976,10 +977,32 @@ class EnhancedComicGenerator:
             font-weight: bold; 
         }
         .page-info {
-            text-align: center;
-            font-size: 12px;
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            font-size: 14px;
             color: #666;
-            margin-top: 5px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px 10px;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+            z-index: 10;
+            font-family: monospace;
+        }
+        .page-info.top-left {
+            bottom: auto;
+            right: auto;
+            top: 10px;
+            left: 15px;
+        }
+        .page-info.top-right {
+            bottom: auto;
+            top: 10px;
+        }
+        .page-info.bottom-left {
+            right: auto;
+            left: 15px;
         }
         .panel { position: relative; border: 2px solid #333; overflow: hidden; }
         .panel img { width: 100%; height: 100%; object-fit: cover; }
@@ -1103,7 +1126,7 @@ class EnhancedComicGenerator:
                             // Add page info (resolution)
                             const pageInfo = document.createElement('div');
                             pageInfo.className = 'page-info';
-                            pageInfo.textContent = '800x1080 resolution';
+                            pageInfo.textContent = '800x1080';
                             pageDiv.appendChild(pageInfo);
                             
                             // Create grid for this page
@@ -1379,9 +1402,14 @@ class EnhancedComicGenerator:
                         gap: 10px !important;
                     }
                     
-                    /* Hide page info in print */
+                    /* Show page info in print */
                     .page-info {
-                        display: none !important;
+                        display: block !important;
+                        position: absolute !important;
+                        bottom: 5px !important;
+                        right: 10px !important;
+                        font-size: 10px !important;
+                        color: #999 !important;
                     }
                     
                     /* Panels scale properly */
