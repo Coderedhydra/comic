@@ -1,302 +1,251 @@
 """
-Eye State Detection and Frame Selection
-Ensures selected frames have open eyes
+Enhanced eye state detection to avoid half-closed eyes in frames
 """
 
 import cv2
 import numpy as np
-import mediapipe as mp
-from typing import List, Tuple, Dict
+from typing import Dict, Tuple, List
 import os
 
 class EyeStateDetector:
-    """Detect if eyes are open or closed in frames"""
+    """Detect eye states (open, closed, half-closed) in images"""
     
     def __init__(self):
-        """Initialize eye detection"""
+        # Load cascade classifiers
         self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         self.eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
         
-        # Try to use MediaPipe for better accuracy
-        self.use_mediapipe = False
-        try:
-            import mediapipe as mp
-            self.mp_face_mesh = mp.solutions.face_mesh
-            self.face_mesh = self.mp_face_mesh.FaceMesh(
-                static_image_mode=True,
-                max_num_faces=5,
-                min_detection_confidence=0.5
-            )
-            self.use_mediapipe = True
-            print("✅ Using MediaPipe for accurate eye detection")
-        except:
-            print("⚠️ MediaPipe not available, using OpenCV")
+        # Eye aspect ratio thresholds
+        self.EAR_THRESHOLD_CLOSED = 0.2
+        self.EAR_THRESHOLD_HALF = 0.25
+        self.EAR_THRESHOLD_OPEN = 0.3
+        
+    def check_eyes_state(self, image_path: str) -> Dict[str, any]:
+        """
+        Check the state of eyes in an image
+        
+        Returns:
+            dict: {
+                'state': 'open'|'closed'|'half_closed'|'unknown',
+                'confidence': float (0-1),
+                'suitable_for_comic': bool,
+                'eye_aspect_ratio': float
+            }
+        """
+        img = cv2.imread(image_path)
+        if img is None:
+            return {
+                'state': 'unknown',
+                'confidence': 0.0,
+                'suitable_for_comic': False,
+                'eye_aspect_ratio': 0.0
+            }
+        
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        
+        # Detect faces
+        faces = self.face_cascade.detectMultiScale(gray, 1.1, 4)
+        if len(faces) == 0:
+            return {
+                'state': 'unknown',
+                'confidence': 0.0,
+                'suitable_for_comic': True,  # No face, might be background
+                'eye_aspect_ratio': 0.0
+            }
+        
+        # Process the largest face
+        x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
+        face_roi = gray[y:y+h, x:x+w]
+        
+        # Detect eyes in face region
+        eyes = self.eye_cascade.detectMultiScale(face_roi, 1.05, 5)
+        
+        if len(eyes) < 2:
+            # Less than 2 eyes detected - might be closed or profile view
+            return {
+                'state': 'possibly_closed',
+                'confidence': 0.5,
+                'suitable_for_comic': False,
+                'eye_aspect_ratio': 0.0
+            }
+        
+        # Calculate eye metrics
+        eye_metrics = self._analyze_eye_openness(face_roi, eyes)
+        
+        # Determine state
+        state, confidence, suitable = self._determine_eye_state(eye_metrics)
+        
+        return {
+            'state': state,
+            'confidence': confidence,
+            'suitable_for_comic': suitable,
+            'eye_aspect_ratio': eye_metrics['average_ear']
+        }
     
-    def calculate_eye_aspect_ratio(self, eye_points):
-        """Calculate Eye Aspect Ratio (EAR) to detect if eye is open"""
-        # EAR = (vertical_distance) / (horizontal_distance)
-        # For open eyes: EAR > 0.2
-        # For closed eyes: EAR < 0.2
+    def _analyze_eye_openness(self, face_roi, eyes) -> Dict[str, float]:
+        """Analyze how open the eyes are"""
+        eye_aspects = []
         
-        if len(eye_points) < 6:
-            return 0.3  # Default to open
+        for (ex, ey, ew, eh) in eyes[:2]:  # Process first two eyes
+            eye_roi = face_roi[ey:ey+eh, ex:ex+ew]
             
-        # Calculate distances
-        A = np.linalg.norm(eye_points[1] - eye_points[5])
-        B = np.linalg.norm(eye_points[2] - eye_points[4])
-        C = np.linalg.norm(eye_points[0] - eye_points[3])
+            # Calculate eye aspect ratio (simplified)
+            # In a real implementation, we'd use facial landmarks
+            # Here we use a simpler approach based on eye region intensity
+            
+            # Check vertical gradient (open eyes have more gradient)
+            gradient = cv2.Sobel(eye_roi, cv2.CV_64F, 0, 1, ksize=3)
+            gradient_magnitude = np.abs(gradient).mean()
+            
+            # Check darkness ratio (closed eyes are darker)
+            mean_intensity = eye_roi.mean()
+            
+            # Estimate eye aspect ratio
+            ear = self._estimate_ear(gradient_magnitude, mean_intensity, eh)
+            eye_aspects.append(ear)
         
-        ear = (A + B) / (2.0 * C) if C > 0 else 0
+        return {
+            'average_ear': np.mean(eye_aspects) if eye_aspects else 0.0,
+            'min_ear': min(eye_aspects) if eye_aspects else 0.0,
+            'max_ear': max(eye_aspects) if eye_aspects else 0.0
+        }
+    
+    def _estimate_ear(self, gradient, intensity, height) -> float:
+        """Estimate eye aspect ratio from simple features"""
+        # Normalize features
+        gradient_score = min(gradient / 50.0, 1.0)
+        intensity_score = min(intensity / 150.0, 1.0)
+        height_score = min(height / 30.0, 1.0)
+        
+        # Combine scores (higher = more open)
+        ear = (gradient_score * 0.5 + intensity_score * 0.3 + height_score * 0.2)
         return ear
     
-    def detect_eyes_mediapipe(self, image):
-        """Detect eyes using MediaPipe"""
-        if not self.use_mediapipe:
-            return []
-            
-        # Convert to RGB
-        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        results = self.face_mesh.process(rgb_image)
+    def _determine_eye_state(self, metrics: Dict[str, float]) -> Tuple[str, float, bool]:
+        """Determine eye state from metrics"""
+        ear = metrics['average_ear']
         
-        eye_states = []
-        
-        if results.multi_face_landmarks:
-            for face_landmarks in results.multi_face_landmarks:
-                # Left eye indices
-                LEFT_EYE = [33, 160, 158, 133, 153, 144]
-                # Right eye indices  
-                RIGHT_EYE = [362, 385, 387, 263, 373, 380]
-                
-                h, w = image.shape[:2]
-                
-                # Get left eye points
-                left_eye_points = []
-                for idx in LEFT_EYE:
-                    x = int(face_landmarks.landmark[idx].x * w)
-                    y = int(face_landmarks.landmark[idx].y * h)
-                    left_eye_points.append([x, y])
-                
-                # Get right eye points
-                right_eye_points = []
-                for idx in RIGHT_EYE:
-                    x = int(face_landmarks.landmark[idx].x * w)
-                    y = int(face_landmarks.landmark[idx].y * h)
-                    right_eye_points.append([x, y])
-                
-                # Calculate EAR for both eyes
-                left_ear = self.calculate_eye_aspect_ratio(np.array(left_eye_points))
-                right_ear = self.calculate_eye_aspect_ratio(np.array(right_eye_points))
-                
-                # Average EAR
-                avg_ear = (left_ear + right_ear) / 2.0
-                
-                # Determine if eyes are open (threshold: 0.2)
-                is_open = avg_ear > 0.2
-                
-                eye_states.append({
-                    'left_ear': left_ear,
-                    'right_ear': right_ear,
-                    'avg_ear': avg_ear,
-                    'eyes_open': is_open
-                })
-                
-        return eye_states
+        if ear < self.EAR_THRESHOLD_CLOSED:
+            return 'closed', 0.8, False
+        elif ear < self.EAR_THRESHOLD_HALF:
+            return 'half_closed', 0.7, False
+        elif ear < self.EAR_THRESHOLD_OPEN:
+            return 'partially_open', 0.6, True  # Acceptable but not ideal
+        else:
+            return 'open', 0.9, True
     
-    def detect_eyes_opencv(self, image):
-        """Fallback eye detection using OpenCV"""
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        faces = self.face_cascade.detectMultiScale(gray, 1.1, 4)
+    def select_best_frame(self, frame_paths: List[str], target_emotion: str = None) -> str:
+        """
+        Select the best frame from a list, avoiding half-closed eyes
         
-        eye_states = []
-        
-        for (x, y, w, h) in faces:
-            roi_gray = gray[y:y+h, x:x+w]
-            eyes = self.eye_cascade.detectMultiScale(roi_gray, 1.1, 4)
+        Args:
+            frame_paths: List of frame file paths
+            target_emotion: Optional emotion to match
             
-            # Simple heuristic: if we detect 2 eyes, they're likely open
-            # If we detect 0 or 1, they might be closed
-            eyes_open = len(eyes) >= 2
-            
-            # Additional check: analyze eye regions for darkness
-            if len(eyes) > 0:
-                eye_openness = []
-                for (ex, ey, ew, eh) in eyes[:2]:  # Check first 2 eyes
-                    eye_roi = roi_gray[ey:ey+eh, ex:ex+ew]
-                    # Calculate variance - open eyes have more variance
-                    variance = np.var(eye_roi)
-                    eye_openness.append(variance > 100)  # Threshold
-                
-                eyes_open = any(eye_openness) if eye_openness else False
-            
-            eye_states.append({
-                'num_eyes_detected': len(eyes),
-                'eyes_open': eyes_open
-            })
-            
-        return eye_states
-    
-    def are_eyes_open(self, image_path):
-        """Check if eyes are open in the image"""
-        image = cv2.imread(image_path)
-        if image is None:
-            return True  # Default to true if can't read
-        
-        # Try MediaPipe first
-        if self.use_mediapipe:
-            eye_states = self.detect_eyes_mediapipe(image)
-            if eye_states:
-                # Return true if any face has open eyes
-                return any(state['eyes_open'] for state in eye_states)
-        
-        # Fallback to OpenCV
-        eye_states = self.detect_eyes_opencv(image)
-        if eye_states:
-            return any(state['eyes_open'] for state in eye_states)
-        
-        # If no faces detected, assume eyes are open
-        return True
-    
-    def score_frame_quality(self, image_path):
-        """Score frame quality based on eye state and other factors"""
-        image = cv2.imread(image_path)
-        if image is None:
-            return 0.0
-        
-        score = 0.0
-        
-        # 1. Eye state score (most important)
-        if self.are_eyes_open(image_path):
-            score += 50.0
-        
-        # 2. Face detection score
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        faces = self.face_cascade.detectMultiScale(gray, 1.1, 4)
-        if len(faces) > 0:
-            score += 20.0
-        
-        # 3. Image sharpness (Laplacian variance)
-        laplacian = cv2.Laplacian(gray, cv2.CV_64F)
-        sharpness = laplacian.var()
-        if sharpness > 100:
-            score += 15.0
-        
-        # 4. Brightness (not too dark or bright)
-        brightness = np.mean(gray)
-        if 50 < brightness < 200:
-            score += 10.0
-        
-        # 5. Contrast
-        contrast = np.std(gray)
-        if contrast > 30:
-            score += 5.0
-        
-        return score
-
-class SmartFrameSelector:
-    """Select best frames avoiding closed eyes"""
-    
-    def __init__(self):
-        self.eye_detector = EyeStateDetector()
-    
-    def select_best_frames(self, frame_paths: List[str], num_frames: int = 16) -> List[str]:
-        """Select best frames based on eye state and quality"""
-        print("👁️ Analyzing frames for open eyes...")
-        
-        # Score all frames
+        Returns:
+            Path to the best frame
+        """
         frame_scores = []
-        for i, frame_path in enumerate(frame_paths):
-            score = self.eye_detector.score_frame_quality(frame_path)
-            frame_scores.append((frame_path, score))
-            
-            # Debug info
-            if i % 10 == 0:
-                eyes_open = self.eye_detector.are_eyes_open(frame_path)
-                print(f"  Frame {i}: Score={score:.1f}, Eyes={'Open' if eyes_open else 'Closed'}")
         
-        # Sort by score (highest first)
+        for frame_path in frame_paths:
+            eye_state = self.check_eyes_state(frame_path)
+            
+            # Calculate score
+            score = 0.0
+            
+            # Eye state scoring
+            if eye_state['state'] == 'open':
+                score += 1.0
+            elif eye_state['state'] == 'partially_open':
+                score += 0.7
+            elif eye_state['state'] == 'half_closed':
+                score += 0.2
+            else:
+                score += 0.1
+            
+            # Confidence bonus
+            score += eye_state['confidence'] * 0.3
+            
+            # Suitability check
+            if not eye_state['suitable_for_comic']:
+                score *= 0.5  # Penalize unsuitable frames
+            
+            frame_scores.append((frame_path, score, eye_state))
+        
+        # Sort by score and return best
         frame_scores.sort(key=lambda x: x[1], reverse=True)
         
-        # Select top frames with good distribution
-        selected_frames = []
-        selected_indices = set()
+        if frame_scores:
+            best_frame, best_score, best_state = frame_scores[0]
+            print(f"  👁️ Selected frame with {best_state['state']} eyes (score: {best_score:.2f})")
+            return best_frame
         
-        # First pass: get frames with open eyes
-        for frame_path, score in frame_scores:
-            if len(selected_frames) >= num_frames:
-                break
-                
-            # Get frame index
-            frame_name = os.path.basename(frame_path)
-            frame_idx = int(''.join(filter(str.isdigit, frame_name)))
-            
-            # Ensure some spacing between frames
-            too_close = any(abs(frame_idx - idx) < 5 for idx in selected_indices)
-            
-            if not too_close and score > 30:  # Minimum quality threshold
-                selected_frames.append(frame_path)
-                selected_indices.add(frame_idx)
-        
-        # If not enough frames, add more with relaxed criteria
-        if len(selected_frames) < num_frames:
-            for frame_path, score in frame_scores:
-                if frame_path not in selected_frames:
-                    selected_frames.append(frame_path)
-                    if len(selected_frames) >= num_frames:
-                        break
-        
-        # Sort selected frames by name to maintain order
-        selected_frames.sort()
-        
-        print(f"✅ Selected {len(selected_frames)} frames with open eyes")
-        return selected_frames[:num_frames]
+        return frame_paths[0] if frame_paths else None
 
-def enhance_frame_selection(frames_dir: str = 'frames', output_dir: str = 'frames/final'):
-    """Enhance frame selection to avoid closed eyes"""
-    import shutil
-    
-    # Get all frames
-    frame_files = [f for f in os.listdir(frames_dir) if f.endswith(('.png', '.jpg', '.jpeg'))]
-    frame_paths = [os.path.join(frames_dir, f) for f in frame_files]
-    
-    if not frame_paths:
-        print("❌ No frames found")
-        return
-    
-    # Select best frames
-    selector = SmartFrameSelector()
-    best_frames = selector.select_best_frames(frame_paths, num_frames=16)
-    
-    # Copy selected frames to output
-    os.makedirs(output_dir, exist_ok=True)
-    
-    for i, frame_path in enumerate(best_frames):
-        output_path = os.path.join(output_dir, f'frame{i:03d}.png')
-        shutil.copy2(frame_path, output_path)
-        print(f"  Copied: {os.path.basename(frame_path)} → {os.path.basename(output_path)}")
-    
-    print(f"✅ Enhanced frame selection complete: {len(best_frames)} frames")
 
-# Integration with existing keyframe generation
-def generate_keyframes_with_eye_check(video_path: str, num_frames: int = 16):
-    """Generate keyframes ensuring eyes are open"""
-    # First extract more frames than needed
-    from backend.keyframes.extract_frames import extract_frames
+def enhance_frame_selection(video_path: str, subtitle, output_dir: str, frames_to_extract: int = 5):
+    """
+    Extract multiple frames and select the best one (no half-closed eyes)
     
-    print("🎬 Extracting frames from video...")
-    extract_frames(video_path, num_frames=num_frames * 3)  # Extract 3x frames
+    Args:
+        video_path: Path to video file
+        subtitle: Subtitle object with start/end times
+        output_dir: Directory to save the selected frame
+        frames_to_extract: Number of candidate frames to extract
+        
+    Returns:
+        Path to the selected frame
+    """
+    import tempfile
     
-    # Then select best frames with open eyes
-    enhance_frame_selection('frames', 'frames/final')
-
-if __name__ == "__main__":
-    # Test the eye detection
     detector = EyeStateDetector()
     
-    # Test on a sample image
-    test_image = "frames/frame001.png"
-    if os.path.exists(test_image):
-        eyes_open = detector.are_eyes_open(test_image)
-        print(f"Eyes open in {test_image}: {eyes_open}")
+    # Create temp directory for candidate frames
+    temp_dir = tempfile.mkdtemp()
+    
+    try:
+        cap = cv2.VideoCapture(video_path)
+        fps = cap.get(cv2.CAP_PROP_FPS)
         
-        score = detector.score_frame_quality(test_image)
-        print(f"Frame quality score: {score}")
+        # Calculate time range
+        start_time = subtitle.start.total_seconds()
+        end_time = subtitle.end.total_seconds()
+        duration = end_time - start_time
+        
+        # Extract multiple frames across the subtitle duration
+        candidate_frames = []
+        
+        for i in range(frames_to_extract):
+            # Distribute frames evenly across the duration
+            time_offset = (i + 1) / (frames_to_extract + 1) * duration
+            timestamp = start_time + time_offset
+            frame_num = int(timestamp * fps)
+            
+            # Extract frame
+            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
+            ret, frame = cap.read()
+            
+            if ret:
+                temp_path = os.path.join(temp_dir, f"candidate_{i}.png")
+                cv2.imwrite(temp_path, frame)
+                candidate_frames.append(temp_path)
+        
+        cap.release()
+        
+        # Select best frame
+        if candidate_frames:
+            best_frame_path = detector.select_best_frame(candidate_frames)
+            
+            # Copy best frame to output
+            if best_frame_path:
+                output_path = os.path.join(output_dir, f"frame_{subtitle.index:03d}.png")
+                img = cv2.imread(best_frame_path)
+                cv2.imwrite(output_path, img)
+                return output_path
+        
+    finally:
+        # Clean up temp files
+        import shutil
+        shutil.rmtree(temp_dir, ignore_errors=True)
+    
+    return None

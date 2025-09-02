@@ -162,12 +162,16 @@ class EnhancedComicGenerator:
             # 3. Generate keyframes based on story moments
             print("🎯 Generating keyframes...")
             if filtered_subs:
-                # Use FIXED story-based keyframe generation
-                from backend.keyframes.keyframes_fixed import generate_keyframes_fixed
-                success = generate_keyframes_fixed(self.video_path, filtered_subs, max_frames=48)
+                # Use SMART keyframe generation (avoids half-closed eyes)
+                from backend.keyframes.keyframes_smart import generate_keyframes_smart
+                success = generate_keyframes_smart(self.video_path, filtered_subs, max_frames=48)
                 if not success:
-                    print("⚠️ Frame extraction failed, trying fallback...")
-                    generate_keyframes_simple(self.video_path)
+                    print("⚠️ Smart extraction failed, trying fixed method...")
+                    from backend.keyframes.keyframes_fixed import generate_keyframes_fixed
+                    success = generate_keyframes_fixed(self.video_path, filtered_subs, max_frames=48)
+                    if not success:
+                        print("⚠️ Frame extraction failed, trying fallback...")
+                        generate_keyframes_simple(self.video_path)
             else:
                 # Fallback to simple method
                 generate_keyframes_simple(self.video_path)
@@ -695,24 +699,89 @@ class EnhancedComicGenerator:
             print(f"Save results failed: {e}")
     
     def _generate_smart_comic(self, emotion_match=True):
-        """Generate smart comic with emotion matching"""
+        """Generate smart comic with enhanced emotion matching"""
         try:
-            if emotion_match:
-                # Use emotion-aware generator
-                generator = EmotionAwareComicGenerator()
-                comic_data = generator.generate_emotion_comic(self.video_path)
-            else:
-                # Use story analyzer
-                generator = SmartComicGenerator()
-                comic_data = generator.generate_smart_comic(self.video_path)
+            # Use enhanced emotion matching
+            from backend.enhanced_emotion_matcher import EnhancedEmotionMatcher
+            from backend.eye_state_detector import EyeStateDetector
             
-            # Generate viewer HTML
-            if comic_data:
+            if not os.path.exists('test1.srt'):
+                print("❌ Missing subtitles for smart comic")
+                return
+            
+            print("🎭 Generating Smart Comic with Enhanced Features...")
+            print("  👁️ Eye detection: Avoiding half-closed eyes")
+            print("  😊 Emotion matching: Text ↔ Facial expressions")
+            
+            # Initialize components
+            emotion_matcher = EnhancedEmotionMatcher()
+            eye_detector = EyeStateDetector() if emotion_match else None
+            
+            # Get frames and subtitles
+            frame_files = sorted([f for f in os.listdir(self.frames_dir) if f.endswith('.png')])
+            frame_paths = [os.path.join(self.frames_dir, f) for f in frame_files]
+            
+            with open('test1.srt', 'r', encoding='utf-8') as f:
+                import srt
+                subtitles = list(srt.parse(f.read()))
+            
+            # Use filtered subtitles if available
+            if hasattr(self, '_filtered_count') and self._filtered_count > 0:
+                step = len(subtitles) / self._filtered_count if len(subtitles) > self._filtered_count else 1
+                filtered_subtitles = []
+                for i in range(min(self._filtered_count, len(subtitles))):
+                    idx = int(i * step) if step > 1 else i
+                    if idx < len(subtitles):
+                        filtered_subtitles.append(subtitles[idx])
+                subtitles = filtered_subtitles[:len(frame_paths)]  # Match frame count
+            
+            print(f"  📝 Analyzing {len(subtitles)} dialogues")
+            
+            # Match frames to emotions
+            matched_panels = emotion_matcher.match_frames_to_emotions(
+                frame_paths[:len(subtitles)], subtitles, eye_detector
+            )
+            
+            print(f"  ✅ Created {len(matched_panels)} emotion-matched panels")
+            
+            # Generate smart comic data
+            comic_data = {
+                'title': 'Emotion-Aware Comic',
+                'panels': []
+            }
+            
+            for i, panel in enumerate(matched_panels):
+                # Get dominant emotions
+                text_emotion = max(panel['text_emotions'].items(), 
+                                 key=lambda x: x[1] if x[0] != 'intensity' else 0)[0]
+                face_emotion = max(panel['face_emotions'].items(), 
+                                 key=lambda x: x[1] if x[0] != 'intensity' else 0)[0]
+                
+                comic_data['panels'].append({
+                    'id': i,
+                    'frame': os.path.basename(panel['frame']),
+                    'text': panel['subtitle'].content,
+                    'text_emotion': text_emotion,
+                    'face_emotion': face_emotion,
+                    'match_score': panel['match_score'],
+                    'eye_score': panel.get('eye_score', 1.0),
+                    'emotions': {
+                        'text': panel['text_emotions'],
+                        'face': panel['face_emotions']
+                    }
+                })
+            
+            # Save and generate viewer
+            if comic_data['panels']:
                 self._generate_smart_viewer(comic_data)
                 print("✅ Smart comic generated: output/smart_comic_viewer.html")
+            else:
+                print("❌ No panels generated for smart comic")
                 
         except Exception as e:
             print(f"⚠️ Smart comic generation failed: {e}")
+            import traceback
+            traceback.print_exc()
     
     def _generate_smart_viewer(self, comic_data):
         """Generate HTML viewer for smart comic"""
