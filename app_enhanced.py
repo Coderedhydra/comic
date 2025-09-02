@@ -906,13 +906,13 @@ class EnhancedComicGenerator:
     def _copy_template_files(self):
         """Copy template files to output directory"""
         try:
-            # Copy HTML template
+            # Copy HTML template with editing functionality
             template_html = '''<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generated Comic</title>
+    <title>Generated Comic - Interactive Editor</title>
     <style>
         body { margin: 0; padding: 20px; background: #f0f0f0; font-family: Arial, sans-serif; }
         .comic-container { max-width: 1200px; margin: 0 auto; }
@@ -934,6 +934,26 @@ class EnhancedComicGenerator:
             z-index: 10;
             text-align: center;
             color: #333;
+            cursor: move;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .speech-bubble:hover { 
+            transform: scale(1.02); 
+            box-shadow: 3px 3px 12px rgba(0,0,0,0.6); 
+        }
+        .speech-bubble.editing { 
+            cursor: text; 
+        }
+        .speech-bubble textarea {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+            font: inherit;
+            text-align: center;
+            resize: none;
+            outline: 2px solid #4CAF50;
+            padding: 5px;
         }
         .speech-bubble::after { 
             content: ''; 
@@ -948,6 +968,20 @@ class EnhancedComicGenerator:
         }
         .comic-title { text-align: center; color: #333; margin-bottom: 20px; }
         .loading { text-align: center; color: #666; font-style: italic; }
+        .edit-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.85);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .edit-controls h4 { margin: 0 0 10px 0; color: #4CAF50; }
+        .edit-controls p { margin: 5px 0; opacity: 0.9; }
     </style>
 </head>
 <body>
@@ -956,6 +990,14 @@ class EnhancedComicGenerator:
         <div id="comic-pages">
             <div class="loading">Loading comic...</div>
         </div>
+    </div>
+    
+    <!-- Edit Controls -->
+    <div class="edit-controls">
+        <h4>✏️ Interactive Editor</h4>
+        <p>• <strong>Drag</strong> speech bubbles to move</p>
+        <p>• <strong>Double-click</strong> to edit text</p>
+        <p>• Changes auto-save locally</p>
     </div>
     <script>
         // Load comic data
@@ -1045,6 +1087,143 @@ class EnhancedComicGenerator:
                 console.error('Error loading comic:', error);
                 document.getElementById('comic-grid').innerHTML = '<div class="loading">Error loading comic data: ' + error.message + '</div>';
             });
+            
+        // Initialize editing functionality after comic loads
+        setTimeout(initializeEditor, 1000);
+        
+        // Editing functionality
+        let currentEditBubble = null;
+        let draggedBubble = null;
+        let offset = {x: 0, y: 0};
+        
+        function initializeEditor() {
+            document.querySelectorAll('.speech-bubble').forEach(bubble => {
+                bubble.addEventListener('dblclick', (e) => {
+                    e.stopPropagation();
+                    editBubbleText(bubble);
+                });
+                bubble.addEventListener('mousedown', startDrag);
+            });
+            
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+            loadSavedState();
+        }
+        
+        function editBubbleText(bubble) {
+            if (currentEditBubble) return;
+            
+            currentEditBubble = bubble;
+            bubble.classList.add('editing');
+            
+            const text = bubble.innerText;
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            
+            bubble.innerHTML = '';
+            bubble.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            
+            textarea.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    saveBubbleText(bubble, textarea.value);
+                }
+                if (e.key === 'Escape') {
+                    saveBubbleText(bubble, text);
+                }
+            });
+            
+            textarea.addEventListener('blur', () => {
+                setTimeout(() => {
+                    if (currentEditBubble === bubble) {
+                        saveBubbleText(bubble, textarea.value);
+                    }
+                }, 100);
+            });
+        }
+        
+        function saveBubbleText(bubble, text) {
+            bubble.innerText = text;
+            bubble.classList.remove('editing');
+            currentEditBubble = null;
+            saveState();
+        }
+        
+        function startDrag(e) {
+            if (e.target.tagName === 'TEXTAREA') return;
+            
+            const bubble = e.target.closest('.speech-bubble');
+            if (!bubble || currentEditBubble) return;
+            
+            draggedBubble = bubble;
+            const rect = bubble.getBoundingClientRect();
+            offset.x = e.clientX - rect.left;
+            offset.y = e.clientY - rect.top;
+            
+            bubble.style.opacity = '0.9';
+            bubble.style.zIndex = '100';
+            e.preventDefault();
+        }
+        
+        function drag(e) {
+            if (!draggedBubble) return;
+            
+            const parent = draggedBubble.parentElement;
+            const parentRect = parent.getBoundingClientRect();
+            
+            let x = e.clientX - parentRect.left - offset.x;
+            let y = e.clientY - parentRect.top - offset.y;
+            
+            x = Math.max(0, Math.min(x, parentRect.width - draggedBubble.offsetWidth));
+            y = Math.max(0, Math.min(y, parentRect.height - draggedBubble.offsetHeight));
+            
+            draggedBubble.style.left = x + 'px';
+            draggedBubble.style.top = y + 'px';
+        }
+        
+        function stopDrag() {
+            if (draggedBubble) {
+                draggedBubble.style.opacity = '';
+                draggedBubble.style.zIndex = '';
+                saveState();
+                draggedBubble = null;
+            }
+        }
+        
+        function saveState() {
+            const bubbles = [];
+            document.querySelectorAll('.speech-bubble').forEach((bubble, index) => {
+                bubbles.push({
+                    index: index,
+                    text: bubble.innerText,
+                    left: bubble.style.left,
+                    top: bubble.style.top
+                });
+            });
+            localStorage.setItem('comicBubbles', JSON.stringify(bubbles));
+        }
+        
+        function loadSavedState() {
+            const saved = localStorage.getItem('comicBubbles');
+            if (!saved) return;
+            
+            try {
+                const bubbles = JSON.parse(saved);
+                const elements = document.querySelectorAll('.speech-bubble');
+                
+                bubbles.forEach((data, index) => {
+                    if (elements[index]) {
+                        elements[index].innerText = data.text;
+                        if (data.left) elements[index].style.left = data.left;
+                        if (data.top) elements[index].style.top = data.top;
+                    }
+                });
+            } catch (e) {
+                console.error('Failed to load saved state:', e);
+            }
+        }
     </script>
 </body>
 </html>'''
