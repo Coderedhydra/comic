@@ -11,6 +11,8 @@ import os
 import srt
 from backend.keyframes.extract_frames import extract_frames
 from backend.utils import copy_and_rename_file, get_black_bar_coordinates, crop_image
+import signal
+import threading  # Added to check main thread
 
 # Cell 2
 # Global model cache to avoid reloading
@@ -119,14 +121,14 @@ def generate_keyframes(video):
     torch.cuda.empty_cache()
     
     # Add timeout protection
-    import signal
     
     def timeout_handler(signum, frame):
         raise TimeoutError("Keyframe generation timed out")
     
-    # Set timeout to 10 minutes
-    signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(600)  # 10 minutes timeout
+    # Set timeout to 10 minutes only if running in the main thread (signals are not allowed in worker threads)
+    if threading.current_thread() is threading.main_thread():
+        signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(600)  # 10 minutes timeout
 
     # Create final directory if it doesn't exist
     final_dir = os.path.join("frames", "final")
