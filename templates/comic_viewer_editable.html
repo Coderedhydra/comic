@@ -7,7 +7,7 @@
     <style>
         body {
             margin: 0;
-            padding: 20px;
+            padding: 0; /* remove padding */
             background: #2c3e50;
             font-family: Arial, sans-serif;
         }
@@ -16,23 +16,28 @@
             max-width: 900px;
             margin: 0 auto;
             background: white;
-            padding: 20px;
+            padding: 10px; /* reduce padding */
             border-radius: 10px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
         
         .comic-page {
             position: relative;
-            margin: 20px 0;
+            margin: 20px auto 0 auto; /* center horizontally */
             background: #f9f9f9;
             border: 2px solid #333;
+            width: 800px;  /* exact width */
+            height: 1080px; /* exact height */
+            overflow: hidden;
         }
         
         .panel-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            padding: 20px;
+            grid-template-rows: 1fr 1fr;
+            gap: 0; /* no gap */
+            width: 100%;
+            height: 100%;
         }
         
         .panel {
@@ -40,7 +45,6 @@
             border: 3px solid #333;
             background: white;
             overflow: hidden;
-            aspect-ratio: 4/3;
         }
         
         .panel img {
@@ -153,12 +157,16 @@
             <button class="btn" onclick="addNewBubble()">➕ Add Bubble</button>
             <button class="btn success" onclick="saveComic()">💾 Save Changes</button>
             <button class="btn" onclick="resetPositions()">🔄 Reset</button>
+            <button class="btn" onclick="downloadPages()">⬇️ Download Pages</button>
         </div>
         
         <div id="comic-pages">
             <!-- Comic pages will be inserted here -->
         </div>
     </div>
+    
+    <!-- html2canvas library for rendering pages to image -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     
     <script>
         let bubbles = [];
@@ -196,7 +204,7 @@
                     const panelDiv = document.createElement('div');
                     panelDiv.className = 'panel';
                     panelDiv.dataset.panelIdx = panelIdx;
-                    panelDiv.innerHTML = `<img src="${panel.image}" alt="Panel ${panelIdx + 1}">`;
+                    panelDiv.innerHTML = `<img src="${panel.image}" alt="Panel ${panelIdx + 1}" crossorigin="anonymous">`;
                     
                     // Add bubbles
                     panel.bubbles.forEach(bubble => {
@@ -369,6 +377,22 @@
             if (confirm('Reset all bubble positions to default?')) {
                 initComic();
             }
+        }
+        
+        // Download each comic page as 800x1080 PNG using html2canvas
+        function downloadPages() {
+            const pages = document.querySelectorAll('.comic-page');
+            pages.forEach((page, idx) => {
+                html2canvas(page, {width: 800, height: 1080, scale: 2, allowTaint: true, useCORS: true}).then(canvas => {
+                    canvas.toBlob(blob => {
+                        const link = document.createElement('a');
+                        link.download = `comic_page_${idx+1}.png`;
+                        link.href = URL.createObjectURL(blob);
+                        link.click();
+                        URL.revokeObjectURL(link.href);
+                    }, 'image/png');
+                });
+            });
         }
         
         // Load saved data if exists

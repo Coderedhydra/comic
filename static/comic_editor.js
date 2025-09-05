@@ -45,6 +45,8 @@ class ComicEditor {
                 background: white;
                 margin: 20px auto;
                 box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+                width: 800px;  /* exact width */
+                height: 1080px; /* exact height */
             }
             
             .comic-panel {
@@ -176,6 +178,14 @@ class ComicEditor {
             
             .toolbar-btn.success:hover {
                 background: #218838;
+            }
+            
+            .toolbar-btn.download {
+                background: #ff66b3; /* pink */
+                color: white;
+            }
+            .toolbar-btn.download:hover {
+                background: #ff4da6;
             }
             
             .resize-handle {
@@ -566,9 +576,9 @@ class ComicEditor {
         
         // Export button
         const exportBtn = document.createElement('button');
-        exportBtn.className = 'toolbar-btn';
-        exportBtn.textContent = '📥 Export';
-        exportBtn.onclick = () => this.exportComic();
+        exportBtn.className = 'toolbar-btn download';
+        exportBtn.textContent = '⬇️ Download';
+        exportBtn.onclick = () => this.downloadPages();
         toolbar.appendChild(exportBtn);
         
         // Reset button
@@ -751,6 +761,23 @@ class ComicEditor {
         
         document.addEventListener('mousemove', handleResize);
         document.addEventListener('mouseup', stopResize);
+    }
+
+    /** Download each page as PNG using html2canvas */
+    downloadPages() {
+        const pages = this.container.querySelectorAll('.comic-page');
+        if (!pages.length) return;
+        pages.forEach((page, idx) => {
+            html2canvas(page, {width: 800, height: 1080, scale: 2, useCORS: true, allowTaint: true}).then(canvas => {
+                canvas.toBlob(blob => {
+                    const a = document.createElement('a');
+                    a.download = `comic_page_${idx+1}.png`;
+                    a.href = URL.createObjectURL(blob);
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                }, 'image/png');
+            });
+        });
     }
 }
 

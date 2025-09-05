@@ -11,6 +11,8 @@ import os
 import srt
 from backend.keyframes.extract_frames import extract_frames
 from backend.utils import copy_and_rename_file, get_black_bar_coordinates, crop_image
+import signal
+import threading  # Added to check main thread
 
 # Cell 2
 # Global model cache to avoid reloading
@@ -119,14 +121,14 @@ def generate_keyframes(video):
     torch.cuda.empty_cache()
     
     # Add timeout protection
-    import signal
     
     def timeout_handler(signum, frame):
         raise TimeoutError("Keyframe generation timed out")
     
-    # Set timeout to 10 minutes
-    signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(600)  # 10 minutes timeout
+    # Set timeout to 10 minutes only if running in the main thread (signals are not allowed in worker threads)
+    if threading.current_thread() is threading.main_thread():
+        signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(600)  # 10 minutes timeout
 
     # Create final directory if it doesn't exist
     final_dir = os.path.join("frames", "final")
@@ -172,6 +174,31 @@ def generate_keyframes(video):
             else:
                 # Fallback if no frames extracted
                 print(f"⚠️ No frames extracted for subtitle {sub.index}")
+        
+        # If no frames were successfully generated, run fallback extraction on full video
+        if frame_counter == 1:
+            print("🚨 No story-relevant frames generated – falling back to uniform extraction…")
+            try:
+                # Extract 16 evenly spaced frames across the entire video duration
+                video_cap = cv2.VideoCapture(video)
+                total_frames = int(video_cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                step = max(total_frames // 16, 1)
+                extracted = 0
+                frame_idx = 0
+                while extracted < 16 and video_cap.isOpened():
+                    video_cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+                    ret, frame = video_cap.read()
+                    if not ret:
+                        break
+                    out_path = os.path.join(final_dir, f"frame{frame_counter:03}.png")
+                    cv2.imwrite(out_path, frame)
+                    frame_counter += 1
+                    extracted += 1
+                    frame_idx += step
+                video_cap.release()
+                print(f"✅ Fallback extracted {extracted} uniform frames")
+            except Exception as e:
+                print(f"Fallback extraction failed: {e}")
         
         print(f"✅ Generated {frame_counter-1} story-relevant frames")
         
