@@ -57,9 +57,21 @@ def get_lips(video, crop_coords, black_x, black_y):
     subs = srt.parse(data)
 
     lips = {}
-    for sub in subs:  
+    for array_index, sub in enumerate(subs):  
         keyframe_path = f"frames/final/frame{sub.index:03}.png"
+        
+        # Check if frame file exists and can be read
+        if not os.path.exists(keyframe_path):
+            print(f"⚠️ Frame file not found: {keyframe_path}")
+            lips[sub.index] = (-1, -1)
+            continue
+            
         keyframe = cv2.imread(keyframe_path)
+        if keyframe is None:
+            print(f"⚠️ Could not read frame file: {keyframe_path}")
+            lips[sub.index] = (-1, -1)
+            continue
+            
         gray = cv2.cvtColor(keyframe,cv2.COLOR_BGR2GRAY)   # Convert image into grayscale
         face_rects = face_detector(gray,1)             # Detect face
         print("\nsub:",sub.index)
@@ -73,24 +85,30 @@ def get_lips(video, crop_coords, black_x, black_y):
             lips[sub.index] = (-1,-1)
             continue
 
+        # Check if we have crop coordinates for this subtitle
+        if array_index >= len(crop_coords):
+            print(f"⚠️ No crop coordinates for subtitle {sub.index} (array_index={array_index})")
+            lips[sub.index] = (-1, -1)
+            continue
+
         if len(face_rects) == 1:                # 1 face detected: Extract from keyframe itself
             rect = face_rects[0]
             landmark = landmark_detector(gray, rect)   # Detect face landmarks
-            x,y = convert_to_css_pixel(landmark.part(65).x, landmark.part(65).y, crop_coords[sub.index - 1])
+            x,y = convert_to_css_pixel(landmark.part(65).x, landmark.part(65).y, crop_coords[array_index])
             lips[sub.index] = (x,y)
             continue
 
             
         if len(face_rects) > 1:                  # Too many face detected
             print("Too many face: sub_",sub.index,": ", len(face_rects))
-            origin = (crop_coords[sub.index - 1][0] , crop_coords[sub.index - 1][2] ) # (left,top)
+            origin = (crop_coords[array_index][0] , crop_coords[array_index][2] ) # (left,top)
             lip_coords = get_multi_speaker_lips(sub,video,face_rects)
             if lip_coords == (-1,-1):
                 lips[sub.index] = (-1,-1)
             else:
                 x = lip_coords[0] - (origin[0] + black_x)
                 y = lip_coords[1] - (origin[1] + black_y)
-                x , y = convert_to_css_pixel(x,y,crop_coords[sub.index - 1])
+                x , y = convert_to_css_pixel(x,y,crop_coords[array_index])
                 lips[sub.index] = (x,y)
             continue
     print(lips)

@@ -115,8 +115,19 @@ def bubble_create(video, crop_coords, black_x, black_y):
     # print("Detected emotions:", emotions)
 
 
+    # Create a mapping between subtitle indices and array positions
+    # This handles cases where subtitle indices are not sequential (e.g., 8, 9, 10, 12...)
+    subtitle_indices = [sub.index for sub in subs]
+    print(f"🔍 Subtitle indices: {subtitle_indices}")
+    print(f"🔍 Available crop_coords: {len(crop_coords)}, CAM_data: {len(CAM_data) if CAM_data else 0}")
+    
     placed_positions = []
-    for sub in subs:
+    for array_index, sub in enumerate(subs):
+        # Use array_index instead of sub.index-1 to avoid IndexError
+        if array_index >= len(crop_coords):
+            print(f"⚠️ Skipping subtitle {sub.index}: no crop coordinates available (array_index={array_index}, crop_coords length={len(crop_coords)})")
+            continue
+            
         lip_x = lips[sub.index][0]
         lip_y = lips[sub.index][1]
 
@@ -127,23 +138,30 @@ def bubble_create(video, crop_coords, black_x, black_y):
             try:
                 from backend.speech_bubble.smart_bubble_placement import get_smart_bubble_position
                 frame_path = f"frames/final/frame{sub.index:03}.png"
-                bubble_x, bubble_y = get_smart_bubble_position(frame_path, crop_coords[sub.index-1], (lip_x, lip_y))
+                bubble_x, bubble_y = get_smart_bubble_position(frame_path, crop_coords[array_index], (lip_x, lip_y))
                 print(f"Smart placement: ({bubble_x:.0f}, {bubble_y:.0f})")
             except Exception as e:
                 print(f"Smart placement failed: {e}, using fallback")
                 # Fallback to simple upper positioning
-                left, right, top, bottom = crop_coords[sub.index-1]
+                left, right, top, bottom = crop_coords[array_index]
                 bubble_x = left + (right - left) * 0.8  # 80% from left
                 bubble_y = top + (bottom - top) * 0.2   # 20% from top
         else:
             # For legacy mode, use CAM data
-            bubble_x, bubble_y = get_bubble_position(crop_coords[sub.index-1], CAM_data[sub.index-1], (lip_x, lip_y))
+            if CAM_data and array_index < len(CAM_data):
+                bubble_x, bubble_y = get_bubble_position(crop_coords[array_index], CAM_data[array_index], (lip_x, lip_y))
+            else:
+                print(f"⚠️ No CAM data for subtitle {sub.index}, using simple positioning")
+                # Fallback to simple upper positioning
+                left, right, top, bottom = crop_coords[array_index]
+                bubble_x = left + (right - left) * 0.8  # 80% from left
+                bubble_y = top + (bottom - top) * 0.2   # 20% from top
 
         # Advanced collision avoidance with grid-based positioning
         px, py = bubble_x, bubble_y
         
         # First, try to avoid face overlap
-        px, py = _avoid_lip_overlap(px, py, lip_x, lip_y, crop_coords[sub.index-1])
+        px, py = _avoid_lip_overlap(px, py, lip_x, lip_y, crop_coords[array_index])
         
         # Then handle bubble-to-bubble collision with smart positioning
         attempts = 0
@@ -175,7 +193,7 @@ def bubble_create(video, crop_coords, black_x, black_y):
                 py = original_pos[1] + radius * math.sin(angle)
             
             # Ensure position stays within panel bounds
-            px, py = _clamp_to_panel(px, py, crop_coords[sub.index-1])
+            px, py = _clamp_to_panel(px, py, crop_coords[array_index])
             attempts += 1
         
         bubble_x, bubble_y = px, py
