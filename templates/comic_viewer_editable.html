@@ -204,7 +204,7 @@
                     const panelDiv = document.createElement('div');
                     panelDiv.className = 'panel';
                     panelDiv.dataset.panelIdx = panelIdx;
-                    panelDiv.innerHTML = `<img src="${panel.image}" alt="Panel ${panelIdx + 1}">`;
+                    panelDiv.innerHTML = `<img src="${panel.image}" alt="Panel ${panelIdx + 1}" crossorigin="anonymous">`;
                     
                     // Add bubbles
                     panel.bubbles.forEach(bubble => {
@@ -383,7 +383,7 @@
         function downloadPages() {
             const pages = document.querySelectorAll('.comic-page');
             pages.forEach((page, idx) => {
-                html2canvas(page, {width: 800, height: 1080, scale: 1}).then(canvas => {
+                html2canvas(page, {width: 800, height: 1080, scale: 2, allowTaint: true, useCORS: true}).then(canvas => {
                     canvas.toBlob(blob => {
                         const link = document.createElement('a');
                         link.download = `comic_page_${idx+1}.png`;
