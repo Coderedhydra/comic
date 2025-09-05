@@ -118,15 +118,10 @@ def generate_keyframes(video):
     subs = srt.parse(data)
     torch.cuda.empty_cache()
     
-    # Add timeout protection
-    import signal
-    
-    def timeout_handler(signum, frame):
-        raise TimeoutError("Keyframe generation timed out")
-    
-    # Set timeout to 10 minutes
-    signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(600)  # 10 minutes timeout
+    # Add timeout protection using time-based checks (thread-safe alternative to signal)
+    # Track start time for timeout
+    start_time = time.time()
+    timeout_seconds = 600  # 10 minutes timeout
 
     # Create final directory if it doesn't exist
     final_dir = os.path.join("frames", "final")
@@ -143,6 +138,10 @@ def generate_keyframes(video):
     try:
         # Enhanced story-aware keyframe extraction
         for i, sub in enumerate(subs, 1):
+            # Check for timeout
+            if time.time() - start_time > timeout_seconds:
+                raise TimeoutError("Keyframe generation timed out")
+                
             print(f"📝 Processing segment {i}/{total_subs}: {sub.content[:30]}...")
             frames = []
             if not os.path.exists(f"frames/sub{sub.index}"):
@@ -153,6 +152,10 @@ def generate_keyframes(video):
                                   sub.start.total_seconds(), sub.end.total_seconds(), 10)  # Increased from 3 to 10
             
             if len(frames) > 0:
+                # Check for timeout before AI processing
+                if time.time() - start_time > timeout_seconds:
+                    raise TimeoutError("Keyframe generation timed out")
+                    
                 # Get AI highlight scores
                 features = _get_features(frames, gpu=False)
                 highlight_scores = _get_probs(features, gpu=False)
@@ -193,9 +196,23 @@ def generate_keyframes(video):
         
         print(f"✅ Generated {frame_counter-1} fallback frames")
     
-    finally:
-        # Cancel timeout
-        signal.alarm(0)
+    except Exception as e:
+        print(f"❌ Error during keyframe generation: {e}")
+        # Fallback: use first few subtitle segments
+        for i, sub in enumerate(subs[:4], 1):  # Use only first 4 segments
+            if frame_counter <= 16:
+                try:
+                    # Simple frame extraction without AI
+                    frames = extract_frames(video, os.path.join("frames", f"sub{sub.index}"), 
+                                          sub.start.total_seconds(), sub.end.total_seconds(), 1)
+                    if frames:
+                        copy_and_rename_file(frames[0], final_dir, f"frame{frame_counter:03}.png")
+                        print(f"📖 Fallback frame {frame_counter}: {sub.content}")
+                        frame_counter += 1
+                except:
+                    pass
+        
+        print(f"✅ Generated {frame_counter-1} fallback frames")
 
 def _select_story_relevant_frames(frames, highlight_scores, subtitle):
     """Enhanced story-aware frame selection"""
