@@ -87,7 +87,18 @@ def bubble_create(video, crop_coords, black_x, black_y):
     data=""
     with open("test1.srt") as f:
         data=f.read()
-    subs=srt.parse(data)
+    subs=list(srt.parse(data))
+
+    # Load frame map to locate actual frame path for each subtitle
+    frame_map_path = os.path.join("frames", "final", "frame_map.json")
+    frame_sub_indices = []
+    if os.path.exists(frame_map_path):
+        try:
+            with open(frame_map_path, "r") as mf:
+                frame_map = json.load(mf)
+                frame_sub_indices = frame_map.get("frame_sub_indices", [])
+        except Exception:
+            frame_sub_indices = []
 
 
     # Reading CAM data from dump (only for legacy mode)
@@ -126,8 +137,26 @@ def bubble_create(video, crop_coords, black_x, black_y):
             # Use smart image analysis for bubble placement
             try:
                 from backend.speech_bubble.smart_bubble_placement import get_smart_bubble_position
-                frame_path = f"frames/final/frame{sub.index:03}.png"
-                bubble_x, bubble_y = get_smart_bubble_position(frame_path, crop_coords[sub.index-1], (lip_x, lip_y))
+                # Find actual frame file path via mapping if available
+                candidate_indices = []
+                if frame_sub_indices:
+                    candidate_indices = [i+1 for i, si in enumerate(frame_sub_indices) if si == sub.index]
+                if not candidate_indices:
+                    candidate_indices = [sub.index]
+                frame_path = None
+                for idx in candidate_indices:
+                    p = f"frames/final/frame{idx:03}.png"
+                    if os.path.exists(p):
+                        frame_path = p
+                        break
+                if frame_path is None:
+                    # As a last resort, skip bubble by placing offscreen-safe default inside panel
+                    left, right, top, bottom = crop_coords[sub.index-1]
+                    bubble_x = max(0, (right - left) - 200)
+                    bubble_y = max(0, top)
+                    print(f"Skipping smart placement for sub {sub.index}: no frame found")
+                else:
+                    bubble_x, bubble_y = get_smart_bubble_position(frame_path, crop_coords[sub.index-1], (lip_x, lip_y))
                 print(f"Smart placement: ({bubble_x:.0f}, {bubble_y:.0f})")
             except Exception as e:
                 print(f"Smart placement failed: {e}, using fallback")

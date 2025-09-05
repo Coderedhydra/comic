@@ -9,6 +9,7 @@ import cv2
 import time
 import threading
 import os
+import json
 import srt
 from backend.keyframes.extract_frames import extract_frames
 from backend.utils import copy_and_rename_file, get_black_bar_coordinates, crop_image
@@ -146,6 +147,7 @@ def generate_keyframes(video):
         print(f"Created directory: {final_dir}")
 
     frame_counter = 1
+    frame_sub_indices = []  # mapping: list of subtitle indices in saved frame order
     total_subs = len(subs)
     
     print(f"🎯 Processing {total_subs} subtitle segments...")
@@ -179,6 +181,7 @@ def generate_keyframes(video):
                         try:
                             copy_and_rename_file(frames[frame_idx], final_dir, f"frame{frame_counter:03}.png")
                             print(f"📖 Story frame {frame_counter}: {sub.content} (score: {highlight_scores[frame_idx]:.3f})")
+                            frame_sub_indices.append(sub.index)
                             frame_counter += 1
                         except:
                             pass
@@ -199,6 +202,7 @@ def generate_keyframes(video):
                     if frames:
                         copy_and_rename_file(frames[0], final_dir, f"frame{frame_counter:03}.png")
                         print(f"📖 Fallback frame {frame_counter}: {sub.content}")
+                        frame_sub_indices.append(sub.index)
                         frame_counter += 1
                 except:
                     pass
@@ -214,12 +218,14 @@ def generate_keyframes(video):
                                             sub.start.total_seconds(), sub.end.total_seconds(), 1)
                     if frames:
                         copy_and_rename_file(frames[0], final_dir, f"frame001.png")
+                        frame_sub_indices.append(sub.index)
                         frame_counter = 2
                 else:
                     # As a last resort, grab the first frame of the video
                     frames = extract_frames(video, os.path.join("frames", "sub0"), 0.0, 1.0, 1)
                     if frames:
                         copy_and_rename_file(frames[0], final_dir, f"frame001.png")
+                        frame_sub_indices.append(1)
                         frame_counter = 2
             except Exception as e:
                 print(f"Fallback frame creation failed: {e}")
@@ -231,6 +237,16 @@ def generate_keyframes(video):
                 signal.alarm(0)
         except Exception:
             pass
+
+        # Persist frame-to-subtitle mapping for downstream modules
+        try:
+            if frame_sub_indices:
+                mapping_path = os.path.join("frames", "final", "frame_map.json")
+                with open(mapping_path, "w") as mf:
+                    json.dump({"frame_sub_indices": frame_sub_indices}, mf)
+                print(f"🗺️ Saved frame map with {len(frame_sub_indices)} entries to {mapping_path}")
+        except Exception as e:
+            print(f"⚠️ Failed to save frame map: {e}")
 
 def _select_story_relevant_frames(frames, highlight_scores, subtitle):
     """Enhanced story-aware frame selection"""
