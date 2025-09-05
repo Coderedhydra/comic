@@ -116,7 +116,8 @@ def generate_keyframes(video):
     with open("test1.srt") as f:
         data = f.read()
 
-    subs = srt.parse(data)
+    # Parse subtitles once to avoid generator exhaustion
+    subs = list(srt.parse(data))
     torch.cuda.empty_cache()
     
     # Add timeout protection (thread-safe)
@@ -145,8 +146,7 @@ def generate_keyframes(video):
         print(f"Created directory: {final_dir}")
 
     frame_counter = 1
-    total_subs = len(list(subs))
-    subs = list(subs)  # Convert to list to avoid exhaustion
+    total_subs = len(subs)
     
     print(f"🎯 Processing {total_subs} subtitle segments...")
     
@@ -187,14 +187,13 @@ def generate_keyframes(video):
                 print(f"⚠️ No frames extracted for subtitle {sub.index}")
         
         print(f"✅ Generated {frame_counter-1} story-relevant frames")
-        
+    
     except TimeoutError:
         print("⏰ Keyframe generation timed out, using fallback method...")
         # Fallback: use first few subtitle segments
         for i, sub in enumerate(subs[:4], 1):  # Use only first 4 segments
             if frame_counter <= 16:
                 try:
-                    # Simple frame extraction without AI
                     frames = extract_frames(video, os.path.join("frames", f"sub{sub.index}"), 
                                           sub.start.total_seconds(), sub.end.total_seconds(), 1)
                     if frames:
@@ -203,8 +202,27 @@ def generate_keyframes(video):
                         frame_counter += 1
                 except:
                     pass
-        
         print(f"✅ Generated {frame_counter-1} fallback frames")
+    else:
+        # If no frames were produced during the main pass, do a simple fallback
+        if frame_counter == 1:
+            print("⚠️ No frames generated during main pass. Creating basic fallback frame...")
+            try:
+                if subs:
+                    sub = subs[0]
+                    frames = extract_frames(video, os.path.join("frames", f"sub{sub.index}"),
+                                            sub.start.total_seconds(), sub.end.total_seconds(), 1)
+                    if frames:
+                        copy_and_rename_file(frames[0], final_dir, f"frame001.png")
+                        frame_counter = 2
+                else:
+                    # As a last resort, grab the first frame of the video
+                    frames = extract_frames(video, os.path.join("frames", "sub0"), 0.0, 1.0, 1)
+                    if frames:
+                        copy_and_rename_file(frames[0], final_dir, f"frame001.png")
+                        frame_counter = 2
+            except Exception as e:
+                print(f"Fallback frame creation failed: {e}")
     
     finally:
         # Cancel timeout if it was set via SIGALRM
