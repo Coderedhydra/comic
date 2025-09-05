@@ -33,15 +33,34 @@ body {
     height: 100%;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    border: 3px solid rgb(255, 255, 255);
-    row-gap: 3px;
-    column-gap: 3px;
+    grid-auto-rows: calc(1100px / 3); /* ensure three exact rows */
+    border: 0; /* default no outer border; modes override */
+    row-gap: 0;
+    column-gap: 0;
 }
 
 .grid-item {
     background-position: center center;
     background-repeat: no-repeat;
     background-size: cover;
-    border: 3px solid black;
+    border: 0;
     position: relative;
+}
+
+/* Exact Mode: single outer border, panels edge-to-edge */
+body.exact .grid-container {
+    border: 3px solid black;
+}
+
+body.exact .grid-item {
+    border: 0;
+}
+
+/* Unity Mode: no borders anywhere */
+body.unity .grid-container {
+    border: 0;
+}
+
+body.unity .grid-item {
+    border: 0;
 }

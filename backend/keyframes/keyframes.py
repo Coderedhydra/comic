@@ -7,6 +7,7 @@ from backend.keyframes.model import DSN
 import torch.nn as nn
 import cv2
 import time
+import threading
 import os
 import srt
 from backend.keyframes.extract_frames import extract_frames
@@ -118,15 +119,24 @@ def generate_keyframes(video):
     subs = srt.parse(data)
     torch.cuda.empty_cache()
     
-    # Add timeout protection
+    # Add timeout protection (thread-safe)
     import signal
     
     def timeout_handler(signum, frame):
         raise TimeoutError("Keyframe generation timed out")
     
-    # Set timeout to 10 minutes
-    signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(600)  # 10 minutes timeout
+    alarm_set = False
+    is_main_thread = threading.current_thread() is threading.main_thread()
+    deadline = time.time() + 600  # Soft deadline fallback
+    try:
+        if is_main_thread and hasattr(signal, "SIGALRM"):
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(600)  # 10 minutes timeout
+            alarm_set = True
+        else:
+            print("⏱️ SIGALRM not available (not main thread). Using soft deadline fallback.")
+    except Exception as e:
+        print(f"⏱️ Timeout setup failed: {e}. Using soft deadline fallback.")
 
     # Create final directory if it doesn't exist
     final_dir = os.path.join("frames", "final")
@@ -143,6 +153,9 @@ def generate_keyframes(video):
     try:
         # Enhanced story-aware keyframe extraction
         for i, sub in enumerate(subs, 1):
+            # Check soft deadline in non-main thread environments
+            if time.time() > deadline:
+                raise TimeoutError("Keyframe generation soft deadline exceeded")
             print(f"📝 Processing segment {i}/{total_subs}: {sub.content[:30]}...")
             frames = []
             if not os.path.exists(f"frames/sub{sub.index}"):
@@ -194,8 +207,12 @@ def generate_keyframes(video):
         print(f"✅ Generated {frame_counter-1} fallback frames")
     
     finally:
-        # Cancel timeout
-        signal.alarm(0)
+        # Cancel timeout if it was set via SIGALRM
+        try:
+            if alarm_set:
+                signal.alarm(0)
+        except Exception:
+            pass
 
 def _select_story_relevant_frames(frames, highlight_scores, subtitle):
     """Enhanced story-aware frame selection"""
