@@ -175,6 +175,31 @@ def generate_keyframes(video):
                 # Fallback if no frames extracted
                 print(f"⚠️ No frames extracted for subtitle {sub.index}")
         
+        # If no frames were successfully generated, run fallback extraction on full video
+        if frame_counter == 1:
+            print("🚨 No story-relevant frames generated – falling back to uniform extraction…")
+            try:
+                # Extract 16 evenly spaced frames across the entire video duration
+                video_cap = cv2.VideoCapture(video)
+                total_frames = int(video_cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                step = max(total_frames // 16, 1)
+                extracted = 0
+                frame_idx = 0
+                while extracted < 16 and video_cap.isOpened():
+                    video_cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+                    ret, frame = video_cap.read()
+                    if not ret:
+                        break
+                    out_path = os.path.join(final_dir, f"frame{frame_counter:03}.png")
+                    cv2.imwrite(out_path, frame)
+                    frame_counter += 1
+                    extracted += 1
+                    frame_idx += step
+                video_cap.release()
+                print(f"✅ Fallback extracted {extracted} uniform frames")
+            except Exception as e:
+                print(f"Fallback extraction failed: {e}")
+        
         print(f"✅ Generated {frame_counter-1} story-relevant frames")
         
     except TimeoutError:
