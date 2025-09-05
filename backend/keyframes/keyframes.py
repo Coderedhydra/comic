@@ -158,9 +158,9 @@ def generate_keyframes(video):
         os.makedirs(final_dir)
         print(f"Created directory: {final_dir}")
 
-    frame_counter = 1
     total_subs = len(list(subs))
     subs = list(subs)  # Convert to list to avoid exhaustion
+    frames_generated = 0
     
     print(f"🎯 Processing {total_subs} subtitle segments...")
     
@@ -171,7 +171,7 @@ def generate_keyframes(video):
             if time.time() - start_time > timeout_seconds:
                 raise TimeoutError("Keyframe generation timed out")
                 
-            print(f"📝 Processing segment {i}/{total_subs}: {sub.content[:30]}...")
+            print(f"📝 Processing segment {i}/{total_subs} (sub {sub.index}): {sub.content[:30]}...")
             frames = []
             if not os.path.exists(f"frames/sub{sub.index}"):
                 os.makedirs(f"frames/sub{sub.index}")
@@ -187,6 +187,9 @@ def generate_keyframes(video):
                 if time.time() - start_time > timeout_seconds:
                     raise TimeoutError("Keyframe generation timed out")
                 
+                # Use subtitle index for frame naming (this is what the rest of the system expects)
+                frame_filename = f"frame{sub.index:03}.png"
+                
                 # Check if AI processing is available
                 if TORCH_AVAILABLE:
                     try:
@@ -197,98 +200,98 @@ def generate_keyframes(video):
                         # Enhanced story-aware selection
                         story_frames = _select_story_relevant_frames(frames, highlight_scores, sub)
                         
-                        # Save the best story frames
-                        for j, frame_idx in enumerate(story_frames):
-                            if frame_counter <= 16:  # Limit to 16 frames total
-                                try:
-                                    copy_and_rename_file(frames[frame_idx], final_dir, f"frame{frame_counter:03}.png")
-                                    print(f"📖 Story frame {frame_counter}: {sub.content} (score: {highlight_scores[frame_idx]:.3f})")
-                                    frame_counter += 1
-                                except Exception as e:
-                                    print(f"⚠️ Failed to copy frame {frame_idx}: {e}")
+                        # Save the best story frame (use first one)
+                        if len(story_frames) > 0:
+                            try:
+                                copy_and_rename_file(frames[story_frames[0]], final_dir, frame_filename)
+                                print(f"📖 Story frame {sub.index}: {sub.content} (score: {highlight_scores[story_frames[0]]:.3f})")
+                                frames_generated += 1
+                            except Exception as e:
+                                print(f"⚠️ Failed to copy frame for sub {sub.index}: {e}")
                                     
                     except Exception as e:
                         print(f"⚠️ AI processing failed for segment {sub.index}: {e}")
                         # Fallback: use simple frame selection without AI
                         try:
                             # Use first frame as fallback
-                            if frame_counter <= 16 and len(frames) > 0:
-                                copy_and_rename_file(frames[0], final_dir, f"frame{frame_counter:03}.png")
-                                print(f"📖 Fallback frame {frame_counter}: {sub.content}")
-                                frame_counter += 1
+                            if len(frames) > 0:
+                                copy_and_rename_file(frames[0], final_dir, frame_filename)
+                                print(f"📖 Fallback frame {sub.index}: {sub.content}")
+                                frames_generated += 1
                         except Exception as fallback_error:
                             print(f"⚠️ Fallback frame copy also failed: {fallback_error}")
                 else:
                     # No AI available, use simple selection
                     try:
                         # Use first frame as fallback
-                        if frame_counter <= 16 and len(frames) > 0:
-                            copy_and_rename_file(frames[0], final_dir, f"frame{frame_counter:03}.png")
-                            print(f"📖 Simple frame {frame_counter}: {sub.content}")
-                            frame_counter += 1
+                        if len(frames) > 0:
+                            copy_and_rename_file(frames[0], final_dir, frame_filename)
+                            print(f"📖 Simple frame {sub.index}: {sub.content}")
+                            frames_generated += 1
                     except Exception as fallback_error:
                         print(f"⚠️ Simple frame copy failed: {fallback_error}")
             else:
                 # Fallback if no frames extracted
                 print(f"⚠️ No frames extracted for subtitle {sub.index}")
         
-        print(f"✅ Generated {frame_counter-1} story-relevant frames")
+        print(f"✅ Generated {frames_generated} story-relevant frames")
         
     except TimeoutError:
         print("⏰ Keyframe generation timed out, using fallback method...")
-        frame_counter = _generate_fallback_frames(video, subs, final_dir, frame_counter)
+        frames_generated += _generate_fallback_frames(video, subs, final_dir)
         
     except Exception as e:
         print(f"❌ Error during keyframe generation: {e}")
-        frame_counter = _generate_fallback_frames(video, subs, final_dir, frame_counter)
+        frames_generated += _generate_fallback_frames(video, subs, final_dir)
     
     # Ensure we have at least some frames
-    if frame_counter <= 1:
+    if frames_generated == 0:
         print("⚠️ No frames generated, attempting emergency fallback...")
-        frame_counter = _emergency_frame_generation(video, final_dir)
+        frames_generated = _emergency_frame_generation(video, final_dir, subs)
         
-    print(f"✅ Final result: Generated {frame_counter-1} frames")
+    print(f"✅ Final result: Generated {frames_generated} frames")
 
-def _generate_fallback_frames(video, subs, final_dir, frame_counter):
+def _generate_fallback_frames(video, subs, final_dir):
     """Generate fallback frames when AI processing fails"""
     print("🔄 Generating fallback frames without AI...")
     
+    fallback_count = 0
     # Use first few subtitle segments
     for i, sub in enumerate(subs[:8], 1):  # Use first 8 segments for better coverage
-        if frame_counter <= 16:
-            try:
-                # Create subtitle directory if it doesn't exist
-                sub_dir = os.path.join("frames", f"sub{sub.index}")
-                if not os.path.exists(sub_dir):
-                    os.makedirs(sub_dir)
+        try:
+            # Create subtitle directory if it doesn't exist
+            sub_dir = os.path.join("frames", f"sub{sub.index}")
+            if not os.path.exists(sub_dir):
+                os.makedirs(sub_dir)
+            
+            # Simple frame extraction without AI
+            frames = extract_frames(video, sub_dir, 
+                                  sub.start.total_seconds(), sub.end.total_seconds(), 1)
+            if frames and os.path.exists(frames[0]):
+                frame_filename = f"frame{sub.index:03}.png"
+                copy_and_rename_file(frames[0], final_dir, frame_filename)
+                print(f"📖 Fallback frame {sub.index}: {sub.content[:50]}...")
+                fallback_count += 1
+            else:
+                print(f"⚠️ No frames extracted for subtitle {sub.index}")
+        except Exception as e:
+            print(f"⚠️ Failed to extract fallback frame for subtitle {sub.index}: {e}")
                 
-                # Simple frame extraction without AI
-                frames = extract_frames(video, sub_dir, 
-                                      sub.start.total_seconds(), sub.end.total_seconds(), 1)
-                if frames and os.path.exists(frames[0]):
-                    copy_and_rename_file(frames[0], final_dir, f"frame{frame_counter:03}.png")
-                    print(f"📖 Fallback frame {frame_counter}: {sub.content[:50]}...")
-                    frame_counter += 1
-                else:
-                    print(f"⚠️ No frames extracted for subtitle {sub.index}")
-            except Exception as e:
-                print(f"⚠️ Failed to extract fallback frame for subtitle {sub.index}: {e}")
-                
-    print(f"✅ Generated {frame_counter-1} fallback frames")
-    return frame_counter
+    print(f"✅ Generated {fallback_count} fallback frames")
+    return fallback_count
 
-def _emergency_frame_generation(video, final_dir):
+def _emergency_frame_generation(video, final_dir, subs):
     """Emergency frame generation when everything else fails"""
     print("🚨 Emergency frame generation - extracting frames from video directly...")
     
-    frame_counter = 1
+    emergency_count = 0
     try:
         import cv2
         cap = cv2.VideoCapture(video)
         
         if not cap.isOpened():
             print(f"❌ Cannot open video file: {video}")
-            return frame_counter
+            return emergency_count
             
         fps = cap.get(cv2.CAP_PROP_FPS)
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -296,29 +299,53 @@ def _emergency_frame_generation(video, final_dir):
         
         print(f"📊 Video info: {total_frames} frames, {fps:.2f} fps, {duration:.2f}s")
         
-        # Extract frames at regular intervals
-        intervals = min(16, max(4, int(duration / 30)))  # Extract 4-16 frames depending on duration
-        frame_step = max(1, total_frames // intervals)
-        
-        for i in range(intervals):
-            frame_pos = i * frame_step
-            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_pos)
-            ret, frame = cap.read()
+        # If we have subtitles, try to extract frames at subtitle times
+        if subs and len(subs) > 0:
+            for sub in subs[:8]:  # Use first 8 subtitles
+                try:
+                    # Extract frame at the middle of the subtitle timing
+                    mid_time = (sub.start.total_seconds() + sub.end.total_seconds()) / 2
+                    frame_pos = int(mid_time * fps)
+                    
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_pos)
+                    ret, frame = cap.read()
+                    
+                    if ret and frame is not None:
+                        frame_filename = f"frame{sub.index:03}.png"
+                        frame_path = os.path.join(final_dir, frame_filename)
+                        cv2.imwrite(frame_path, frame)
+                        print(f"📖 Emergency frame {sub.index} extracted at {mid_time:.2f}s: {sub.content[:30]}...")
+                        emergency_count += 1
+                    else:
+                        print(f"⚠️ Failed to read frame at position {frame_pos} for sub {sub.index}")
+                except Exception as e:
+                    print(f"⚠️ Failed to extract emergency frame for sub {sub.index}: {e}")
+        else:
+            # No subtitles, extract frames at regular intervals with sequential naming
+            intervals = min(8, max(4, int(duration / 30)))  # Extract 4-8 frames depending on duration
+            frame_step = max(1, total_frames // intervals)
             
-            if ret and frame is not None:
-                frame_path = os.path.join(final_dir, f"frame{frame_counter:03}.png")
-                cv2.imwrite(frame_path, frame)
-                print(f"📖 Emergency frame {frame_counter} extracted at position {frame_pos}")
-                frame_counter += 1
-            else:
-                print(f"⚠️ Failed to read frame at position {frame_pos}")
+            for i in range(intervals):
+                frame_pos = i * frame_step
+                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_pos)
+                ret, frame = cap.read()
+                
+                if ret and frame is not None:
+                    frame_filename = f"frame{i+1:03}.png"
+                    frame_path = os.path.join(final_dir, frame_filename)
+                    cv2.imwrite(frame_path, frame)
+                    print(f"📖 Emergency frame {i+1} extracted at position {frame_pos}")
+                    emergency_count += 1
+                else:
+                    print(f"⚠️ Failed to read frame at position {frame_pos}")
                 
         cap.release()
         
     except Exception as e:
         print(f"❌ Emergency frame generation failed: {e}")
         
-    return frame_counter
+    print(f"✅ Generated {emergency_count} emergency frames")
+    return emergency_count
 
 def _select_story_relevant_frames(frames, highlight_scores, subtitle):
     """Enhanced story-aware frame selection"""

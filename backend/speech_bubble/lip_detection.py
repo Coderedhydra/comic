@@ -59,7 +59,19 @@ def get_lips(video, crop_coords, black_x, black_y):
     lips = {}
     for sub in subs:  
         keyframe_path = f"frames/final/frame{sub.index:03}.png"
+        
+        # Check if frame file exists and can be read
+        if not os.path.exists(keyframe_path):
+            print(f"⚠️ Frame file not found: {keyframe_path}")
+            lips[sub.index] = (-1, -1)
+            continue
+            
         keyframe = cv2.imread(keyframe_path)
+        if keyframe is None:
+            print(f"⚠️ Could not read frame file: {keyframe_path}")
+            lips[sub.index] = (-1, -1)
+            continue
+            
         gray = cv2.cvtColor(keyframe,cv2.COLOR_BGR2GRAY)   # Convert image into grayscale
         face_rects = face_detector(gray,1)             # Detect face
         print("\nsub:",sub.index)
