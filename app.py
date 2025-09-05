@@ -11,6 +11,7 @@ from backend.speech_bubble.bubble import bubble_create
 from backend.page_create import page_create,page_json
 from backend.utils import cleanup, download_video
 from backend.utils import copy_template
+from flask import send_from_directory
 
 app = Flask(__name__)
 
@@ -58,6 +59,12 @@ def handle_link():
         copy_template()
         webbrowser.open('file:///'+os.getcwd()+'/' + 'output/page.html')
         return "Comic created Successfully"
+    
+
+@app.route('/frames/<path:filename>')
+def frames_static(filename):
+    """Serve generated frame images located in /frames directory"""
+    return send_from_directory('frames', filename)
     
 
 
