@@ -7,7 +7,9 @@ from backend.keyframes.model import DSN
 import torch.nn as nn
 import cv2
 import time
+import threading
 import os
+import json
 import srt
 from backend.keyframes.extract_frames import extract_frames
 from backend.utils import copy_and_rename_file, get_black_bar_coordinates, crop_image
@@ -115,18 +117,28 @@ def generate_keyframes(video):
     with open("test1.srt") as f:
         data = f.read()
 
-    subs = srt.parse(data)
+    # Parse subtitles once to avoid generator exhaustion
+    subs = list(srt.parse(data))
     torch.cuda.empty_cache()
     
-    # Add timeout protection
+    # Add timeout protection (thread-safe)
     import signal
     
     def timeout_handler(signum, frame):
         raise TimeoutError("Keyframe generation timed out")
     
-    # Set timeout to 10 minutes
-    signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(600)  # 10 minutes timeout
+    alarm_set = False
+    is_main_thread = threading.current_thread() is threading.main_thread()
+    deadline = time.time() + 600  # Soft deadline fallback
+    try:
+        if is_main_thread and hasattr(signal, "SIGALRM"):
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(600)  # 10 minutes timeout
+            alarm_set = True
+        else:
+            print("⏱️ SIGALRM not available (not main thread). Using soft deadline fallback.")
+    except Exception as e:
+        print(f"⏱️ Timeout setup failed: {e}. Using soft deadline fallback.")
 
     # Create final directory if it doesn't exist
     final_dir = os.path.join("frames", "final")
@@ -135,14 +147,17 @@ def generate_keyframes(video):
         print(f"Created directory: {final_dir}")
 
     frame_counter = 1
-    total_subs = len(list(subs))
-    subs = list(subs)  # Convert to list to avoid exhaustion
+    frame_sub_indices = []  # mapping: list of subtitle indices in saved frame order
+    total_subs = len(subs)
     
     print(f"🎯 Processing {total_subs} subtitle segments...")
     
     try:
         # Enhanced story-aware keyframe extraction
         for i, sub in enumerate(subs, 1):
+            # Check soft deadline in non-main thread environments
+            if time.time() > deadline:
+                raise TimeoutError("Keyframe generation soft deadline exceeded")
             print(f"📝 Processing segment {i}/{total_subs}: {sub.content[:30]}...")
             frames = []
             if not os.path.exists(f"frames/sub{sub.index}"):
@@ -166,6 +181,7 @@ def generate_keyframes(video):
                         try:
                             copy_and_rename_file(frames[frame_idx], final_dir, f"frame{frame_counter:03}.png")
                             print(f"📖 Story frame {frame_counter}: {sub.content} (score: {highlight_scores[frame_idx]:.3f})")
+                            frame_sub_indices.append(sub.index)
                             frame_counter += 1
                         except:
                             pass
@@ -174,28 +190,63 @@ def generate_keyframes(video):
                 print(f"⚠️ No frames extracted for subtitle {sub.index}")
         
         print(f"✅ Generated {frame_counter-1} story-relevant frames")
-        
+    
     except TimeoutError:
         print("⏰ Keyframe generation timed out, using fallback method...")
         # Fallback: use first few subtitle segments
         for i, sub in enumerate(subs[:4], 1):  # Use only first 4 segments
             if frame_counter <= 16:
                 try:
-                    # Simple frame extraction without AI
                     frames = extract_frames(video, os.path.join("frames", f"sub{sub.index}"), 
                                           sub.start.total_seconds(), sub.end.total_seconds(), 1)
                     if frames:
                         copy_and_rename_file(frames[0], final_dir, f"frame{frame_counter:03}.png")
                         print(f"📖 Fallback frame {frame_counter}: {sub.content}")
+                        frame_sub_indices.append(sub.index)
                         frame_counter += 1
                 except:
                     pass
-        
         print(f"✅ Generated {frame_counter-1} fallback frames")
+    else:
+        # If no frames were produced during the main pass, do a simple fallback
+        if frame_counter == 1:
+            print("⚠️ No frames generated during main pass. Creating basic fallback frame...")
+            try:
+                if subs:
+                    sub = subs[0]
+                    frames = extract_frames(video, os.path.join("frames", f"sub{sub.index}"),
+                                            sub.start.total_seconds(), sub.end.total_seconds(), 1)
+                    if frames:
+                        copy_and_rename_file(frames[0], final_dir, f"frame001.png")
+                        frame_sub_indices.append(sub.index)
+                        frame_counter = 2
+                else:
+                    # As a last resort, grab the first frame of the video
+                    frames = extract_frames(video, os.path.join("frames", "sub0"), 0.0, 1.0, 1)
+                    if frames:
+                        copy_and_rename_file(frames[0], final_dir, f"frame001.png")
+                        frame_sub_indices.append(1)
+                        frame_counter = 2
+            except Exception as e:
+                print(f"Fallback frame creation failed: {e}")
     
     finally:
-        # Cancel timeout
-        signal.alarm(0)
+        # Cancel timeout if it was set via SIGALRM
+        try:
+            if alarm_set:
+                signal.alarm(0)
+        except Exception:
+            pass
+
+        # Persist frame-to-subtitle mapping for downstream modules
+        try:
+            if frame_sub_indices:
+                mapping_path = os.path.join("frames", "final", "frame_map.json")
+                with open(mapping_path, "w") as mf:
+                    json.dump({"frame_sub_indices": frame_sub_indices}, mf)
+                print(f"🗺️ Saved frame map with {len(frame_sub_indices)} entries to {mapping_path}")
+        except Exception as e:
+            print(f"⚠️ Failed to save frame map: {e}")
 
 def _select_story_relevant_frames(frames, highlight_scores, subtitle):
     """Enhanced story-aware frame selection"""

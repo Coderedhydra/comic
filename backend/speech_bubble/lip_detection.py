@@ -5,6 +5,7 @@ import srt
 import re
 from math import floor,sqrt
 from backend.utils import convert_to_css_pixel
+import json
 
 # Some constants
 THETA1 = 1.2    # Difference between lip distance of prev and curr frame
@@ -54,12 +55,41 @@ def get_lips(video, crop_coords, black_x, black_y):
     data=""
     with open("test1.srt") as f:
         data = f.read()
-    subs = srt.parse(data)
+    subs = list(srt.parse(data))
+
+    # Optional mapping from frames to subtitle indices
+    frame_map_path = os.path.join("frames", "final", "frame_map.json")
+    frame_sub_indices = []
+    if os.path.exists(frame_map_path):
+        try:
+            with open(frame_map_path, "r") as mf:
+                frame_map = json.load(mf)
+                frame_sub_indices = frame_map.get("frame_sub_indices", [])
+        except Exception:
+            frame_sub_indices = []
 
     lips = {}
     for sub in subs:  
-        keyframe_path = f"frames/final/frame{sub.index:03}.png"
-        keyframe = cv2.imread(keyframe_path)
+        # Prefer mapped frames if available; else fall back to direct sub.index
+        candidate_indices = []
+        if frame_sub_indices:
+            candidate_indices = [i+1 for i, si in enumerate(frame_sub_indices) if si == sub.index]
+        if not candidate_indices:
+            candidate_indices = [sub.index]
+
+        keyframe = None
+        for idx in candidate_indices:
+            keyframe_path = f"frames/final/frame{idx:03}.png"
+            if os.path.exists(keyframe_path):
+                keyframe = cv2.imread(keyframe_path)
+                if keyframe is not None:
+                    break
+
+        if keyframe is None:
+            print(f"No keyframe found for subtitle {sub.index}, skipping lip detection")
+            lips[sub.index] = (-1,-1)
+            continue
+
         gray = cv2.cvtColor(keyframe,cv2.COLOR_BGR2GRAY)   # Convert image into grayscale
         face_rects = face_detector(gray,1)             # Detect face
         print("\nsub:",sub.index)
