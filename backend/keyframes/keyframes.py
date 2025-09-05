@@ -1,10 +1,18 @@
 # Cell 1
-import torch
-from torchvision import transforms
+# Import torch-related modules conditionally
+try:
+    import torch
+    from torchvision import transforms
+    from backend.keyframes.model import DSN
+    import torch.nn as nn
+    TORCH_AVAILABLE = True
+    print("✅ PyTorch available for AI-based keyframe selection")
+except ImportError:
+    TORCH_AVAILABLE = False
+    print("⚠️ PyTorch not available - using fallback frame selection")
+
 from PIL import Image
 import numpy as np
-from backend.keyframes.model import DSN
-import torch.nn as nn
 import cv2
 import time
 import os
@@ -18,6 +26,9 @@ _googlenet_model = None
 _preprocess_pipeline = None
 
 def _get_features(frames, gpu=True, batch_size=1):
+    if not TORCH_AVAILABLE:
+        raise ImportError("PyTorch not available for AI feature extraction")
+        
     global _googlenet_model, _preprocess_pipeline
     
     # Load pre-trained GoogLeNet model only once
@@ -71,6 +82,9 @@ def _get_features(frames, gpu=True, batch_size=1):
 _dsn_models = {}
 
 def _get_probs(features, gpu=True, mode=0):
+    if not TORCH_AVAILABLE:
+        raise ImportError("PyTorch not available for AI probability calculation")
+        
     global _dsn_models
     
     # Create cache key
@@ -111,12 +125,27 @@ def _get_probs(features, gpu=True, mode=0):
 
    
 def generate_keyframes(video):
+    # Check if video file exists
+    if not os.path.exists(video):
+        print(f"❌ Video file not found: {video}")
+        return
+        
+    print(f"🎬 Starting keyframe generation for: {video}")
+    
     data=""
     with open("test1.srt") as f:
         data = f.read()
 
     subs = srt.parse(data)
-    torch.cuda.empty_cache()
+    
+    # Only clear GPU cache if torch is available
+    if TORCH_AVAILABLE:
+        try:
+            torch.cuda.empty_cache()
+        except Exception as e:
+            print(f"⚠️ GPU cache clear failed: {e}")
+    else:
+        print("⚠️ PyTorch not available - proceeding without GPU optimization")
     
     # Add timeout protection using time-based checks (thread-safe alternative to signal)
     # Track start time for timeout
@@ -148,30 +177,57 @@ def generate_keyframes(video):
                 os.makedirs(f"frames/sub{sub.index}")
             
             # Extract more frames per segment for better story selection
-            frames = extract_frames(video, os.path.join("frames", f"sub{sub.index}"), 
+            sub_dir = os.path.join("frames", f"sub{sub.index}")
+            frames = extract_frames(video, sub_dir, 
                                   sub.start.total_seconds(), sub.end.total_seconds(), 10)  # Increased from 3 to 10
+            print(f"🔍 Extracted {len(frames)} frames for segment {sub.index} (time: {sub.start.total_seconds():.2f}s - {sub.end.total_seconds():.2f}s)")
             
             if len(frames) > 0:
                 # Check for timeout before AI processing
                 if time.time() - start_time > timeout_seconds:
                     raise TimeoutError("Keyframe generation timed out")
-                    
-                # Get AI highlight scores
-                features = _get_features(frames, gpu=False)
-                highlight_scores = _get_probs(features, gpu=False)
                 
-                # Enhanced story-aware selection
-                story_frames = _select_story_relevant_frames(frames, highlight_scores, sub)
-                
-                # Save the best story frames
-                for j, frame_idx in enumerate(story_frames):
-                    if frame_counter <= 16:  # Limit to 16 frames total
+                # Check if AI processing is available
+                if TORCH_AVAILABLE:
+                    try:
+                        # Try AI-based selection first
+                        features = _get_features(frames, gpu=False)
+                        highlight_scores = _get_probs(features, gpu=False)
+                        
+                        # Enhanced story-aware selection
+                        story_frames = _select_story_relevant_frames(frames, highlight_scores, sub)
+                        
+                        # Save the best story frames
+                        for j, frame_idx in enumerate(story_frames):
+                            if frame_counter <= 16:  # Limit to 16 frames total
+                                try:
+                                    copy_and_rename_file(frames[frame_idx], final_dir, f"frame{frame_counter:03}.png")
+                                    print(f"📖 Story frame {frame_counter}: {sub.content} (score: {highlight_scores[frame_idx]:.3f})")
+                                    frame_counter += 1
+                                except Exception as e:
+                                    print(f"⚠️ Failed to copy frame {frame_idx}: {e}")
+                                    
+                    except Exception as e:
+                        print(f"⚠️ AI processing failed for segment {sub.index}: {e}")
+                        # Fallback: use simple frame selection without AI
                         try:
-                            copy_and_rename_file(frames[frame_idx], final_dir, f"frame{frame_counter:03}.png")
-                            print(f"📖 Story frame {frame_counter}: {sub.content} (score: {highlight_scores[frame_idx]:.3f})")
+                            # Use first frame as fallback
+                            if frame_counter <= 16 and len(frames) > 0:
+                                copy_and_rename_file(frames[0], final_dir, f"frame{frame_counter:03}.png")
+                                print(f"📖 Fallback frame {frame_counter}: {sub.content}")
+                                frame_counter += 1
+                        except Exception as fallback_error:
+                            print(f"⚠️ Fallback frame copy also failed: {fallback_error}")
+                else:
+                    # No AI available, use simple selection
+                    try:
+                        # Use first frame as fallback
+                        if frame_counter <= 16 and len(frames) > 0:
+                            copy_and_rename_file(frames[0], final_dir, f"frame{frame_counter:03}.png")
+                            print(f"📖 Simple frame {frame_counter}: {sub.content}")
                             frame_counter += 1
-                        except:
-                            pass
+                    except Exception as fallback_error:
+                        print(f"⚠️ Simple frame copy failed: {fallback_error}")
             else:
                 # Fallback if no frames extracted
                 print(f"⚠️ No frames extracted for subtitle {sub.index}")
@@ -180,39 +236,89 @@ def generate_keyframes(video):
         
     except TimeoutError:
         print("⏰ Keyframe generation timed out, using fallback method...")
-        # Fallback: use first few subtitle segments
-        for i, sub in enumerate(subs[:4], 1):  # Use only first 4 segments
-            if frame_counter <= 16:
-                try:
-                    # Simple frame extraction without AI
-                    frames = extract_frames(video, os.path.join("frames", f"sub{sub.index}"), 
-                                          sub.start.total_seconds(), sub.end.total_seconds(), 1)
-                    if frames:
-                        copy_and_rename_file(frames[0], final_dir, f"frame{frame_counter:03}.png")
-                        print(f"📖 Fallback frame {frame_counter}: {sub.content}")
-                        frame_counter += 1
-                except:
-                    pass
+        frame_counter = _generate_fallback_frames(video, subs, final_dir, frame_counter)
         
-        print(f"✅ Generated {frame_counter-1} fallback frames")
-    
     except Exception as e:
         print(f"❌ Error during keyframe generation: {e}")
-        # Fallback: use first few subtitle segments
-        for i, sub in enumerate(subs[:4], 1):  # Use only first 4 segments
-            if frame_counter <= 16:
-                try:
-                    # Simple frame extraction without AI
-                    frames = extract_frames(video, os.path.join("frames", f"sub{sub.index}"), 
-                                          sub.start.total_seconds(), sub.end.total_seconds(), 1)
-                    if frames:
-                        copy_and_rename_file(frames[0], final_dir, f"frame{frame_counter:03}.png")
-                        print(f"📖 Fallback frame {frame_counter}: {sub.content}")
-                        frame_counter += 1
-                except:
-                    pass
+        frame_counter = _generate_fallback_frames(video, subs, final_dir, frame_counter)
+    
+    # Ensure we have at least some frames
+    if frame_counter <= 1:
+        print("⚠️ No frames generated, attempting emergency fallback...")
+        frame_counter = _emergency_frame_generation(video, final_dir)
         
-        print(f"✅ Generated {frame_counter-1} fallback frames")
+    print(f"✅ Final result: Generated {frame_counter-1} frames")
+
+def _generate_fallback_frames(video, subs, final_dir, frame_counter):
+    """Generate fallback frames when AI processing fails"""
+    print("🔄 Generating fallback frames without AI...")
+    
+    # Use first few subtitle segments
+    for i, sub in enumerate(subs[:8], 1):  # Use first 8 segments for better coverage
+        if frame_counter <= 16:
+            try:
+                # Create subtitle directory if it doesn't exist
+                sub_dir = os.path.join("frames", f"sub{sub.index}")
+                if not os.path.exists(sub_dir):
+                    os.makedirs(sub_dir)
+                
+                # Simple frame extraction without AI
+                frames = extract_frames(video, sub_dir, 
+                                      sub.start.total_seconds(), sub.end.total_seconds(), 1)
+                if frames and os.path.exists(frames[0]):
+                    copy_and_rename_file(frames[0], final_dir, f"frame{frame_counter:03}.png")
+                    print(f"📖 Fallback frame {frame_counter}: {sub.content[:50]}...")
+                    frame_counter += 1
+                else:
+                    print(f"⚠️ No frames extracted for subtitle {sub.index}")
+            except Exception as e:
+                print(f"⚠️ Failed to extract fallback frame for subtitle {sub.index}: {e}")
+                
+    print(f"✅ Generated {frame_counter-1} fallback frames")
+    return frame_counter
+
+def _emergency_frame_generation(video, final_dir):
+    """Emergency frame generation when everything else fails"""
+    print("🚨 Emergency frame generation - extracting frames from video directly...")
+    
+    frame_counter = 1
+    try:
+        import cv2
+        cap = cv2.VideoCapture(video)
+        
+        if not cap.isOpened():
+            print(f"❌ Cannot open video file: {video}")
+            return frame_counter
+            
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        duration = total_frames / fps if fps > 0 else 0
+        
+        print(f"📊 Video info: {total_frames} frames, {fps:.2f} fps, {duration:.2f}s")
+        
+        # Extract frames at regular intervals
+        intervals = min(16, max(4, int(duration / 30)))  # Extract 4-16 frames depending on duration
+        frame_step = max(1, total_frames // intervals)
+        
+        for i in range(intervals):
+            frame_pos = i * frame_step
+            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_pos)
+            ret, frame = cap.read()
+            
+            if ret and frame is not None:
+                frame_path = os.path.join(final_dir, f"frame{frame_counter:03}.png")
+                cv2.imwrite(frame_path, frame)
+                print(f"📖 Emergency frame {frame_counter} extracted at position {frame_pos}")
+                frame_counter += 1
+            else:
+                print(f"⚠️ Failed to read frame at position {frame_pos}")
+                
+        cap.release()
+        
+    except Exception as e:
+        print(f"❌ Emergency frame generation failed: {e}")
+        
+    return frame_counter
 
 def _select_story_relevant_frames(frames, highlight_scores, subtitle):
     """Enhanced story-aware frame selection"""

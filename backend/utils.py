@@ -3,9 +3,16 @@ import os
 from PIL import Image
 import cv2
 import numpy as np
-import yt_dlp
 import re
 from pathlib import Path
+
+# Import yt_dlp conditionally
+try:
+    import yt_dlp
+    YT_DLP_AVAILABLE = True
+except ImportError:
+    YT_DLP_AVAILABLE = False
+    print("⚠️ yt-dlp not available - video download features disabled")
 # Dimensions of the entire page
 hT = 1100
 wT = 1035
@@ -223,6 +230,9 @@ def cleanup():
     print("Deleted previous sub folders")
 
 def download_video(url):
+    if not YT_DLP_AVAILABLE:
+        raise ImportError("yt-dlp not available - cannot download videos from URLs")
+        
     print("Downloading video")
     ydl_opts = {
         'outtmpl': f'video/uploaded.%(ext)s',
