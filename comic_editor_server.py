@@ -94,7 +94,7 @@ def generate_comic_data():
     
     # Create comic layout
     page_width = 800
-    page_height = 1200
+    page_height = 1080
     panel_width = 380
     panel_height = 280
     padding = 10
