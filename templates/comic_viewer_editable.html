@@ -23,7 +23,7 @@
         
         .comic-page {
             position: relative;
-            margin: 20px 0;
+            margin: 0; /* removed outer margin to eliminate extra space */
             background: #f9f9f9;
             border: 2px solid #333;
         }
@@ -31,8 +31,8 @@
         .panel-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            padding: 20px;
+            gap: 0; /* remove gap between panels */
+            padding: 0; /* remove internal padding */
         }
         
         .panel {
