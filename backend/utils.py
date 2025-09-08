@@ -215,6 +215,23 @@ def cleanup():
     # Delete all other folders in the frames folder
     delete_other_folders(frames_path, final_folder_name)
 
+    # --- NEW: Remove previously generated auxiliary files so they don't leak into the next run ---
+    aux_files = [
+        'test1.srt',                 # previous subtitle file
+        'lips.pkl',                  # cached lip positions
+        'CAM_data.pkl',              # cached CAM data (legacy mode)
+        os.path.join('output_template', 'page.js'),  # previous generated page data
+        os.path.join('frames', 'final', 'frame_map.json'), # mapping of frames to subtitles
+    ]
+
+    for aux in aux_files:
+        if os.path.exists(aux):
+            try:
+                os.remove(aux)
+                print(f"Deleted previous auxiliary file: {aux}")
+            except Exception as e:
+                print(f"Failed to delete {aux}: {e}")
+
     # Deleting the uploaded.mp4
     if os.path.exists(uploaded_video_path):
         os.remove(uploaded_video_path)

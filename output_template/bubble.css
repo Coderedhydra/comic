@@ -24,6 +24,21 @@
 
 }
 
+/* NEW: Special styling for jagged emotion bubbles to align text properly inside the spiky cloud image */
+.bubble.jagged {
+    background-image: url("assets/jagged.png");
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-color: transparent;
+
+    width: 200px;
+    height: 94px;
+
+    /* Provide inner space so text does not overlap spikes */
+    padding: 35px 30px 30px 30px; /* top, right, bottom, left */
+}
+
 .tail{
   width: 0;
   height: 0;
