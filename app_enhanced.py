@@ -1954,6 +1954,17 @@ def create_portable():
         print(f"Portable creation error: {e}")
         return jsonify({'error': str(e)}), 500
 
+# ------------------------------------------------------------------
+# Disable caching so browser always fetches latest comic assets
+# ------------------------------------------------------------------
+
+@app.after_request
+def add_header(response):
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
 if __name__ == '__main__':
     print("🚀 Starting Enhanced Comic Generator...")
     print("✨ Features:")

@@ -37,7 +37,7 @@
     height: 94px;
 
     /* Provide inner space so text does not overlap spikes */
-    padding: 26px 30px 22px 30px; /* fine-tuned for jagged cloud */
+    padding: 32px 36px 28px 36px; /* adjusted to match jagged graphic inner area */
 }
 
 .tail{
