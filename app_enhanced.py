@@ -1755,6 +1755,10 @@ class EnhancedComicGenerator:
             }, 3000);
         }
     </script>
+    <script>
+        // Ensure previous bubble edits do not carry over to a new comic
+        localStorage.removeItem('comicBubbles');
+    </script>
 </body>
 </html>'''
             
