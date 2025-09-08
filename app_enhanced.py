@@ -220,6 +220,8 @@ class EnhancedComicGenerator:
             
             # 10. Save results
             print("💾 Saving results...")
+            # Prepare exact-size panel images to avoid any gaps in HTML
+            self._generate_panel_frames_400x540()
             self._save_results(pages)
             
             # 11. Smart mode already applied during frame selection
@@ -257,6 +259,38 @@ class EnhancedComicGenerator:
             enhancer.enhance_batch(self.frames_dir)
         except Exception as e:
             print(f"❌ Simple enhancement failed: {e}")
+    
+    def _generate_panel_frames_400x540(self):
+        """Create 400x540 PNG versions for all frames to avoid gaps in UI."""
+        try:
+            target_w, target_h = 400, 540
+            input_dir = self.frames_dir
+            output_dir = os.path.join('frames', 'panels_400x540')
+            os.makedirs(output_dir, exist_ok=True)
+            frame_files = [f for f in os.listdir(input_dir) if f.lower().endswith('.png')]
+            for fname in frame_files:
+                src_path = os.path.join(input_dir, fname)
+                dst_name = os.path.splitext(fname)[0] + '.png'
+                dst_path = os.path.join(output_dir, dst_name)
+                try:
+                    img = cv2.imread(src_path)
+                    if img is None:
+                        continue
+                    h, w = img.shape[:2]
+                    scale = max(target_w / w, target_h / h)
+                    new_w = int(round(w * scale))
+                    new_h = int(round(h * scale))
+                    resized = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_LANCZOS4)
+                    x_start = max(0, (new_w - target_w) // 2)
+                    y_start = max(0, (new_h - target_h) // 2)
+                    cropped = resized[y_start:y_start+target_h, x_start:x_start+target_w]
+                    cropped = cropped[:target_h, :target_w]
+                    cv2.imwrite(dst_path, cropped, [cv2.IMWRITE_PNG_COMPRESSION, 3])
+                except Exception as e:
+                    print(f"⚠️ 400x540 generation failed for {fname}: {e}")
+            print(f"✅ 400x540 frames ready in {output_dir}")
+        except Exception as e:
+            print(f"⚠️ Failed generating 400x540 frames: {e}")
     
     def _enhance_all_images_advanced(self):
         """Enhance quality using advanced AI models (Real-ESRGAN, GFPGAN, etc.)"""
@@ -845,7 +879,7 @@ class EnhancedComicGenerator:
             
             html += f'''
             <div class="comic-panel">
-                <img src="/frames/final/{panel['frame']}" alt="Panel {i+1}" onerror="this.src='/frames/final/frame{i:03d}.png'">
+                <img src="/frames/panels_400x540/{panel['frame']}" alt="Panel {i+1}" onerror="this.src='/frames/panels_400x540/frame{i:03d}.png'">
                 <div class="match-score {match_class}">
                     Match: {match_score:.1%} | Eyes: {panel.get('eye_score', 1.0):.1%}
                 </div>
@@ -974,6 +1008,7 @@ class EnhancedComicGenerator:
             position: absolute;
             top: 0;
             left: 0;
+            border: none;
         }
         .page-wrapper {
             margin: 30px auto;
@@ -1019,38 +1054,22 @@ class EnhancedComicGenerator:
         }
         .panel { 
             position: relative; 
-            border: 1px solid #333;
+            border: none;
             overflow: hidden; 
             width: 400px;
             height: 540px;
-            box-sizing: border-box; /* Border included in dimensions */
+            box-sizing: border-box; /* Keep sizing consistent */
             margin: 0;
             padding: 0;
             flex-shrink: 0; /* Don't shrink */
         }
-        /* Remove double borders between adjacent panels */
-        .panel:nth-child(1) {
-            border-right: none;
-            border-bottom: none;
-        }
-        .panel:nth-child(2) {
-            border-left: 1px solid #333;
-            border-bottom: none;
-        }
-        .panel:nth-child(3) {
-            border-right: none;
-            border-top: 1px solid #333;
-        }
-        .panel:nth-child(4) {
-            border-left: 1px solid #333;
-            border-top: 1px solid #333;
-        }
         .panel img { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: contain; /* No zooming - shows entire image */
+            width: 100%;
+            height: 100%;
+            display: block; /* Remove baseline gap */
+            object-fit: cover; /* Fill without letterboxing */
             object-position: center; /* Center the image */
-            background-color: #fff; /* White background for letterbox areas */
+            background-color: transparent;
         }
         
         /* Alternative modes - uncomment one to use */
@@ -1059,21 +1078,12 @@ class EnhancedComicGenerator:
         /* .panel img { object-fit: scale-down; } */ /* Shrink if needed */
         
         /* Exact 800x1080 mode - no individual borders */
-        .exact-size .panel { 
-            border: none !important; 
-        }
-        .exact-size .comic-grid { 
-            border: 1px solid #333;
-            box-sizing: border-box;
-        }
+        .exact-size .panel { border: none !important; }
+        .exact-size .comic-grid { border: none !important; box-sizing: border-box; }
         
         /* Unity export mode - no borders, clean images */
-        .unity-export .panel { 
-            border: none !important; 
-        }
-        .unity-export .comic-grid { 
-            border: none !important; 
-        }
+        .unity-export .panel { border: none !important; }
+        .unity-export .comic-grid { border: none !important; }
         .unity-export .page-info {
             display: none !important;
         }
@@ -1240,7 +1250,7 @@ class EnhancedComicGenerator:
                                 panelDiv.className = 'panel';
                                 
                                 const img = document.createElement('img');
-                                img.src = '/frames/final/' + panel.image;
+                                img.src = '/frames/panels_400x540/' + panel.image;
                                 img.alt = `Page ${pageIndex + 1} - Panel ${index + 1}`;
                                 img.onerror = function() {
                                     this.style.display = 'none';
@@ -1894,6 +1904,11 @@ def output_file(filename):
 def frame_file(filename):
     """Serve frame files"""
     return send_from_directory('frames/final', filename)
+
+@app.route('/frames/panels_400x540/<path:filename>')
+def frame_panel_file(filename):
+    """Serve pre-cropped 400x540 panel frames"""
+    return send_from_directory('frames/panels_400x540', filename)
 
 @app.route('/comic')
 def view_comic():
