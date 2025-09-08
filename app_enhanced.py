@@ -7,7 +7,7 @@ import os
 import webbrowser
 import time
 import threading
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, send_file
 from pathlib import Path
 import cv2
 import numpy as np
@@ -26,6 +26,7 @@ from backend.subtitles.subs_real import get_real_subtitles
 from backend.keyframes.keyframes_simple import generate_keyframes_simple
 from backend.keyframes.keyframes import black_bar_crop
 from backend.class_def import bubble, panel, Page
+from backend.utils import cleanup
 
 # Import smart comic generation
 try:
@@ -1785,9 +1786,8 @@ def upload_file():
             if f.filename == '':
                 return "❌ No file selected"
             
-            # Clean up previous files
-            if os.path.exists('video/uploaded.mp4'):
-                os.remove('video/uploaded.mp4')
+            # Full cleanup of previous run (frames, subtitles, page.js, output, etc.)
+            cleanup()
             
             # Save uploaded file
             f.save("video/uploaded.mp4")
@@ -1828,9 +1828,8 @@ def handle_link():
             if not link:
                 return "❌ No link provided"
             
-            # Clean up previous files
-            if os.path.exists('video/uploaded.mp4'):
-                os.remove('video/uploaded.mp4')
+            # Full cleanup of previous run before downloading new video
+            cleanup()
             
             # Download video using yt-dlp
             try:
