@@ -205,6 +205,12 @@ def cleanup():
     os.makedirs(final_folder_path, exist_ok=True) # If folders does not exist, create:
     os.makedirs('video', exist_ok=True)
 
+    # NEW: clear previously generated output pages to avoid stale cache
+    output_path = 'output'
+    if os.path.exists(output_path):
+        clear_folder(output_path)
+        print("Cleared previous output folder")
+
     # Clear the contents of the final folder
     if os.path.exists(final_folder_path):
         clear_folder(final_folder_path)
@@ -215,12 +221,38 @@ def cleanup():
     # Delete all other folders in the frames folder
     delete_other_folders(frames_path, final_folder_name)
 
+    # --- NEW: Remove previously generated auxiliary files so they don't leak into the next run ---
+    aux_files = [
+        'test1.srt',                 # previous subtitle file
+        'lips.pkl',                  # cached lip positions
+        'CAM_data.pkl',              # cached CAM data (legacy mode)
+        os.path.join('output_template', 'page.js'),  # previous generated page data
+        os.path.join('frames', 'final', 'frame_map.json'), # mapping of frames to subtitles
+    ]
+
+    for aux in aux_files:
+        if os.path.exists(aux):
+            try:
+                os.remove(aux)
+                print(f"Deleted previous auxiliary file: {aux}")
+            except Exception as e:
+                print(f"Failed to delete {aux}: {e}")
+
     # Deleting the uploaded.mp4
     if os.path.exists(uploaded_video_path):
         os.remove(uploaded_video_path)
         print(f"Previous video deleted successfully")
         
     print("Deleted previous sub folders")
+
+    # Additionally remove cached page.js in output directory if any
+    output_page_js = os.path.join(output_path, 'page.js')
+    if os.path.exists(output_page_js):
+        try:
+            os.remove(output_page_js)
+            print("Deleted cached output/page.js")
+        except Exception as e:
+            print(f"Failed to delete cached page.js: {e}")
 
 def download_video(url):
     print("Downloading video")

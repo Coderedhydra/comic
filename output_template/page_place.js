@@ -29,15 +29,7 @@ function placeDialogs(page) {
             const emotion = page['bubbles'][index]['emotion'];
 
             if (emotion == 'jagged') {
-                bubble_temp.style.backgroundImage = `url("assets/jagged.png")`;
-                bubble_temp.style.backgroundPosition = 'center center';
-                bubble_temp.style.backgroundRepeat = 'no-repeat';
-                bubble_temp.style.backgroundSize = 'cover';
-                bubble_temp.style.backgroundColor = 'transparent';
-                bubble_temp.style.width = '200px'; // Adjust height if necessary
-                bubble_temp.style.height = '94px'; // Adjust height if necessary
-                bubble_temp.style.padding = '70px'; // Adjust height if necessary
-
+                bubble_temp.classList.add('jagged');
             }
 
             bubble_temp.style.fontSize = dialog_temp.length;

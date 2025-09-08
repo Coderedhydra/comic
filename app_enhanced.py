@@ -7,7 +7,7 @@ import os
 import webbrowser
 import time
 import threading
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, send_file
 from pathlib import Path
 import cv2
 import numpy as np
@@ -26,6 +26,7 @@ from backend.subtitles.subs_real import get_real_subtitles
 from backend.keyframes.keyframes_simple import generate_keyframes_simple
 from backend.keyframes.keyframes import black_bar_crop
 from backend.class_def import bubble, panel, Page
+from backend.utils import cleanup
 
 # Import smart comic generation
 try:
@@ -188,6 +189,10 @@ class EnhancedComicGenerator:
             # 4. Remove black bars
             print("✂️ Removing black bars...")
             black_x, black_y, _, _ = black_bar_crop()
+            
+            # 4.5 Remove frames with half-closed or closed eyes
+            print("👁️ Filtering frames with half-closed eyes…")
+            self._filter_bad_frames()
             
             # 5. Enhance image quality with advanced models
             if self.quality_mode == '1':
@@ -1048,9 +1053,9 @@ class EnhancedComicGenerator:
         .panel img { 
             width: 100%; 
             height: 100%; 
-            object-fit: contain; /* No zooming - shows entire image */
-            object-position: center; /* Center the image */
-            background-color: #fff; /* White background for letterbox areas */
+            object-fit: cover; /* Fill panel, cropping if needed */
+            object-position: center center; /* Center the cropped image */
+            background-color: #000; /* No white borders */
         }
         
         /* Alternative modes - uncomment one to use */
@@ -1754,6 +1759,10 @@ class EnhancedComicGenerator:
             }, 3000);
         }
     </script>
+    <script>
+        // Ensure previous bubble edits do not carry over to a new comic
+        localStorage.removeItem('comicBubbles');
+    </script>
 </body>
 </html>'''
             
@@ -1785,9 +1794,8 @@ def upload_file():
             if f.filename == '':
                 return "❌ No file selected"
             
-            # Clean up previous files
-            if os.path.exists('video/uploaded.mp4'):
-                os.remove('video/uploaded.mp4')
+            # Full cleanup of previous run (frames, subtitles, page.js, output, etc.)
+            cleanup()
             
             # Save uploaded file
             f.save("video/uploaded.mp4")
@@ -1828,9 +1836,8 @@ def handle_link():
             if not link:
                 return "❌ No link provided"
             
-            # Clean up previous files
-            if os.path.exists('video/uploaded.mp4'):
-                os.remove('video/uploaded.mp4')
+            # Full cleanup of previous run before downloading new video
+            cleanup()
             
             # Download video using yt-dlp
             try:
@@ -1954,6 +1961,17 @@ def create_portable():
     except Exception as e:
         print(f"Portable creation error: {e}")
         return jsonify({'error': str(e)}), 500
+
+# ------------------------------------------------------------------
+# Disable caching so browser always fetches latest comic assets
+# ------------------------------------------------------------------
+
+@app.after_request
+def add_header(response):
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 if __name__ == '__main__':
     print("🚀 Starting Enhanced Comic Generator...")
