@@ -205,6 +205,12 @@ def cleanup():
     os.makedirs(final_folder_path, exist_ok=True) # If folders does not exist, create:
     os.makedirs('video', exist_ok=True)
 
+    # NEW: clear previously generated output pages to avoid stale cache
+    output_path = 'output'
+    if os.path.exists(output_path):
+        clear_folder(output_path)
+        print("Cleared previous output folder")
+
     # Clear the contents of the final folder
     if os.path.exists(final_folder_path):
         clear_folder(final_folder_path)
@@ -238,6 +244,15 @@ def cleanup():
         print(f"Previous video deleted successfully")
         
     print("Deleted previous sub folders")
+
+    # Additionally remove cached page.js in output directory if any
+    output_page_js = os.path.join(output_path, 'page.js')
+    if os.path.exists(output_page_js):
+        try:
+            os.remove(output_page_js)
+            print("Deleted cached output/page.js")
+        except Exception as e:
+            print(f"Failed to delete cached page.js: {e}")
 
 def download_video(url):
     print("Downloading video")

@@ -21,6 +21,7 @@
     align-items: center;
     z-index: 2;
     box-sizing: border-box; /* Ensure padding is included in the bubble's total size */
+    padding: 8px 14px; /* provide inner margin so text doesn't touch edge */
 
 }
 
@@ -36,7 +37,7 @@
     height: 94px;
 
     /* Provide inner space so text does not overlap spikes */
-    padding: 35px 30px 30px 30px; /* top, right, bottom, left */
+    padding: 26px 30px 22px 30px; /* fine-tuned for jagged cloud */
 }
 
 .tail{
