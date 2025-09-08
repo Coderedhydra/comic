@@ -189,6 +189,10 @@ class EnhancedComicGenerator:
             print("✂️ Removing black bars...")
             black_x, black_y, _, _ = black_bar_crop()
             
+            # 4b. Remove frames where eyes are closed/half-closed
+            print("👁️ Filtering frames with half-closed eyes…")
+            self._filter_bad_frames()
+            
             # 5. Enhance image quality with advanced models
             if self.quality_mode == '1':
                 print("✨ Using simple quality enhancement to avoid color issues...")
@@ -1764,6 +1768,43 @@ class EnhancedComicGenerator:
             
         except Exception as e:
             print(f"Template copy failed: {e}")
+
+    def _filter_bad_frames(self):
+        """Detect frames where eyes are closed or half-closed and move them to frames/final/bad"""
+        if not os.path.exists(self.frames_dir):
+            print(f"⚠️ Frames directory not found: {self.frames_dir}")
+            return
+        
+        try:
+            from backend.eye_state_detector import EyeStateDetector
+            detector = EyeStateDetector()
+            
+            frame_files = [f for f in os.listdir(self.frames_dir) if f.lower().endswith('.png')]
+            if not frame_files:
+                print("⚠️ No frames to analyze for eye quality")
+                return
+            
+            bad_dir = os.path.join(self.frames_dir, 'bad')
+            os.makedirs(bad_dir, exist_ok=True)
+            
+            removed = 0
+            for frame in frame_files:
+                frame_path = os.path.join(self.frames_dir, frame)
+                try:
+                    eye_info = detector.check_eyes_state(frame_path)
+                    if not eye_info.get('suitable_for_comic', True):
+                        shutil.move(frame_path, os.path.join(bad_dir, frame))
+                        removed += 1
+                except Exception as e:
+                    print(f"⚠️ Eye quality check failed for {frame}: {e}")
+            
+            if removed:
+                print(f"✅ Removed {removed} frame(s) with closed/half-closed eyes")
+            else:
+                print("✅ All frames passed eye-quality check")
+            
+        except Exception as e:
+            print(f"⚠️ Frame filtering failed: {e}")
 
 # Global comic generator instance
 comic_generator = EnhancedComicGenerator()
