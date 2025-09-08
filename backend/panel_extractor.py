@@ -1,5 +1,5 @@
 """
-Panel Extractor - Extracts and saves individual comic panels as 640x800 images
+Panel Extractor - Extracts and saves individual comic panels as 800x540 PNG images
 """
 
 import os
@@ -17,7 +17,7 @@ class PanelExtractor:
             output_dir: Directory to save extracted panels
         """
         self.output_dir = output_dir
-        self.panel_size = (640, 800)  # Width x Height
+        self.panel_size = (800, 540)  # Width x Height
         
     def extract_panels_from_comic(self, pages_json_path: str = "output/pages.json", 
                                  frames_dir: str = "frames/final") -> List[str]:
@@ -49,7 +49,7 @@ class PanelExtractor:
         saved_panels = []
         panel_count = 0
         
-        print(f"📸 Extracting panels as {self.panel_size[0]}x{self.panel_size[1]} images...")
+        print(f"📸 Extracting panels as {self.panel_size[0]}x{self.panel_size[1]} PNG images...")
         
         # Process each page
         for page_idx, page in enumerate(pages_data):
@@ -75,8 +75,8 @@ class PanelExtractor:
                 # Resize to target size
                 panel_img = self._resize_panel(panel_img)
                 
-                # Save panel
-                filename = f"panel_{panel_count:03d}_p{page_idx+1}_{panel_idx+1}.jpg"
+                # Save panel (PNG)
+                filename = f"panel_{panel_count:03d}_p{page_idx+1}_{panel_idx+1}.png"
                 filepath = os.path.join(self.output_dir, filename)
                 
                 # Convert to RGB if needed (remove alpha channel)
@@ -85,7 +85,7 @@ class PanelExtractor:
                 elif len(panel_img.shape) == 2:
                     panel_img = cv2.cvtColor(panel_img, cv2.COLOR_GRAY2BGR)
                 
-                cv2.imwrite(filepath, panel_img, [cv2.IMWRITE_JPEG_QUALITY, 95])
+                cv2.imwrite(filepath, panel_img, [cv2.IMWRITE_PNG_COMPRESSION, 3])
                 saved_panels.append(filepath)
                 
         print(f"✅ Extracted {len(saved_panels)} panels to: {self.output_dir}")
@@ -220,27 +220,22 @@ class PanelExtractor:
         return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
     
     def _resize_panel(self, panel_img: np.ndarray) -> np.ndarray:
-        """Resize panel to target size (640x800)"""
+        """Resize panel to target size (800x540) using contain-and-pad (no cropping)."""
         h, w = panel_img.shape[:2]
         target_w, target_h = self.panel_size
-        
-        # Calculate scale to fit within target size while maintaining aspect ratio
+
+        # Scale to fit within the target area preserving aspect ratio
         scale = min(target_w / w, target_h / h)
-        new_w = int(w * scale)
-        new_h = int(h * scale)
-        
-        # Resize image
+        new_w = int(round(w * scale))
+        new_h = int(round(h * scale))
+
         resized = cv2.resize(panel_img, (new_w, new_h), interpolation=cv2.INTER_LANCZOS4)
-        
-        # Create canvas of target size
-        canvas = np.ones((target_h, target_w, 3), dtype=np.uint8) * 255  # White background
-        
-        # Center the resized image on canvas
+
+        # Create canvas and center the resized image with black background
+        canvas = np.zeros((target_h, target_w, 3), dtype=np.uint8)
         x_offset = (target_w - new_w) // 2
         y_offset = (target_h - new_h) // 2
-        
         canvas[y_offset:y_offset+new_h, x_offset:x_offset+new_w] = resized
-        
         return canvas
     
     def _create_panel_viewer(self, panel_files: List[str]):
@@ -248,7 +243,7 @@ class PanelExtractor:
         html = '''<!DOCTYPE html>
 <html>
 <head>
-    <title>Extracted Comic Panels - 640x800</title>
+    <title>Extracted Comic Panels - 800x540</title>
     <style>
         body {
             margin: 0;
@@ -309,8 +304,8 @@ class PanelExtractor:
     </style>
 </head>
 <body>
-    <h1>📸 Extracted Comic Panels (640x800)</h1>
-    <p style="text-align: center; color: #888;">All panels have been extracted and resized to 640x800 pixels</p>
+    <h1>📸 Extracted Comic Panels (800x540)</h1>
+    <p style="text-align: center; color: #888;">All panels have been extracted and resized to 800x540 pixels (PNG)</p>
     
     <div class="panel-grid">
 '''

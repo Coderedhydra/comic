@@ -1,4 +1,4 @@
-path = '../frames/final/'
+path = '../frames/panels_800x540/'
 current_page = 0
 
 function placeDialogs(page) {
@@ -9,7 +9,11 @@ function placeDialogs(page) {
         gridItem.style.display = 'flex';
         gridItem.style.gridRow = 'span ' + panel.row_span;
         gridItem.style.gridColumn = 'span ' + panel.col_span;
-        gridItem.style.backgroundImage = `url("${path}${panel.image}.png")`;
+        gridItem.style.backgroundImage = `url("${path}${panel.image}")`;
+        gridItem.style.backgroundPosition = 'center center';
+        gridItem.style.backgroundRepeat = 'no-repeat';
+        gridItem.style.backgroundSize = 'contain';
+        gridItem.style.backgroundColor = '#000';
 
         gridItem.innerHTML = "";
 

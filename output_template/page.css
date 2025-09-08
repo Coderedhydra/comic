@@ -42,7 +42,7 @@ body {
 .grid-item {
     background-position: center center;
     background-repeat: no-repeat;
-    background-size: cover;
+    background-size: cover; /* Ensure no letterboxing */
     border: 0;
     position: relative;
 }
