@@ -190,6 +190,10 @@ class EnhancedComicGenerator:
             print("✂️ Removing black bars...")
             black_x, black_y, _, _ = black_bar_crop()
             
+            # 4.5 Remove frames with half-closed or closed eyes
+            print("👁️ Filtering frames with half-closed eyes…")
+            self._filter_bad_frames()
+            
             # 5. Enhance image quality with advanced models
             if self.quality_mode == '1':
                 print("✨ Using simple quality enhancement to avoid color issues...")
@@ -1049,9 +1053,9 @@ class EnhancedComicGenerator:
         .panel img { 
             width: 100%; 
             height: 100%; 
-            object-fit: contain; /* No zooming - shows entire image */
-            object-position: center; /* Center the image */
-            background-color: #fff; /* White background for letterbox areas */
+            object-fit: cover; /* Fill panel, cropping if needed */
+            object-position: center center; /* Center the cropped image */
+            background-color: #000; /* No white borders */
         }
         
         /* Alternative modes - uncomment one to use */
