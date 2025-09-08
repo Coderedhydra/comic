@@ -1,5 +1,5 @@
 """
-Panel Extractor - Extracts and saves individual comic panels as 400x540 PNG images
+Panel Extractor - Extracts and saves individual comic panels as 800x540 PNG images
 """
 
 import os
@@ -17,7 +17,7 @@ class PanelExtractor:
             output_dir: Directory to save extracted panels
         """
         self.output_dir = output_dir
-        self.panel_size = (400, 540)  # Width x Height
+        self.panel_size = (800, 540)  # Width x Height
         
     def extract_panels_from_comic(self, pages_json_path: str = "output/pages.json", 
                                  frames_dir: str = "frames/final") -> List[str]:
@@ -220,7 +220,7 @@ class PanelExtractor:
         return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
     
     def _resize_panel(self, panel_img: np.ndarray) -> np.ndarray:
-        """Resize panel to target size (400x540) using cover-crop (no letterboxing)."""
+        """Resize panel to target size (800x540) using cover-crop (no letterboxing)."""
         h, w = panel_img.shape[:2]
         target_w, target_h = self.panel_size
 
@@ -251,7 +251,7 @@ class PanelExtractor:
         html = '''<!DOCTYPE html>
 <html>
 <head>
-    <title>Extracted Comic Panels - 400x540</title>
+    <title>Extracted Comic Panels - 800x540</title>
     <style>
         body {
             margin: 0;
@@ -312,8 +312,8 @@ class PanelExtractor:
     </style>
 </head>
 <body>
-    <h1>📸 Extracted Comic Panels (400x540)</h1>
-    <p style="text-align: center; color: #888;">All panels have been extracted and resized to 400x540 pixels (PNG)</p>
+    <h1>📸 Extracted Comic Panels (800x540)</h1>
+    <p style="text-align: center; color: #888;">All panels have been extracted and resized to 800x540 pixels (PNG)</p>
     
     <div class="panel-grid">
 '''

@@ -1,4 +1,4 @@
-path = '../frames/panels_400x540/'
+path = '../frames/panels_800x540/'
 current_page = 0
 
 function placeDialogs(page) {
