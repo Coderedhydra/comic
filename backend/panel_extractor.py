@@ -220,31 +220,23 @@ class PanelExtractor:
         return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
     
     def _resize_panel(self, panel_img: np.ndarray) -> np.ndarray:
-        """Resize panel to target size (800x540) using cover-crop (no letterboxing)."""
+        """Resize panel to target size (800x540) using contain-and-pad (no cropping)."""
         h, w = panel_img.shape[:2]
         target_w, target_h = self.panel_size
 
-        # Scale to cover the target area
-        scale = max(target_w / w, target_h / h)
+        # Scale to fit within the target area preserving aspect ratio
+        scale = min(target_w / w, target_h / h)
         new_w = int(round(w * scale))
         new_h = int(round(h * scale))
 
         resized = cv2.resize(panel_img, (new_w, new_h), interpolation=cv2.INTER_LANCZOS4)
 
-        # Center crop to exact target size
-        x_start = max(0, (new_w - target_w) // 2)
-        y_start = max(0, (new_h - target_h) // 2)
-        x_end = x_start + target_w
-        y_end = y_start + target_h
-        cropped = resized[y_start:y_end, x_start:x_end]
-
-        # Safety: if rounding produced off-by-one, pad/crop to exact
-        cropped = cropped[:target_h, :target_w]
-        if cropped.shape[0] < target_h or cropped.shape[1] < target_w:
-            canvas = np.ones((target_h, target_w, 3), dtype=np.uint8) * 255
-            canvas[:cropped.shape[0], :cropped.shape[1]] = cropped
-            return canvas
-        return cropped
+        # Create canvas and center the resized image with black background
+        canvas = np.zeros((target_h, target_w, 3), dtype=np.uint8)
+        x_offset = (target_w - new_w) // 2
+        y_offset = (target_h - new_h) // 2
+        canvas[y_offset:y_offset+new_h, x_offset:x_offset+new_w] = resized
+        return canvas
     
     def _create_panel_viewer(self, panel_files: List[str]):
         """Create an HTML viewer for extracted panels"""

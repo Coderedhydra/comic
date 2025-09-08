@@ -12,7 +12,8 @@ function placeDialogs(page) {
         gridItem.style.backgroundImage = `url("${path}${panel.image}")`;
         gridItem.style.backgroundPosition = 'center center';
         gridItem.style.backgroundRepeat = 'no-repeat';
-        gridItem.style.backgroundSize = 'cover';
+        gridItem.style.backgroundSize = 'contain';
+        gridItem.style.backgroundColor = '#000';
 
         gridItem.innerHTML = "";
 
