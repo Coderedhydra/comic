@@ -111,79 +111,84 @@ class EnhancedComicGenerator:
             print("📝 Extracting real subtitles from video...")
             get_real_subtitles(self.video_path)
             
-            # 2. Extract FULL story (don't skip important parts)
-            print("📖 Extracting complete story...")
+            # 2. Extract FULL story (don't skip important parts) - COMMENTED OUT FOR SPEED
+            print("📖 Skipping story extraction for speed...")
             filtered_subs = None
-            if os.path.exists('test1.srt'):
-                try:
-                    from backend.full_story_extractor import FullStoryExtractor
-                    extractor = FullStoryExtractor()
-                    
-                    # Get all subtitles first
-                    with open('test1.srt', 'r', encoding='utf-8') as f:
-                        all_subs = list(srt.parse(f.read()))
-                    
-                    # Convert to dict format
-                    sub_list = []
-                    for sub in all_subs:
-                        sub_list.append({
-                            'index': sub.index,
-                            'text': sub.content,
-                            'start': sub.start.total_seconds(),
-                            'end': sub.end.total_seconds()
-                        })
-                    
-                    # Save temp file
-                    os.makedirs('temp', exist_ok=True)
-                    with open('temp/all_subs.json', 'w') as f:
-                        json.dump(sub_list, f)
-                    
-                    # Extract full story (up to 48 panels)
-                    story_subs = extractor.extract_full_story('temp/all_subs.json')
-                    
-                    # Convert back to srt format
-                    filtered_subs = []
-                    for s in story_subs:
-                        # Find matching subtitle
-                        for sub in all_subs:
-                            if sub.index == s.get('index', -1):
-                                filtered_subs.append(sub)
-                                break
-                    
-                    print(f"📚 Full story: {len(filtered_subs)} key moments from {len(all_subs)} total")
-                    
-                    # Store the count for later use
-                    self._filtered_count = len(filtered_subs)
-                    
-                except Exception as e:
-                    print(f"⚠️ Full story extraction failed: {e}")
-                    filtered_subs = None
+            # COMMENTED OUT - EMOTION PROCESSING TAKES TOO LONG
+            # if os.path.exists('test1.srt'):
+            #     try:
+            #         from backend.full_story_extractor import FullStoryExtractor
+            #         extractor = FullStoryExtractor()
+            #         
+            #         # Get all subtitles first
+            #         with open('test1.srt', 'r', encoding='utf-8') as f:
+            #             all_subs = list(srt.parse(f.read()))
+            #         
+            #         # Convert to dict format
+            #         sub_list = []
+            #         for sub in all_subs:
+            #             sub_list.append({
+            #                 'index': sub.index,
+            #                 'text': sub.content,
+            #                 'start': sub.start.total_seconds(),
+            #                 'end': sub.end.total_seconds()
+            #             })
+            #         
+            #         # Save temp file
+            #         os.makedirs('temp', exist_ok=True)
+            #         with open('temp/all_subs.json', 'w') as f:
+            #             json.dump(sub_list, f)
+            #         
+            #         # Extract full story (up to 48 panels)
+            #         story_subs = extractor.extract_full_story('temp/all_subs.json')
+            #         
+            #         # Convert back to srt format
+            #         filtered_subs = []
+            #         for s in story_subs:
+            #             # Find matching subtitle
+            #             for sub in all_subs:
+            #                 if sub.index == s.get('index', -1):
+            #                     filtered_subs.append(sub)
+            #                     break
+            #         
+            #         print(f"📚 Full story: {len(filtered_subs)} key moments from {len(all_subs)} total")
+            #         
+            #         # Store the count for later use
+            #         self._filtered_count = len(filtered_subs)
+            #         
+            #     except Exception as e:
+            #         print(f"⚠️ Full story extraction failed: {e}")
+            #         filtered_subs = None
             
-            # 3. Generate keyframes based on story moments
-            print("🎯 Generating keyframes...")
-            if filtered_subs and smart_mode:
-                # Use ENGAGING frame selection when smart mode is enabled
-                print("✨ Selecting most engaging frames...")
-                from backend.keyframes.keyframes_engaging import generate_keyframes_engaging
-                success = generate_keyframes_engaging(self.video_path, filtered_subs, max_frames=48)
-                if not success:
-                    print("⚠️ Engaging selection failed, trying smart method...")
-                    from backend.keyframes.keyframes_smart import generate_keyframes_smart
-                    success = generate_keyframes_smart(self.video_path, filtered_subs, max_frames=48)
-                    if not success:
-                        print("⚠️ Smart extraction failed, trying fixed method...")
-                        from backend.keyframes.keyframes_fixed import generate_keyframes_fixed
-                        generate_keyframes_fixed(self.video_path, filtered_subs, max_frames=48)
-            elif filtered_subs:
-                # Use regular smart extraction (checks eyes but not emotions)
-                from backend.keyframes.keyframes_smart import generate_keyframes_smart
-                success = generate_keyframes_smart(self.video_path, filtered_subs, max_frames=48)
-                if not success:
-                    from backend.keyframes.keyframes_fixed import generate_keyframes_fixed
-                    generate_keyframes_fixed(self.video_path, filtered_subs, max_frames=48)
-            else:
-                # Fallback to simple method
-                generate_keyframes_simple(self.video_path)
+            # 3. Generate keyframes - SIMPLIFIED FOR SPEED
+            print("🎯 Generating keyframes (simple method for speed)...")
+            # COMMENTED OUT - COMPLEX FRAME SELECTION TAKES TOO LONG
+            # if filtered_subs and smart_mode:
+            #     # Use ENGAGING frame selection when smart mode is enabled
+            #     print("✨ Selecting most engaging frames...")
+            #     from backend.keyframes.keyframes_engaging import generate_keyframes_engaging
+            #     success = generate_keyframes_engaging(self.video_path, filtered_subs, max_frames=48)
+            #     if not success:
+            #         print("⚠️ Engaging selection failed, trying smart method...")
+            #         from backend.keyframes.keyframes_smart import generate_keyframes_smart
+            #         success = generate_keyframes_smart(self.video_path, filtered_subs, max_frames=48)
+            #         if not success:
+            #             print("⚠️ Smart extraction failed, trying fixed method...")
+            #             from backend.keyframes.keyframes_fixed import generate_keyframes_fixed
+            #             generate_keyframes_fixed(self.video_path, filtered_subs, max_frames=48)
+            # elif filtered_subs:
+            #     # Use regular smart extraction (checks eyes but not emotions)
+            #     from backend.keyframes.keyframes_smart import generate_keyframes_smart
+            #     success = generate_keyframes_smart(self.video_path, filtered_subs, max_frames=48)
+            #     if not success:
+            #         from backend.keyframes.keyframes_fixed import generate_keyframes_fixed
+            #         generate_keyframes_fixed(self.video_path, filtered_subs, max_frames=48)
+            # else:
+            #     # Fallback to simple method
+            #     generate_keyframes_simple(self.video_path)
+            
+            # Use simple method for speed
+            generate_keyframes_simple(self.video_path)
             
             # 4. Remove black bars
             print("✂️ Removing black bars...")
@@ -206,13 +211,13 @@ class EnhancedComicGenerator:
             print("🎨 Applying AI-enhanced comic styling...")
             self._apply_comic_styling()
             
-            # 7. Generate optimized layout
-            print("📐 Generating AI-optimized layout...")
-            layout_data = self._generate_optimized_layout()
+            # 7. Generate simple layout - COMMENTED OUT FOR SPEED
+            print("📐 Skipping complex layout generation...")
+            layout_data = None  # Simple layout
             
-            # 8. Create AI-powered speech bubbles
-            print("💬 Creating AI-powered speech bubbles...")
-            bubbles = self._create_ai_bubbles(black_x, black_y)
+            # 8. Create simple speech bubbles - COMMENTED OUT FOR SPEED
+            print("💬 Creating simple speech bubbles...")
+            bubbles = self._create_simple_bubbles()
             
             # 9. Generate final pages
             print("📄 Generating final pages...")
@@ -226,13 +231,13 @@ class EnhancedComicGenerator:
             if smart_mode:
                 print("✅ Smart frame selection completed")
             
-            # 12. Extract individual panels as 640x800 images
-            print("\n📸 Extracting individual panels...")
-            self._extract_panels()
+            # 12. Extract individual panels - COMMENTED OUT FOR SPEED
+            print("\n📸 Skipping panel extraction for speed...")
+            # self._extract_panels()
             
-            # 13. Generate page images at 800x1080
-            print("\n📄 Generating page images (800x1080)...")
-            self._generate_page_images()
+            # 13. Generate page images - COMMENTED OUT FOR SPEED
+            print("\n📄 Skipping page image generation for speed...")
+            # self._generate_page_images()
             
             execution_time = (time.time() - start_time) / 60
             print(f"✅ Comic generation completed in {execution_time:.2f} minutes")
@@ -514,90 +519,112 @@ class EnhancedComicGenerator:
         
         return bubbles
     
+    def _create_simple_bubbles(self):
+        """Create simple speech bubbles without AI processing"""
+        bubbles = []
+        
+        try:
+            # Read subtitles if available
+            if os.path.exists('test1.srt'):
+                with open('test1.srt', 'r', encoding='utf-8') as f:
+                    subs = list(srt.parse(f.read()))
+                
+                # Take first 4 subtitles
+                for i in range(4):
+                    if i < len(subs):
+                        sub = subs[i]
+                        bubble_obj = bubble(
+                            bubble_offset_x=20,
+                            bubble_offset_y=20,
+                            lip_x=-1,
+                            lip_y=-1,
+                            dialog=sub.content,
+                            emotion='normal'
+                        )
+                        bubbles.append(bubble_obj)
+                    else:
+                        # Create fallback bubble
+                        bubble_obj = bubble(
+                            bubble_offset_x=20,
+                            bubble_offset_y=20,
+                            lip_x=-1,
+                            lip_y=-1,
+                            dialog=f"Panel {i+1}",
+                            emotion='normal'
+                        )
+                        bubbles.append(bubble_obj)
+            else:
+                # Create simple fallback bubbles
+                for i in range(4):
+                    bubble_obj = bubble(
+                        bubble_offset_x=20,
+                        bubble_offset_y=20,
+                        lip_x=-1,
+                        lip_y=-1,
+                        dialog=f"Panel {i+1}",
+                        emotion='normal'
+                    )
+                    bubbles.append(bubble_obj)
+                    
+        except Exception as e:
+            print(f"Simple bubble creation failed: {e}")
+            # Create fallback bubbles
+            for i in range(4):
+                bubble_obj = bubble(
+                    bubble_offset_x=20,
+                    bubble_offset_y=20,
+                    lip_x=-1,
+                    lip_y=-1,
+                    dialog=f"Panel {i+1}",
+                    emotion='normal'
+                )
+                bubbles.append(bubble_obj)
+        
+        return bubbles
+    
     def _generate_pages(self, layout_data, bubbles):
-        """Generate final pages based on story-aware layout"""
+        """Generate simple 4-panel pages"""
         pages = []
         
         try:
             frame_files = sorted([f for f in os.listdir(self.frames_dir) if f.endswith('.png')])
+            print(f"📄 Creating simple 4-panel layout with {len(frame_files)} frames")
             
-            # Always use story-based layout for proper grid
-            # Force 12 panels for meaningful story
-            if not hasattr(self, '_filtered_count'):
-                self._filtered_count = min(12, len(frame_files))
-            return self._generate_story_pages(frame_files, bubbles)
+            # Create one page with 4 panels
+            panels = []
+            page_bubbles = []
             
-            # Otherwise, create simple layout based on available frames
-            num_frames = len(frame_files)
-            frames_per_page = 6 if num_frames > 9 else (4 if num_frames > 4 else num_frames)
-            num_pages = (num_frames + frames_per_page - 1) // frames_per_page
-            
-            frame_idx = 0
-            for page_num in range(num_pages):
-                panels = []
-                page_bubbles = []
+            # Take first 4 frames (or cycle if less than 4)
+            for i in range(4):
+                frame_file = frame_files[i % len(frame_files)] if frame_files else 'blank.png'
                 
-                # Force proper grid layout for 12 panels
-                if num_frames <= 6:
-                    rows, cols = 2, 3
-                elif num_frames <= 9:
-                    rows, cols = 3, 3
-                elif num_frames <= 12:
-                    rows, cols = 3, 4
+                panel_obj = panel(
+                    image=frame_file,
+                    row_span=1,  # Simple 1x1 grid
+                    col_span=1
+                )
+                panels.append(panel_obj)
+                
+                # Add simple bubble
+                if i < len(bubbles):
+                    page_bubbles.append(bubbles[i])
                 else:
-                    rows, cols = 4, 4
-                
-                for j in range(frames_per_page):
-                    if frame_idx < len(frame_files):
-                        frame_file = frame_files[frame_idx]
-                    
-                    # Calculate proper span for grid
-                    row_span = 12 // rows
-                    col_span = 12 // cols
-                    
-                    panel_obj = panel(
-                        image=frame_file,
-                        row_span=row_span,
-                        col_span=col_span
+                    # Create simple fallback bubble
+                    fallback_bubble = bubble(
+                        bubble_offset_x=20,
+                        bubble_offset_y=20,
+                        lip_x=-1,
+                        lip_y=-1,
+                        dialog=f"Panel {i+1}",
+                        emotion='normal'
                     )
-                    panels.append(panel_obj)
-                    
-                    # Add corresponding bubble with correct dialogue
-                    bubble_index = page_num * 4 + j
-                    if bubble_index < len(bubbles):
-                        # Use the correct bubble for this frame
-                        original_bubble = bubbles[bubble_index]
-                        bubble_obj = bubble(
-                            bubble_offset_x=original_bubble.bubble_offset_x,
-                            bubble_offset_y=original_bubble.bubble_offset_y,
-                            lip_x=-1,  # Use default values
-                            lip_y=-1,  # Use default values
-                            dialog=original_bubble.dialog,  # Use original dialogue
-                            emotion=original_bubble.emotion
-                        )
-                        page_bubbles.append(bubble_obj)
-                    else:
-                        # Create fallback bubble with varied dialogue
-                        fallback_dialogues = [
-                            "Hello there!", "How are you doing?", "I'm doing great!", "That's wonderful!",
-                            "What's new?", "Not much, just working.", "Sounds busy!", "It sure is!",
-                            "Any plans for today?", "Just relaxing.", "That sounds nice!", "Indeed it is.",
-                            "Have a great day!", "You too!", "See you later!", "Take care!"
-                        ]
-                        fallback_dialog = fallback_dialogues[bubble_index % len(fallback_dialogues)]
-                        fallback_bubble = bubble(
-                            bubble_offset_x=50,
-                            bubble_offset_y=200,
-                            lip_x=-1,
-                            lip_y=-1,
-                            dialog=fallback_dialog,
-                            emotion='normal'
-                        )
-                        page_bubbles.append(fallback_bubble)
-                
-                # Create page
-                page = Page(panels=panels, bubbles=page_bubbles)
-                pages.append(page)
+                    page_bubbles.append(fallback_bubble)
+            
+            # Create single page
+            page = Page(panels=panels, bubbles=page_bubbles)
+            pages.append(page)
+            
+            print(f"✅ Created 1 page with 4 panels")
                 
         except Exception as e:
             print(f"Page generation failed: {e}")
@@ -941,799 +968,225 @@ class EnhancedComicGenerator:
     def _copy_template_files(self):
         """Copy template files to output directory"""
         try:
-            # Copy HTML template with editing functionality
+            # SIMPLE HTML TEMPLATE - 4 EQUAL PARTS, 100% IMAGE COVERAGE
             template_html = '''<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generated Comic - Interactive Editor</title>
+    <title>Simple Comic - 4 Panel Layout</title>
     <style>
-        body { margin: 0; padding: 20px; background: #f0f0f0; font-family: Arial, sans-serif; }
-        .comic-container { max-width: 1200px; margin: 0 auto; }
-        .comic-page { 
-            background: white; 
-            width: 800px; /* Exact image width */
-            height: 1080px; /* Exact image height */
-            padding: 0; /* No padding */
-            margin: 0; /* No margin */
-            box-shadow: 0 0 10px rgba(0,0,0,0.1); 
-            box-sizing: content-box; /* Don't include border in size */
-            position: relative;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            background: #f0f0f0; 
+            font-family: Arial, sans-serif; 
+            padding: 20px;
+        }
+        
+        .comic-container { 
+            max-width: 900px; 
+            margin: 0 auto; 
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             overflow: hidden;
         }
-        .comic-grid { 
-            display: grid; 
-            grid-template-columns: 400px 400px; 
-            grid-template-rows: 540px 540px; 
-            gap: 0; /* No gap between panels */
-            width: 800px;
-            height: 1080px;
-            margin: 0;
-            padding: 0;
-            position: absolute;
-            top: 0;
-            left: 0;
-            border: 2px solid #333; /* Single border around entire grid */
-            box-sizing: border-box;
-        }
-        .page-wrapper {
-            margin: 30px auto;
-            width: 800px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .page-title { 
+        
+        .comic-title { 
             text-align: center; 
-            color: #333; 
-            margin-bottom: 10px; 
-            font-size: 18px; 
-            font-weight: bold; 
-        }
-        .page-info {
-            position: absolute;
-            bottom: 10px;
-            right: 15px;
-            font-size: 14px;
-            color: #666;
+            padding: 20px; 
+            background: #333; 
+            color: white; 
+            font-size: 24px;
             font-weight: bold;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 5px 10px;
-            border-radius: 3px;
-            border: 1px solid #ddd;
-            z-index: 10;
-            font-family: monospace;
         }
-        .page-info.top-left {
-            bottom: auto;
-            right: auto;
-            top: 10px;
-            left: 15px;
+        
+        .comic-page { 
+            width: 800px;
+            height: 800px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 0;
+            border: 3px solid #333;
         }
-        .page-info.top-right {
-            bottom: auto;
-            top: 10px;
-        }
-        .page-info.bottom-left {
-            right: auto;
-            left: 15px;
-        }
+        
         .panel { 
-            position: relative; 
-            border: none; /* Remove all borders to eliminate gaps */
-            overflow: hidden; 
-            width: 400px;
-            height: 540px;
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            flex-shrink: 0; /* Don't shrink */
+            position: relative;
+            overflow: hidden;
+            background: #fff;
         }
-        /* No border adjustments needed since borders are removed */
+        
         .panel img { 
             width: 100%; 
             height: 100%; 
-            object-fit: contain; /* No zooming - shows entire image */
-            object-position: center; /* Center the image */
-            background-color: #fff; /* White background for letterbox areas */
+            object-fit: cover;
+            display: block;
         }
         
-        /* Alternative modes - uncomment one to use */
-        /* .panel img { object-fit: cover; } */ /* Zoom to fill (crops edges) */
-        /* .panel img { object-fit: fill; } */ /* Stretch to fit (may distort) */
-        /* .panel img { object-fit: scale-down; } */ /* Shrink if needed */
-        
-        /* Exact 800x1080 mode - single border around grid */
-        .exact-size .panel { 
-            border: none !important; 
-        }
-        .exact-size .comic-grid { 
-            border: 2px solid #333 !important;
-            box-sizing: border-box;
-        }
-        
-        /* Unity export mode - no borders, clean images */
-        .unity-export .panel { 
-            border: none !important; 
-        }
-        .unity-export .comic-grid { 
-            border: none !important; 
-        }
-        .unity-export .page-info {
-            display: none !important;
-        }
-        
-        /* Debug mode - shows exact dimensions */
-        .debug-mode .comic-page {
-            outline: 2px solid red;
-        }
-        .debug-mode .comic-page::before {
-            content: "Page: 800×1080";
-            position: absolute;
-            top: -25px;
-            left: 0;
-            color: red;
-            font-size: 12px;
-            z-index: 100;
-        }
-        .debug-mode .comic-grid {
-            outline: 2px solid blue;
-        }
-        .debug-mode .panel {
-            outline: 1px solid green;
-        }
         .speech-bubble { 
             position: absolute; 
             background: white; 
-            border: 3px solid #333; 
-            border-radius: 15px; 
-            padding: 12px; 
-            max-width: 200px; 
-            font-size: 14px; 
+            border: 2px solid #333; 
+            border-radius: 10px; 
+            padding: 8px 12px; 
+            max-width: 150px; 
+            font-size: 12px; 
             font-weight: bold;
-            box-shadow: 3px 3px 8px rgba(0,0,0,0.4);
+            box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
             z-index: 10;
             text-align: center;
             color: #333;
             cursor: move;
-            transition: transform 0.2s, box-shadow 0.2s;
         }
+        
         .speech-bubble:hover { 
-            transform: scale(1.02); 
-            box-shadow: 3px 3px 12px rgba(0,0,0,0.6); 
+            transform: scale(1.05); 
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.4); 
         }
-        .speech-bubble.editing { 
-            cursor: text; 
-        }
-        .speech-bubble textarea {
-            width: 100%;
-            height: 100%;
-            border: none;
-            background: transparent;
-            font: inherit;
-            text-align: center;
-            resize: none;
-            outline: 2px solid #4CAF50;
-            padding: 5px;
-        }
+        
         .speech-bubble::after { 
             content: ''; 
             position: absolute; 
-            bottom: -10px; 
-            left: 20px; 
+            bottom: -8px; 
+            left: 15px; 
             width: 0; 
             height: 0; 
-            border-left: 10px solid transparent; 
-            border-right: 10px solid transparent; 
-            border-top: 10px solid #333; 
+            border-left: 8px solid transparent; 
+            border-right: 8px solid transparent; 
+            border-top: 8px solid #333; 
         }
-        .comic-title { text-align: center; color: #333; margin-bottom: 20px; }
-        .loading { text-align: center; color: #666; font-style: italic; }
-        .edit-controls {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0,0,0,0.85);
+        
+        .loading { 
+            text-align: center; 
+            padding: 50px; 
+            color: #666; 
+            font-size: 18px;
+        }
+        
+        .controls {
+            text-align: center;
+            padding: 20px;
+            background: #f8f8f8;
+        }
+        
+        .btn {
+            background: #4CAF50;
             color: white;
-            padding: 15px 20px;
-            border-radius: 10px;
-            font-size: 14px;
-            z-index: 1000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
         }
-        .edit-controls h4 { margin: 0 0 10px 0; color: #4CAF50; }
-        .edit-controls p { margin: 5px 0; opacity: 0.9; }
+        
+        .btn:hover {
+            background: #45a049;
+        }
     </style>
 </head>
 <body>
     <div class="comic-container">
-        <h1 class="comic-title">🎬 Generated Comic</h1>
-        <div id="comic-pages">
+        <h1 class="comic-title">🎬 Simple Comic Generator</h1>
+        
+        <div id="comic-content">
             <div class="loading">Loading comic...</div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" onclick="printComic()">🖨️ Print</button>
+            <button class="btn" onclick="saveComic()">💾 Save</button>
+            <button class="btn" onclick="reloadComic()">🔄 Reload</button>
         </div>
     </div>
     
-    <!-- Edit Controls -->
-    <div class="edit-controls">
-        <h4>✏️ Interactive Editor</h4>
-        <p>• <strong>Drag</strong> speech bubbles to move</p>
-        <p>• <strong>Double-click</strong> to edit text</p>
-        <p>• Changes auto-save locally</p>
-        <button onclick="saveEditableHTML()" style="margin-top: 10px; padding: 8px 15px; background: #FF9800; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
-            💾 Save Editable Comic
-        </button>
-        <button onclick="exportToPDF()" style="margin-top: 5px; padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
-            📄 Export to PDF
-        </button>
-                   <button onclick="printComic()" style="margin-top: 5px; padding: 8px 15px; background: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
-               🖨️ Print Comic
-           </button>
-           <button onclick="viewPageImages()" style="margin-top: 5px; padding: 8px 15px; background: #9C27B0; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
-               🖼️ View Page Images
-           </button>
-           <button onclick="toggleUnityMode()" style="margin-top: 5px; padding: 8px 15px; background: #FF5722; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
-               🎮 Unity Mode (No Borders)
-           </button>
-           <button onclick="checkDimensions()" style="margin-top: 5px; padding: 8px 15px; background: #607D8B; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
-               📏 Check Dimensions
-           </button>
-    </div>
     <script>
         // Load comic data
         fetch('/output/pages.json')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to load pages.json');
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
-                const pagesContainer = document.getElementById('comic-pages');
-                pagesContainer.innerHTML = ''; // Clear loading message
+                const container = document.getElementById('comic-content');
+                container.innerHTML = '';
                 
                 if (data && data.length > 0) {
-                    // Create multiple pages
-                    data.forEach((pageData, pageIndex) => {
-                        if (pageData.panels && pageData.panels.length > 0) {
-                            // Create wrapper for title and page
-                            const pageWrapper = document.createElement('div');
-                            pageWrapper.className = 'page-wrapper';
+                    // Take first page only for simplicity
+                    const pageData = data[0];
+                    
+                    if (pageData.panels && pageData.panels.length > 0) {
+                        // Create simple 2x2 grid
+                        const pageDiv = document.createElement('div');
+                        pageDiv.className = 'comic-page';
+                        
+                        // Add 4 panels
+                        for (let i = 0; i < 4; i++) {
+                            const panelDiv = document.createElement('div');
+                            panelDiv.className = 'panel';
                             
-                            // Add page title outside the page
-                            const pageTitle = document.createElement('h2');
-                            pageTitle.className = 'page-title';
-                            pageTitle.textContent = `Page ${pageIndex + 1}`;
-                            pageWrapper.appendChild(pageTitle);
+                            const img = document.createElement('img');
+                            // Use available frames, cycle if needed
+                            const frameIndex = i % pageData.panels.length;
+                            img.src = '/frames/final/' + pageData.panels[frameIndex].image;
+                            img.alt = `Panel ${i + 1}`;
                             
-                            // Create page container (exact 800x1080)
-                            const pageDiv = document.createElement('div');
-                            pageDiv.className = 'comic-page';
+                            // Handle missing images
+                            img.onerror = function() {
+                                this.style.display = 'none';
+                                panelDiv.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #ddd; color: #666; font-size: 18px;">No Image</div>';
+                            };
                             
-                            // Add page info (resolution)
-                            const pageInfo = document.createElement('div');
-                            pageInfo.className = 'page-info';
-                            pageInfo.textContent = '800x1080';
-                            pageDiv.appendChild(pageInfo);
+                            panelDiv.appendChild(img);
                             
-                            // Create grid for this page
-                            const grid = document.createElement('div');
-                            grid.className = 'comic-grid';
-                            
-                            // Add panels to this page
-                            pageData.panels.forEach((panel, index) => {
-                                const panelDiv = document.createElement('div');
-                                panelDiv.className = 'panel';
+                            // Add speech bubble if available
+                            if (pageData.bubbles && pageData.bubbles[frameIndex]) {
+                                const bubble = pageData.bubbles[frameIndex];
+                                const bubbleDiv = document.createElement('div');
+                                bubbleDiv.className = 'speech-bubble';
+                                bubbleDiv.textContent = bubble.dialog || 'Action!';
                                 
-                                const img = document.createElement('img');
-                                img.src = '/frames/final/' + panel.image;
-                                img.alt = `Page ${pageIndex + 1} - Panel ${index + 1}`;
-                                img.onerror = function() {
-                                    this.style.display = 'none';
-                                    panelDiv.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666;">Image not found</div>';
-                                };
-                                panelDiv.appendChild(img);
+                                // Position bubble
+                                bubbleDiv.style.left = '20px';
+                                bubbleDiv.style.top = '20px';
                                 
-                                // Add speech bubbles
-                                if (pageData.bubbles && pageData.bubbles[index]) {
-                                    const bubble = pageData.bubbles[index];
-                                    const bubbleDiv = document.createElement('div');
-                                    bubbleDiv.className = 'speech-bubble';
-                                    
-                                    // Use bubble_offset_x and bubble_offset_y from the data
-                                    // Fix positioning - ensure bubbles are visible within panel
-                                    let x = bubble.bubble_offset_x || 50;
-                                    let y = bubble.bubble_offset_y || 50;
-                                    
-                                    // Clamp positions to ensure bubbles are visible
-                                    x = Math.max(10, Math.min(x, 300));
-                                    y = Math.max(10, Math.min(y, 200));
-                                    
-                                    bubbleDiv.style.left = x + 'px';
-                                    bubbleDiv.style.top = y + 'px';
-                                    bubbleDiv.style.maxWidth = '180px';
-                                    bubbleDiv.style.minHeight = '50px';
-                                    bubbleDiv.style.fontSize = '12px';
-                                    bubbleDiv.style.lineHeight = '1.2';
-                                    bubbleDiv.style.wordWrap = 'break-word';
-                                    
-                                    // Use dialog from the data
-                                    bubbleDiv.textContent = bubble.dialog || '((action-scene))';
-                                    panelDiv.appendChild(bubbleDiv);
-                                }
-                                
-                                grid.appendChild(panelDiv);
-                            });
+                                panelDiv.appendChild(bubbleDiv);
+                            }
                             
-                            pageDiv.appendChild(grid);
-                            
-                            // Add page to wrapper, then wrapper to container
-                            pageWrapper.appendChild(pageDiv);
-                            pagesContainer.appendChild(pageWrapper);
+                            pageDiv.appendChild(panelDiv);
                         }
-                    });
+                        
+                        container.appendChild(pageDiv);
+                    } else {
+                        container.innerHTML = '<div class="loading">No panels found</div>';
+                    }
                 } else {
-                    pagesContainer.innerHTML = '<div class="loading">No comic data found</div>';
+                    container.innerHTML = '<div class="loading">No comic data found</div>';
                 }
             })
             .catch(error => {
                 console.error('Error loading comic:', error);
-                document.getElementById('comic-grid').innerHTML = '<div class="loading">Error loading comic data: ' + error.message + '</div>';
+                document.getElementById('comic-content').innerHTML = '<div class="loading">Error loading comic: ' + error.message + '</div>';
             });
-            
-        // Initialize editing functionality after comic loads
-        setTimeout(initializeEditor, 1000);
         
-        // Editing functionality
-        let currentEditBubble = null;
-        let draggedBubble = null;
-        let offset = {x: 0, y: 0};
-        
-        function initializeEditor() {
-            document.querySelectorAll('.speech-bubble').forEach(bubble => {
-                bubble.addEventListener('dblclick', (e) => {
-                    e.stopPropagation();
-                    editBubbleText(bubble);
-                });
-                bubble.addEventListener('mousedown', startDrag);
-            });
-            
-            document.addEventListener('mousemove', drag);
-            document.addEventListener('mouseup', stopDrag);
-            loadSavedState();
-        }
-        
-        function editBubbleText(bubble) {
-            if (currentEditBubble) return;
-            
-            currentEditBubble = bubble;
-            bubble.classList.add('editing');
-            
-            const text = bubble.innerText;
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            
-            bubble.innerHTML = '';
-            bubble.appendChild(textarea);
-            textarea.focus();
-            textarea.select();
-            
-            textarea.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    saveBubbleText(bubble, textarea.value);
-                }
-                if (e.key === 'Escape') {
-                    saveBubbleText(bubble, text);
-                }
-            });
-            
-            textarea.addEventListener('blur', () => {
-                setTimeout(() => {
-                    if (currentEditBubble === bubble) {
-                        saveBubbleText(bubble, textarea.value);
-                    }
-                }, 100);
-            });
-        }
-        
-        function saveBubbleText(bubble, text) {
-            bubble.innerText = text;
-            bubble.classList.remove('editing');
-            currentEditBubble = null;
-            saveState();
-        }
-        
-        function startDrag(e) {
-            if (e.target.tagName === 'TEXTAREA') return;
-            
-            const bubble = e.target.closest('.speech-bubble');
-            if (!bubble || currentEditBubble) return;
-            
-            draggedBubble = bubble;
-            const rect = bubble.getBoundingClientRect();
-            offset.x = e.clientX - rect.left;
-            offset.y = e.clientY - rect.top;
-            
-            bubble.style.opacity = '0.9';
-            bubble.style.zIndex = '100';
-            e.preventDefault();
-        }
-        
-        function drag(e) {
-            if (!draggedBubble) return;
-            
-            const parent = draggedBubble.parentElement;
-            const parentRect = parent.getBoundingClientRect();
-            
-            let x = e.clientX - parentRect.left - offset.x;
-            let y = e.clientY - parentRect.top - offset.y;
-            
-            x = Math.max(0, Math.min(x, parentRect.width - draggedBubble.offsetWidth));
-            y = Math.max(0, Math.min(y, parentRect.height - draggedBubble.offsetHeight));
-            
-            draggedBubble.style.left = x + 'px';
-            draggedBubble.style.top = y + 'px';
-        }
-        
-        function stopDrag() {
-            if (draggedBubble) {
-                draggedBubble.style.opacity = '';
-                draggedBubble.style.zIndex = '';
-                saveState();
-                draggedBubble = null;
-            }
-        }
-        
-        function saveState() {
-            const bubbles = [];
-            document.querySelectorAll('.speech-bubble').forEach((bubble, index) => {
-                bubbles.push({
-                    index: index,
-                    text: bubble.innerText,
-                    left: bubble.style.left,
-                    top: bubble.style.top
-                });
-            });
-            localStorage.setItem('comicBubbles', JSON.stringify(bubbles));
-        }
-        
-        function loadSavedState() {
-            const saved = localStorage.getItem('comicBubbles');
-            if (!saved) return;
-            
-            try {
-                const bubbles = JSON.parse(saved);
-                const elements = document.querySelectorAll('.speech-bubble');
-                
-                bubbles.forEach((data, index) => {
-                    if (elements[index]) {
-                        elements[index].innerText = data.text;
-                        if (data.left) elements[index].style.left = data.left;
-                        if (data.top) elements[index].style.top = data.top;
-                    }
-                });
-            } catch (e) {
-                console.error('Failed to load saved state:', e);
-            }
-        }
-        
-        // Export functions
+        // Simple functions
         function printComic() {
-            // Hide edit controls for printing
-            document.querySelector('.edit-controls').style.display = 'none';
-            
-            // Use browser's print function
             window.print();
-            
-            // Show edit controls again
-            setTimeout(() => {
-                document.querySelector('.edit-controls').style.display = 'block';
-            }, 100);
         }
         
-        // View page images gallery
-        function viewPageImages() {
-            window.open('/output/page_images/index.html', '_blank');
-        }
-        
-        // Toggle Unity export mode (no borders)
-        let unityMode = false;
-        function toggleUnityMode() {
-            unityMode = !unityMode;
-            const container = document.querySelector('.comic-container');
-            
-            if (unityMode) {
-                container.classList.add('unity-export');
-                showSaveMessage('🎮 Unity Mode ON - Borders hidden for clean export');
-                
-                // Update button text
-                event.target.innerHTML = '🎮 Unity Mode ON (Click to disable)';
-                event.target.style.background = '#4CAF50';
-            } else {
-                container.classList.remove('unity-export');
-                showSaveMessage('📚 Normal Mode - Borders visible');
-                
-                // Update button text
-                event.target.innerHTML = '🎮 Unity Mode (No Borders)';
-                event.target.style.background = '#FF5722';
-            }
-        }
-        
-        // Check exact dimensions
-        function checkDimensions() {
-            const pages = document.querySelectorAll('.comic-page');
-            const container = document.querySelector('.comic-container');
-            
-            // Toggle debug mode and exact-size mode
-            container.classList.toggle('debug-mode');
-            container.classList.toggle('exact-size');
-            
-            // Get first page dimensions
-            if (pages.length > 0) {
-                const page = pages[0];
-                const grid = page.querySelector('.comic-grid');
-                const pageRect = page.getBoundingClientRect();
-                const gridRect = grid ? grid.getBoundingClientRect() : null;
-                const computed = window.getComputedStyle(page);
-                
-                const info = `📏 Page Dimensions Check:\n\n` +
-                    `Page Width: ${pageRect.width}px (should be 800)\n` +
-                    `Page Height: ${pageRect.height}px (should be 1080)\n` +
-                    `Grid Width: ${gridRect ? gridRect.width : 'N/A'}px\n` +
-                    `Grid Height: ${gridRect ? gridRect.height : 'N/A'}px\n` +
-                    `Padding: ${computed.padding}\n` +
-                    `Box-sizing: ${computed.boxSizing}\n\n` +
-                    `${pageRect.width === 800 && pageRect.height === 1080 ? '✅ EXACT MATCH!' : '❌ Size mismatch!'}\n\n` +
-                    `Exact-size mode: ${container.classList.contains('exact-size') ? 'ON' : 'OFF'}`;
-                
-                alert(info);
-                
-                // Update button text
-                const btn = event.target;
-                if (container.classList.contains('exact-size')) {
-                    btn.innerHTML = '📏 Exact Mode ON';
-                    btn.style.background = '#4CAF50';
-                } else {
-                    btn.innerHTML = '📏 Check Dimensions';
-                    btn.style.background = '#607D8B';
-                }
-            }
-        }
-        
-        function exportToPDF() {
-            // For basic PDF export, we'll use the print dialog with PDF option
-            // Most browsers support "Save as PDF" in print dialog
-            
-            // First, add print-specific styles
-            const printStyles = document.createElement('style');
-            printStyles.innerHTML = `
-                @media print {
-                    /* Reset all margins and padding */
-                    * {
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
-                        color-adjust: exact !important;
-                    }
-                    
-                    body { 
-                        margin: 0 !important; 
-                        padding: 0 !important;
-                        background: white !important;
-                    }
-                    
-                    /* Hide non-comic elements */
-                    .edit-controls, .comic-title, .save-notice { 
-                        display: none !important; 
-                    }
-                    
-                    /* Full page for comic container */
-                    .comic-container {
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        max-width: none !important;
-                        width: 100% !important;
-                    }
-                    
-                    /* Each comic page exactly 800x1080 */
-                    .comic-page { 
-                        page-break-inside: avoid !important;
-                        page-break-after: always !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        box-shadow: none !important;
-                        background: white !important;
-                        width: 800px !important;
-                        height: 1080px !important;
-                        box-sizing: border-box !important;
-                        position: relative !important;
-                    }
-                    
-                    /* Hide wrapper elements in print */
-                    .page-wrapper {
-                        page-break-inside: avoid !important;
-                    }
-                    .page-title {
-                        display: none !important;
-                    }
-                    
-                    /* Comic grid exact 800x1080 with 4 panels */
-                    .comic-grid {
-                        width: 800px !important;
-                        height: 1080px !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        gap: 0 !important; /* No gap for exact panel sizing */
-                        display: grid !important;
-                        grid-template-columns: 400px 400px !important;
-                        grid-template-rows: 540px 540px !important;
-                        border: 2px solid #000 !important; /* Single border around entire grid */
-                        box-sizing: border-box !important;
-                    }
-                    
-                    /* Show page info in print */
-                    .page-info {
-                        display: block !important;
-                        position: absolute !important;
-                        bottom: 5px !important;
-                        right: 10px !important;
-                        font-size: 10px !important;
-                        color: #999 !important;
-                    }
-                    
-                    /* Panels exact 400x540 each - no gaps */
-                    .panel {
-                        width: 400px !important;
-                        height: 540px !important;
-                        border: none !important; /* Remove borders to eliminate gaps */
-                        overflow: hidden !important;
-                        position: relative !important;
-                        box-sizing: border-box !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                    }
-                    /* No border adjustments needed since borders are removed */
-                    
-                    .panel img {
-                        width: 100% !important;
-                        height: 100% !important;
-                        object-fit: contain !important; /* No zooming/cropping */
-                        background-color: white !important;
-                    }
-                    
-                    /* Speech bubbles maintain position */
-                    .speech-bubble { 
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
-                        background: white !important;
-                        border: 3px solid black !important;
-                    }
-                    
-                    /* Page settings */
-                    @page { 
-                        size: A4 landscape;
-                        margin: 10mm;
-                    }
-                    
-                    /* Remove last page break */
-                    .comic-page:last-child {
-                        page-break-after: avoid !important;
-                    }
-                }
-            `;
-            document.head.appendChild(printStyles);
-            
-            // Show instructions with recommended settings
-            alert('📄 Export to PDF - Recommended Settings\\n\\n' +
-                  '1. Destination: "Save as PDF"\\n' +
-                  '2. Layout: "Landscape" (for better fit)\\n' +
-                  '3. Paper size: "A4" or "Letter"\\n' +
-                  '4. Margins: "Default" or "None"\\n' +
-                  '5. Scale: "Default (100%)" or "Fit to page"\\n' +
-                  '6. Options: ✓ "Background graphics"\\n\\n' +
-                  'Click Save to create your PDF!');
-            
-            // Trigger print
-            printComic();
-        }
-        
-        // Add keyboard shortcut for export
-        document.addEventListener('keydown', (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-                e.preventDefault();
-                exportToPDF();
-            }
-            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                e.preventDefault();
-                saveEditableHTML();
-            }
-        });
-        
-        // Save editable HTML with all current edits
-        function saveEditableHTML() {
-            // Update the current DOM with edited content
-            const currentState = {
-                bubbles: [],
-                timestamp: new Date().toISOString()
-            };
-            
-            // Collect current bubble states
-            document.querySelectorAll('.speech-bubble').forEach((bubble, index) => {
-                currentState.bubbles.push({
-                    text: bubble.innerText,
-                    left: bubble.style.left,
-                    top: bubble.style.top
-                });
-            });
-            
-            // Clone the current document
-            const docClone = document.documentElement.cloneNode(true);
-            
-            // Remove the loading message from clone
-            const loadingDiv = docClone.querySelector('.loading');
-            if (loadingDiv) loadingDiv.remove();
-            
-            // Add a marker to show this is a saved version
-            const savedNotice = docClone.createElement('div');
-            savedNotice.style.cssText = 'position: fixed; top: 10px; left: 10px; background: #4CAF50; color: white; padding: 10px; border-radius: 5px; z-index: 1000;';
-            savedNotice.innerHTML = '✅ This is a saved editable comic - Continue editing anytime!';
-            docClone.body.insertBefore(savedNotice, docClone.body.firstChild);
-            
-            // Inject the current state into the saved file
-            const stateScript = docClone.createElement('script');
-            stateScript.innerHTML = `
-                // Saved state from ${new Date().toLocaleString()}
-                const savedState = ${JSON.stringify(currentState)};
-                
-                // Auto-restore saved state when file opens
-                window.addEventListener('load', () => {
-                    setTimeout(() => {
-                        const bubbles = document.querySelectorAll('.speech-bubble');
-                        savedState.bubbles.forEach((state, index) => {
-                            if (bubbles[index]) {
-                                bubbles[index].innerText = state.text;
-                                if (state.left) bubbles[index].style.left = state.left;
-                                if (state.top) bubbles[index].style.top = state.top;
-                            }
-                        });
-                        console.log('✅ Restored saved edits from', savedState.timestamp);
-                    }, 1500);
-                });
-            `;
-            docClone.head.appendChild(stateScript);
-            
-            // Convert to string
-            const htmlContent = '<!DOCTYPE html>\\n' + docClone.outerHTML;
-            
-            // Create blob and download
-            const blob = new Blob([htmlContent], { type: 'text/html' });
+        function saveComic() {
+            const html = document.documentElement.outerHTML;
+            const blob = new Blob([html], { type: 'text/html' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            
-            // Generate filename with timestamp
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-            a.download = `comic_editable_${timestamp}.html`;
-            
+            a.download = 'simple_comic.html';
             a.click();
             URL.revokeObjectURL(url);
-            
-            // Show success message
-            showSaveMessage('✅ Comic saved! You can open this HTML file anytime to continue editing.');
         }
         
-        // Show temporary save message
-        function showSaveMessage(message) {
-            const msgDiv = document.createElement('div');
-            msgDiv.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #4CAF50; color: white; padding: 20px 30px; border-radius: 10px; font-size: 16px; z-index: 10000; box-shadow: 0 4px 20px rgba(0,0,0,0.3);';
-            msgDiv.innerHTML = message;
-            document.body.appendChild(msgDiv);
-            
-            setTimeout(() => {
-                msgDiv.style.transition = 'opacity 0.5s';
-                msgDiv.style.opacity = '0';
-                setTimeout(() => msgDiv.remove(), 500);
-            }, 3000);
+        function reloadComic() {
+            location.reload();
         }
     </script>
 </body>

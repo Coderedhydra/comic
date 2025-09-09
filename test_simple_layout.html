@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple 4-Panel Comic Layout Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            background: #f0f0f0; 
+            font-family: Arial, sans-serif; 
+            padding: 20px;
+        }
+        
+        .comic-container { 
+            max-width: 900px; 
+            margin: 0 auto; 
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .comic-title { 
+            text-align: center; 
+            padding: 20px; 
+            background: #333; 
+            color: white; 
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .comic-page { 
+            width: 800px;
+            height: 800px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 0;
+            border: 3px solid #333;
+        }
+        
+        .panel { 
+            position: relative;
+            overflow: hidden;
+            background: #fff;
+        }
+        
+        .panel img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover;
+            display: block;
+        }
+        
+        .speech-bubble { 
+            position: absolute; 
+            background: white; 
+            border: 2px solid #333; 
+            border-radius: 10px; 
+            padding: 8px 12px; 
+            max-width: 150px; 
+            font-size: 12px; 
+            font-weight: bold;
+            box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+            z-index: 10;
+            text-align: center;
+            color: #333;
+            cursor: move;
+        }
+        
+        .speech-bubble:hover { 
+            transform: scale(1.05); 
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.4); 
+        }
+        
+        .speech-bubble::after { 
+            content: ''; 
+            position: absolute; 
+            bottom: -8px; 
+            left: 15px; 
+            width: 0; 
+            height: 0; 
+            border-left: 8px solid transparent; 
+            border-right: 8px solid transparent; 
+            border-top: 8px solid #333; 
+        }
+        
+        .test-info {
+            text-align: center;
+            padding: 20px;
+            background: #e8f5e8;
+            border: 1px solid #4CAF50;
+            margin: 20px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="comic-container">
+        <h1 class="comic-title">🎬 Simple 4-Panel Comic Layout</h1>
+        
+        <div class="test-info">
+            <h2>✅ New Simple Layout Features:</h2>
+            <ul style="text-align: left; max-width: 600px; margin: 0 auto;">
+                <li>✅ 4 equal panels in 2x2 grid (400x400px each)</li>
+                <li>✅ 100% image coverage with object-fit: cover</li>
+                <li>✅ No gaps between panels</li>
+                <li>✅ Simple speech bubbles</li>
+                <li>✅ Fast generation (emotion processing commented out)</li>
+                <li>✅ Clean, modern design</li>
+            </ul>
+        </div>
+        
+        <div class="comic-page">
+            <div class="panel">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZmY2NjY2Ii8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPlBhbmVsIDE8L3RleHQ+Cjwvc3ZnPg==" alt="Panel 1">
+                <div class="speech-bubble">Hello there!</div>
+            </div>
+            <div class="panel">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNjZmZmZmIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPlBhbmVsIDI8L3RleHQ+Cjwvc3ZnPg==" alt="Panel 2">
+                <div class="speech-bubble">How are you?</div>
+            </div>
+            <div class="panel">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZmZmZjY2Ii8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPlBhbmVsIDM8L3RleHQ+Cjwvc3ZnPg==" alt="Panel 3">
+                <div class="speech-bubble">I'm doing great!</div>
+            </div>
+            <div class="panel">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZmY2NmZmIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPlBhbmVsIDQ8L3RleHQ+Cjwvc3ZnPg==" alt="Panel 4">
+                <div class="speech-bubble">That's wonderful!</div>
+            </div>
+        </div>
+        
+        <div class="test-info">
+            <h3>🚀 Speed Improvements:</h3>
+            <ul style="text-align: left; max-width: 600px; margin: 0 auto;">
+                <li>✅ Emotion processing commented out</li>
+                <li>✅ Complex story extraction disabled</li>
+                <li>✅ AI bubble placement simplified</li>
+                <li>✅ Panel extraction skipped</li>
+                <li>✅ Page image generation disabled</li>
+                <li>✅ Simple 4-panel layout only</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
