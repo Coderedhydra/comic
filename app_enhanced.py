@@ -974,6 +974,8 @@ class EnhancedComicGenerator:
             position: absolute;
             top: 0;
             left: 0;
+            border: 2px solid #333; /* Single border around entire grid */
+            box-sizing: border-box;
         }
         .page-wrapper {
             margin: 30px auto;
@@ -1019,32 +1021,16 @@ class EnhancedComicGenerator:
         }
         .panel { 
             position: relative; 
-            border: 1px solid #333;
+            border: none; /* Remove all borders to eliminate gaps */
             overflow: hidden; 
             width: 400px;
             height: 540px;
-            box-sizing: border-box; /* Border included in dimensions */
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
             flex-shrink: 0; /* Don't shrink */
         }
-        /* Remove double borders between adjacent panels */
-        .panel:nth-child(1) {
-            border-right: none;
-            border-bottom: none;
-        }
-        .panel:nth-child(2) {
-            border-left: 1px solid #333;
-            border-bottom: none;
-        }
-        .panel:nth-child(3) {
-            border-right: none;
-            border-top: 1px solid #333;
-        }
-        .panel:nth-child(4) {
-            border-left: 1px solid #333;
-            border-top: 1px solid #333;
-        }
+        /* No border adjustments needed since borders are removed */
         .panel img { 
             width: 100%; 
             height: 100%; 
@@ -1058,12 +1044,12 @@ class EnhancedComicGenerator:
         /* .panel img { object-fit: fill; } */ /* Stretch to fit (may distort) */
         /* .panel img { object-fit: scale-down; } */ /* Shrink if needed */
         
-        /* Exact 800x1080 mode - no individual borders */
+        /* Exact 800x1080 mode - single border around grid */
         .exact-size .panel { 
             border: none !important; 
         }
         .exact-size .comic-grid { 
-            border: 1px solid #333;
+            border: 2px solid #333 !important;
             box-sizing: border-box;
         }
         
@@ -1581,6 +1567,8 @@ class EnhancedComicGenerator:
                         display: grid !important;
                         grid-template-columns: 400px 400px !important;
                         grid-template-rows: 540px 540px !important;
+                        border: 2px solid #000 !important; /* Single border around entire grid */
+                        box-sizing: border-box !important;
                     }
                     
                     /* Show page info in print */
@@ -1597,20 +1585,14 @@ class EnhancedComicGenerator:
                     .panel {
                         width: 400px !important;
                         height: 540px !important;
-                        border: 1px solid #000 !important;
+                        border: none !important; /* Remove borders to eliminate gaps */
                         overflow: hidden !important;
                         position: relative !important;
                         box-sizing: border-box !important;
                         margin: 0 !important;
                         padding: 0 !important;
                     }
-                    /* Remove double borders in print */
-                    .panel:nth-child(1), .panel:nth-child(3) {
-                        border-right: none !important;
-                    }
-                    .panel:nth-child(1), .panel:nth-child(2) {
-                        border-bottom: none !important;
-                    }
+                    /* No border adjustments needed since borders are removed */
                     
                     .panel img {
                         width: 100% !important;
