@@ -35,23 +35,32 @@ class ComicEditor {
             .comic-editor-container {
                 position: relative;
                 user-select: none;
-                background: #f0f0f0;
-                padding: 20px;
-                border-radius: 10px;
+                background: #000;
+                width: 100vw;
+                height: 100vh;
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
             }
             
             .comic-page {
                 position: relative;
-                background: white;
-                margin: 20px auto;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+                width: 100%;
+                height: 100%;
             }
             
+            .comic-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: 1fr 1fr;
+                gap: 0;
+                width: 100%;
+                height: 100%;
+            }
             .comic-panel {
-                position: absolute;
-                border: 2px solid #333;
+                position: relative;
                 overflow: hidden;
-                background: white;
+                background: #000;
             }
             
             .comic-panel img {
@@ -132,17 +141,7 @@ class ComicEditor {
                 border-top: 16px solid white;
             }
             
-            .editor-toolbar {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: white;
-                border: 2px solid #333;
-                border-radius: 10px;
-                padding: 15px;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-                z-index: 1000;
-            }
+            .editor-toolbar { display: none; }
             
             .toolbar-btn {
                 display: block;
@@ -298,26 +297,26 @@ class ComicEditor {
         data.pages.forEach((page, pageIndex) => {
             const pageDiv = document.createElement('div');
             pageDiv.className = 'comic-page';
-            pageDiv.style.width = page.width + 'px';
-            pageDiv.style.height = page.height + 'px';
             pageDiv.dataset.pageIndex = pageIndex;
-            
-            // Render panels
-            page.panels.forEach((panel, panelIndex) => {
+
+            // Create a 2x2 grid container
+            const grid = document.createElement('div');
+            grid.className = 'comic-grid';
+
+            // Render panels into the grid
+            page.panels.slice(0, 4).forEach((panel, panelIndex) => {
                 const panelDiv = document.createElement('div');
                 panelDiv.className = 'comic-panel';
-                panelDiv.style.left = panel.x + 'px';
-                panelDiv.style.top = panel.y + 'px';
-                panelDiv.style.width = panel.width + 'px';
-                panelDiv.style.height = panel.height + 'px';
                 panelDiv.dataset.panelIndex = panelIndex;
                 
                 const img = document.createElement('img');
                 img.src = panel.image;
                 panelDiv.appendChild(img);
                 
-                pageDiv.appendChild(panelDiv);
+                grid.appendChild(panelDiv);
             });
+            
+            pageDiv.appendChild(grid);
             
             // Render bubbles
             page.bubbles.forEach(bubble => {

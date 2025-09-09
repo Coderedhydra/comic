@@ -5,21 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Comic Editor - Drag & Edit</title>
     <style>
+        html, body { height: 100%; }
         body {
             margin: 0;
             padding: 0;
-            background: #2c3e50;
+            background: #000;
             font-family: Arial, sans-serif;
-            overflow-x: auto;
+            overflow: hidden;
         }
         
-        .header {
-            background: #34495e;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        }
+        .header { display: none; }
         
         .header h1 {
             margin: 0;
@@ -32,8 +27,9 @@
         }
         
         #comic-editor {
-            min-height: 100vh;
-            padding: 40px 20px;
+            width: 100vw;
+            height: 100vh;
+            padding: 0;
         }
         
         .loading {
