@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Comic Editor - Drag & Edit</title>
     <style>
-        html, body { height: 100%; }
+        html, body { 
+            height: 100%; 
+        }
         body {
             margin: 0;
             padding: 0;
@@ -37,6 +39,34 @@
             color: white;
             padding: 50px;
             font-size: 20px;
+        }
+
+        /* ✅ FIX for gaps between comic panels/images */
+        .panel-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 0;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .panel {
+            margin: 0;
+            padding: 0;
+            border: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        .panel img {
+            display: block;     /* removes inline spacing */
+            width: 100%;
+            height: 100%;
+            object-fit: cover;  /* keeps proportions, may crop */
+            /* use object-fit: fill if you prefer no gaps at all but stretched */
         }
         
         /* Mobile responsive */
