@@ -194,9 +194,9 @@ class EnhancedComicGenerator:
             print("✂️ Removing black bars...")
             black_x, black_y, _, _ = black_bar_crop()
             
-            # 4.5. Resize frames to 400x540 for perfect comic layout
-            print("📐 Resizing frames to 400x540...")
-            self._resize_frames_to_400x540()
+            # 4.5. Resize frames to 800x540 for perfect comic layout
+            print("📐 Resizing frames to 800x540...")
+            self._resize_frames_to_800x540()
             
             # 5. Enhance image quality with advanced models
             if self.quality_mode == '1':
@@ -533,8 +533,8 @@ class EnhancedComicGenerator:
                 with open('test1.srt', 'r', encoding='utf-8') as f:
                     subs = list(srt.parse(f.read()))
                 
-                # Take first 4 subtitles
-                for i in range(4):
+                # Take first 12 subtitles (for 6 pages x 2 panels)
+                for i in range(12):
                     if i < len(subs):
                         sub = subs[i]
                         bubble_obj = bubble(
@@ -558,8 +558,8 @@ class EnhancedComicGenerator:
                         )
                         bubbles.append(bubble_obj)
             else:
-                # Create simple fallback bubbles
-                for i in range(4):
+                # Create simple fallback bubbles for 12 panels
+                for i in range(12):
                     bubble_obj = bubble(
                         bubble_offset_x=20,
                         bubble_offset_y=20,
@@ -572,8 +572,8 @@ class EnhancedComicGenerator:
                     
         except Exception as e:
             print(f"Simple bubble creation failed: {e}")
-            # Create fallback bubbles
-            for i in range(4):
+            # Create fallback bubbles for 12 panels
+            for i in range(12):
                 bubble_obj = bubble(
                     bubble_offset_x=20,
                     bubble_offset_y=20,
@@ -586,14 +586,14 @@ class EnhancedComicGenerator:
         
         return bubbles
     
-    def _resize_frames_to_400x540(self):
-        """Resize all frames to exactly 400x540 for perfect comic layout"""
+    def _resize_frames_to_800x540(self):
+        """Resize all frames to exactly 800x540 for perfect comic layout"""
         try:
             import cv2
             import numpy as np
             
             frames_dir = "frames/final"
-            output_dir = "frames/resized_400x540"
+            output_dir = "frames/resized_800x540"
             
             if not os.path.exists(frames_dir):
                 print(f"❌ Frames directory not found: {frames_dir}")
@@ -609,7 +609,7 @@ class EnhancedComicGenerator:
                 print(f"❌ No PNG files found in {frames_dir}")
                 return False
             
-            print(f"📐 Resizing {len(frame_files)} frames to 400x540...")
+            print(f"📐 Resizing {len(frame_files)} frames to 800x540...")
             
             resized_count = 0
             
@@ -627,22 +627,22 @@ class EnhancedComicGenerator:
                     # Get original dimensions
                     orig_height, orig_width = img.shape[:2]
                     
-                    # Resize to 400x540 with padding (no crop, no zoom)
-                    # Calculate scaling to fit within 400x540 without cropping
+                    # Resize to 800x540 with padding (no crop, no zoom)
+                    # Calculate scaling to fit within 800x540 without cropping
                     h, w = img.shape[:2]
-                    scale = min(400/w, 540/h)
+                    scale = min(800/w, 540/h)
                     new_w = int(w * scale)
                     new_h = int(h * scale)
                     
                     # Resize with aspect ratio preserved
                     resized = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_LANCZOS4)
                     
-                    # Create 400x540 canvas with black padding
-                    canvas = np.zeros((540, 400, 3), dtype=np.uint8)
+                    # Create 800x540 canvas with black padding
+                    canvas = np.zeros((540, 800, 3), dtype=np.uint8)
                     
                     # Center the resized image on canvas
                     y_offset = (540 - new_h) // 2
-                    x_offset = (400 - new_w) // 2
+                    x_offset = (800 - new_w) // 2
                     canvas[y_offset:y_offset+new_h, x_offset:x_offset+new_w] = resized
                     
                     resized = canvas
@@ -656,7 +656,7 @@ class EnhancedComicGenerator:
                         saved_height, saved_width = saved_img.shape[:2]
                         file_size = os.path.getsize(output_path)
                         
-                        print(f"  ✓ {frame_file}: {orig_width}x{orig_height} → 400x540 ({file_size/1024:.1f} KB)")
+                        print(f"  ✓ {frame_file}: {orig_width}x{orig_height} → 800x540 ({file_size/1024:.1f} KB)")
                         resized_count += 1
                     else:
                         print(f"  ❌ Failed to save {frame_file}")
@@ -664,7 +664,7 @@ class EnhancedComicGenerator:
                 except Exception as e:
                     print(f"  ❌ Error processing {frame_file}: {e}")
             
-            print(f"✅ Successfully resized {resized_count}/{len(frame_files)} frames to 400x540")
+            print(f"✅ Successfully resized {resized_count}/{len(frame_files)} frames to 800x540")
             print(f"📁 Resized frames saved to: {output_dir}")
             
             return resized_count > 0
@@ -677,48 +677,51 @@ class EnhancedComicGenerator:
             return False
     
     def _generate_pages(self, layout_data, bubbles):
-        """Generate simple 4-panel pages"""
+        """Generate 6 pages with 2 panels each (1x2 grid)"""
         pages = []
         
         try:
             frame_files = sorted([f for f in os.listdir(self.frames_dir) if f.endswith('.png')])
-            print(f"📄 Creating simple 4-panel layout with {len(frame_files)} frames")
+            print(f"📄 Creating 6 pages with 2 panels each using {len(frame_files)} frames")
             
-            # Create one page with 4 panels
-            panels = []
-            page_bubbles = []
-            
-            # Take first 4 frames (or cycle if less than 4)
-            for i in range(4):
-                frame_file = frame_files[i % len(frame_files)] if frame_files else 'blank.png'
+            # Create 6 pages with 2 panels each
+            for page_num in range(6):
+                panels = []
+                page_bubbles = []
                 
-                panel_obj = panel(
-                    image=frame_file,
-                    row_span=1,  # Simple 1x1 grid
-                    col_span=1
-                )
-                panels.append(panel_obj)
-                
-                # Add simple bubble
-                if i < len(bubbles):
-                    page_bubbles.append(bubbles[i])
-                else:
-                    # Create simple fallback bubble
-                    fallback_bubble = bubble(
-                        bubble_offset_x=20,
-                        bubble_offset_y=20,
-                        lip_x=-1,
-                        lip_y=-1,
-                        dialog=f"Panel {i+1}",
-                        emotion='normal'
+                # Each page has 2 panels
+                for panel_num in range(2):
+                    frame_index = (page_num * 2 + panel_num) % len(frame_files) if frame_files else 0
+                    frame_file = frame_files[frame_index] if frame_files else 'blank.png'
+                    
+                    panel_obj = panel(
+                        image=frame_file,
+                        row_span=1,  # Simple 1x1 grid
+                        col_span=1
                     )
-                    page_bubbles.append(fallback_bubble)
+                    panels.append(panel_obj)
+                    
+                    # Add simple bubble
+                    bubble_index = (page_num * 2 + panel_num) % len(bubbles) if bubbles else 0
+                    if bubble_index < len(bubbles):
+                        page_bubbles.append(bubbles[bubble_index])
+                    else:
+                        # Create simple fallback bubble
+                        fallback_bubble = bubble(
+                            bubble_offset_x=20,
+                            bubble_offset_y=20,
+                            lip_x=-1,
+                            lip_y=-1,
+                            dialog=f"Page {page_num+1}, Panel {panel_num+1}",
+                            emotion='normal'
+                        )
+                        page_bubbles.append(fallback_bubble)
+                
+                # Create page
+                page = Page(panels=panels, bubbles=page_bubbles)
+                pages.append(page)
             
-            # Create single page
-            page = Page(panels=panels, bubbles=page_bubbles)
-            pages.append(page)
-            
-            print(f"✅ Created 1 page with 4 panels")
+            print(f"✅ Created 6 pages with 2 panels each (12 total panels)")
                 
         except Exception as e:
             print(f"Page generation failed: {e}")
@@ -1101,7 +1104,7 @@ class EnhancedComicGenerator:
             height: 1080px;
             margin: 0 auto;
             display: grid;
-            grid-template-columns: 400px 400px;
+            grid-template-columns: 800px;
             grid-template-rows: 540px 540px;
             gap: 0;
             border: 3px solid #333;
@@ -1112,7 +1115,7 @@ class EnhancedComicGenerator:
             position: relative;
             overflow: hidden;
             background: #fff;
-            width: 400px;
+            width: 800px;
             height: 540px;
             margin: 0;
             padding: 0;
@@ -1121,7 +1124,7 @@ class EnhancedComicGenerator:
         }
         
         .panel img { 
-            width: 400px; 
+            width: 800px; 
             height: 540px; 
             object-fit: none;
             display: block;
@@ -1232,7 +1235,7 @@ class EnhancedComicGenerator:
                             const img = document.createElement('img');
                             // Use available frames, cycle if needed
                             const frameIndex = i % pageData.panels.length;
-                            img.src = '/frames/resized_400x540/' + pageData.panels[frameIndex].image;
+                            img.src = '/frames/resized_800x540/' + pageData.panels[frameIndex].image;
                             img.alt = `Panel ${i + 1}`;
                             
                             // Handle missing images
@@ -1434,10 +1437,10 @@ def frame_file(filename):
     """Serve frame files"""
     return send_from_directory('frames/final', filename)
 
-@app.route('/frames/resized_400x540/<path:filename>')
+@app.route('/frames/resized_800x540/<path:filename>')
 def resized_frame_file(filename):
     """Serve resized frame files"""
-    return send_from_directory('frames/resized_400x540', filename)
+    return send_from_directory('frames/resized_800x540', filename)
 
 @app.route('/comic')
 def view_comic():
