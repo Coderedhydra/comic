@@ -29,11 +29,14 @@
             background: #000;
         }
         
+        /* ✅ Fix for unwanted gaps */
         .panel-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             grid-template-rows: 1fr 1fr;
             gap: 0;
+            margin: 0;
+            padding: 0;
             width: 100%;
             height: 100%;
         }
@@ -42,13 +45,18 @@
             position: relative;
             background: #000;
             overflow: hidden;
+            margin: 0;
+            padding: 0;
+            border: none;
+            width: 100%;
+            height: 100%;
         }
         
         .panel img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
-            display: block;
+            object-fit: cover;  /* keeps aspect ratio, may crop */
+            display: block;     /* removes inline spacing */
         }
         
         .speech-bubble {
