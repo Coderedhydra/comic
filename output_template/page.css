@@ -1,3 +1,9 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+}
+
 body {
     display: flex;
     justify-content: center;
@@ -21,10 +27,26 @@ body {
       0 0 2px #000000, 0 0 3px #000000, 0 0 3px #000000;
   }
 
+.button-top {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+}
+
+.button-bottom {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+}
+
 .wrapper {
     display: flex;
-    height: 1100px;
-    width: 1035px;
+    height: 100vh;
+    width: 100vw;
     background-color: rgb(255, 255, 255);
 }
 
@@ -33,7 +55,7 @@ body {
     height: 100%;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    grid-auto-rows: calc(1100px / 3); /* ensure three exact rows */
+    grid-template-rows: repeat(3, 1fr);
     border: 0; /* default no outer border; modes override */
     row-gap: 0;
     column-gap: 0;
@@ -45,6 +67,7 @@ body {
     background-size: cover;
     border: 0;
     position: relative;
+    overflow: hidden;
 }
 
 /* Exact Mode: single outer border, panels edge-to-edge */
