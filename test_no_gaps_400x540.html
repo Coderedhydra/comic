@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NO GAPS - 400x540 Perfect Layout Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            background: #f0f0f0; 
+            font-family: Arial, sans-serif; 
+            padding: 20px;
+        }
+        
+        .comic-container { 
+            max-width: 900px; 
+            margin: 0 auto; 
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .comic-title { 
+            text-align: center; 
+            padding: 20px; 
+            background: #333; 
+            color: white; 
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .comic-page { 
+            width: 800px;
+            height: 1080px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 400px 400px;
+            grid-template-rows: 540px 540px;
+            gap: 0;
+            border: 3px solid #333;
+            box-sizing: border-box;
+        }
+        
+        .panel { 
+            position: relative;
+            overflow: hidden;
+            background: #fff;
+            width: 400px;
+            height: 540px;
+            margin: 0;
+            padding: 0;
+            border: none;
+            box-sizing: border-box;
+        }
+        
+        .panel img { 
+            width: 400px; 
+            height: 540px; 
+            object-fit: none;
+            display: block;
+            margin: 0;
+            padding: 0;
+            border: none;
+        }
+        
+        .test-info {
+            text-align: center;
+            padding: 20px;
+            background: #e8f5e8;
+            border: 1px solid #4CAF50;
+            margin: 20px;
+            border-radius: 5px;
+        }
+        
+        .dimensions-check {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 5px;
+            font-size: 12px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="comic-container">
+        <h1 class="comic-title">🚫 NO GAPS - 400x540 Perfect Layout</h1>
+        
+        <div class="test-info">
+            <h2>✅ Perfect Layout Features:</h2>
+            <ul style="text-align: left; max-width: 600px; margin: 0 auto;">
+                <li>✅ Each panel: exactly 400x540 pixels</li>
+                <li>✅ Each image: exactly 400x540 pixels</li>
+                <li>✅ object-fit: none (no scaling, no cropping)</li>
+                <li>✅ gap: 0 (no spaces between panels)</li>
+                <li>✅ Total page: 800x1080 pixels</li>
+                <li>✅ Perfect pixel-to-pixel match</li>
+            </ul>
+        </div>
+        
+        <div class="comic-page">
+            <div class="panel">
+                <div class="dimensions-check">400×540</div>
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjU0MCIgZmlsbD0iI2ZmNjY2NiIvPgogIDx0ZXh0IHg9IjIwMCIgeT0iMjcwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiMzMzMiIHRleHQtYW5jaG9yPSJtaWRkbGUiPjQwMHg1NDA8L3RleHQ+Cjwvc3ZnPg==" alt="Panel 1">
+            </div>
+            <div class="panel">
+                <div class="dimensions-check">400×540</div>
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjU0MCIgZmlsbD0iIzY2ZmZmZiIvPgogIDx0ZXh0IHg9IjIwMCIgeT0iMjcwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiMzMzMiIHRleHQtYW5jaG9yPSJtaWRkbGUiPjQwMHg1NDA8L3RleHQ+Cjwvc3ZnPg==" alt="Panel 2">
+            </div>
+            <div class="panel">
+                <div class="dimensions-check">400×540</div>
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjU0MCIgZmlsbD0iI2ZmZmY2NiIvPgogIDx0ZXh0IHg9IjIwMCIgeT0iMjcwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiMzMzMiIHRleHQtYW5jaG9yPSJtaWRkbGUiPjQwMHg1NDA8L3RleHQ+Cjwvc3ZnPg==" alt="Panel 3">
+            </div>
+            <div class="panel">
+                <div class="dimensions-check">400×540</div>
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjU0MCIgZmlsbD0iI2ZmNjZmZiIvPgogIDx0ZXh0IHg9IjIwMCIgeT0iMjcwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiMzMzMiIHRleHQtYW5jaG9yPSJtaWRkbGUiPjQwMHg1NDA8L3RleHQ+Cjwvc3ZnPg==" alt="Panel 4">
+            </div>
+        </div>
+        
+        <div class="test-info">
+            <h3>🎯 Key CSS Properties:</h3>
+            <ul style="text-align: left; max-width: 600px; margin: 0 auto; font-family: monospace; font-size: 14px;">
+                <li>• gap: 0 (no spaces)</li>
+                <li>• object-fit: none (no scaling)</li>
+                <li>• width: 400px; height: 540px (exact dimensions)</li>
+                <li>• margin: 0; padding: 0 (no spacing)</li>
+                <li>• border: none (no borders between panels)</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

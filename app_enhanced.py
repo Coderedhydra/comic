@@ -590,6 +590,7 @@ class EnhancedComicGenerator:
         """Resize all frames to exactly 400x540 for perfect comic layout"""
         try:
             import cv2
+            import numpy as np
             
             frames_dir = "frames/final"
             output_dir = "frames/resized_400x540"
@@ -626,8 +627,25 @@ class EnhancedComicGenerator:
                     # Get original dimensions
                     orig_height, orig_width = img.shape[:2]
                     
-                    # Resize to 400x540 with high quality interpolation
-                    resized = cv2.resize(img, (400, 540), interpolation=cv2.INTER_LANCZOS4)
+                    # Resize to 400x540 with padding (no crop, no zoom)
+                    # Calculate scaling to fit within 400x540 without cropping
+                    h, w = img.shape[:2]
+                    scale = min(400/w, 540/h)
+                    new_w = int(w * scale)
+                    new_h = int(h * scale)
+                    
+                    # Resize with aspect ratio preserved
+                    resized = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_LANCZOS4)
+                    
+                    # Create 400x540 canvas with black padding
+                    canvas = np.zeros((540, 400, 3), dtype=np.uint8)
+                    
+                    # Center the resized image on canvas
+                    y_offset = (540 - new_h) // 2
+                    x_offset = (400 - new_w) // 2
+                    canvas[y_offset:y_offset+new_h, x_offset:x_offset+new_w] = resized
+                    
+                    resized = canvas
                     
                     # Save resized image
                     cv2.imwrite(output_path, resized)
@@ -638,7 +656,7 @@ class EnhancedComicGenerator:
                         saved_height, saved_width = saved_img.shape[:2]
                         file_size = os.path.getsize(output_path)
                         
-                        print(f"  ✓ {frame_file}: {orig_width}x{orig_height} → {saved_width}x{saved_height} ({file_size/1024:.1f} KB)")
+                        print(f"  ✓ {frame_file}: {orig_width}x{orig_height} → 400x540 ({file_size/1024:.1f} KB)")
                         resized_count += 1
                     else:
                         print(f"  ❌ Failed to save {frame_file}")
@@ -1087,19 +1105,29 @@ class EnhancedComicGenerator:
             grid-template-rows: 540px 540px;
             gap: 0;
             border: 3px solid #333;
+            box-sizing: border-box;
         }
         
         .panel { 
             position: relative;
             overflow: hidden;
             background: #fff;
+            width: 400px;
+            height: 540px;
+            margin: 0;
+            padding: 0;
+            border: none;
+            box-sizing: border-box;
         }
         
         .panel img { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: contain;
+            width: 400px; 
+            height: 540px; 
+            object-fit: none;
             display: block;
+            margin: 0;
+            padding: 0;
+            border: none;
         }
         
         .speech-bubble { 
