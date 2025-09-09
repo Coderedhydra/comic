@@ -194,6 +194,10 @@ class EnhancedComicGenerator:
             print("✂️ Removing black bars...")
             black_x, black_y, _, _ = black_bar_crop()
             
+            # 4.5. Resize frames to 400x540 for perfect comic layout
+            print("📐 Resizing frames to 400x540...")
+            self._resize_frames_to_400x540()
+            
             # 5. Enhance image quality with advanced models
             if self.quality_mode == '1':
                 print("✨ Using simple quality enhancement to avoid color issues...")
@@ -581,6 +585,78 @@ class EnhancedComicGenerator:
                 bubbles.append(bubble_obj)
         
         return bubbles
+    
+    def _resize_frames_to_400x540(self):
+        """Resize all frames to exactly 400x540 for perfect comic layout"""
+        try:
+            import cv2
+            
+            frames_dir = "frames/final"
+            output_dir = "frames/resized_400x540"
+            
+            if not os.path.exists(frames_dir):
+                print(f"❌ Frames directory not found: {frames_dir}")
+                return False
+            
+            # Create output directory
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # Get all PNG files
+            frame_files = [f for f in os.listdir(frames_dir) if f.endswith('.png')]
+            
+            if not frame_files:
+                print(f"❌ No PNG files found in {frames_dir}")
+                return False
+            
+            print(f"📐 Resizing {len(frame_files)} frames to 400x540...")
+            
+            resized_count = 0
+            
+            for i, frame_file in enumerate(frame_files, 1):
+                input_path = os.path.join(frames_dir, frame_file)
+                output_path = os.path.join(output_dir, frame_file)
+                
+                try:
+                    # Read original image
+                    img = cv2.imread(input_path)
+                    if img is None:
+                        print(f"  ❌ Could not read {frame_file}")
+                        continue
+                    
+                    # Get original dimensions
+                    orig_height, orig_width = img.shape[:2]
+                    
+                    # Resize to 400x540 with high quality interpolation
+                    resized = cv2.resize(img, (400, 540), interpolation=cv2.INTER_LANCZOS4)
+                    
+                    # Save resized image
+                    cv2.imwrite(output_path, resized)
+                    
+                    # Verify the output
+                    saved_img = cv2.imread(output_path)
+                    if saved_img is not None:
+                        saved_height, saved_width = saved_img.shape[:2]
+                        file_size = os.path.getsize(output_path)
+                        
+                        print(f"  ✓ {frame_file}: {orig_width}x{orig_height} → {saved_width}x{saved_height} ({file_size/1024:.1f} KB)")
+                        resized_count += 1
+                    else:
+                        print(f"  ❌ Failed to save {frame_file}")
+                        
+                except Exception as e:
+                    print(f"  ❌ Error processing {frame_file}: {e}")
+            
+            print(f"✅ Successfully resized {resized_count}/{len(frame_files)} frames to 400x540")
+            print(f"📁 Resized frames saved to: {output_dir}")
+            
+            return resized_count > 0
+            
+        except ImportError:
+            print("❌ OpenCV not available for resizing")
+            return False
+        except Exception as e:
+            print(f"❌ Frame resizing failed: {e}")
+            return False
     
     def _generate_pages(self, layout_data, bubbles):
         """Generate simple 4-panel pages"""
@@ -1004,11 +1080,11 @@ class EnhancedComicGenerator:
         
         .comic-page { 
             width: 800px;
-            height: 800px;
+            height: 1080px;
             margin: 0 auto;
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
+            grid-template-columns: 400px 400px;
+            grid-template-rows: 540px 540px;
             gap: 0;
             border: 3px solid #333;
         }
@@ -1022,7 +1098,7 @@ class EnhancedComicGenerator:
         .panel img { 
             width: 100%; 
             height: 100%; 
-            object-fit: cover;
+            object-fit: contain;
             display: block;
         }
         
@@ -1128,7 +1204,7 @@ class EnhancedComicGenerator:
                             const img = document.createElement('img');
                             // Use available frames, cycle if needed
                             const frameIndex = i % pageData.panels.length;
-                            img.src = '/frames/final/' + pageData.panels[frameIndex].image;
+                            img.src = '/frames/resized_400x540/' + pageData.panels[frameIndex].image;
                             img.alt = `Panel ${i + 1}`;
                             
                             // Handle missing images
@@ -1329,6 +1405,11 @@ def output_file(filename):
 def frame_file(filename):
     """Serve frame files"""
     return send_from_directory('frames/final', filename)
+
+@app.route('/frames/resized_400x540/<path:filename>')
+def resized_frame_file(filename):
+    """Serve resized frame files"""
+    return send_from_directory('frames/resized_400x540', filename)
 
 @app.route('/comic')
 def view_comic():
