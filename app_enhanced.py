@@ -802,10 +802,10 @@ class EnhancedComicGenerator:
 <head>
     <title>Smart Comic - Emotion Matched</title>
     <style>
-        body { margin: 0; padding: 20px; background: #2c3e50; color: white; font-family: Arial, sans-serif; }
+        body { margin: 0; padding: 0; background: #2c3e50; color: white; font-family: Arial, sans-serif; }
         .header { text-align: center; margin-bottom: 30px; }
         .comic-container { max-width: 1200px; margin: 0 auto; }
-        .comic-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; margin-top: 30px; }
+        .comic-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; margin-top: 0; }
         .comic-panel { background: white; border: 4px solid #333; box-shadow: 0 5px 20px rgba(0,0,0,0.3); position: relative; overflow: hidden; }
         .comic-panel img { width: 100%; height: 400px; object-fit: cover; display: block; }
         .panel-info { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.8); color: white; padding: 15px; }
@@ -950,7 +950,7 @@ class EnhancedComicGenerator:
     <title>Generated Comic - Interactive Editor</title>
     <style>
         body { margin: 0; padding: 20px; background: #f0f0f0; font-family: Arial, sans-serif; }
-        .comic-container { max-width: 1200px; margin: 0 auto; }
+        .comic-container { max-width: none; margin: 0; width: 100vw; height: 100vh; }
         .comic-page { 
             background: white; 
             width: 800px; /* Exact image width */
@@ -976,7 +976,7 @@ class EnhancedComicGenerator:
             left: 0;
         }
         .page-wrapper {
-            margin: 30px auto;
+            margin: 0 auto;
             width: 800px;
             display: flex;
             flex-direction: column;

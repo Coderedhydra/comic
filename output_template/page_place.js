@@ -7,8 +7,10 @@ function placeDialogs(page) {
         var gridItem = gridItems[index];
 
         gridItem.style.display = 'flex';
-        gridItem.style.gridRow = 'span ' + panel.row_span;
-        gridItem.style.gridColumn = 'span ' + panel.col_span;
+        var rowSpan = Math.max(1, Math.min(2, (panel.row_span || 1)));
+        var colSpan = Math.max(1, Math.min(2, (panel.col_span || 1)));
+        gridItem.style.gridRow = 'span ' + rowSpan;
+        gridItem.style.gridColumn = 'span ' + colSpan;
         gridItem.style.backgroundImage = `url("${path}${panel.image}.png")`;
 
         gridItem.innerHTML = "";
