@@ -1499,6 +1499,53 @@ def create_portable():
         print(f"Portable creation error: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/generate-unity-comic', methods=['POST'])
+def generate_unity_comic():
+    """Generate 48-page Unity comic with interactive bubbles"""
+    try:
+        from unity_comic_generator import UnityComicGenerator
+        
+        print("🎬 Starting Unity Comic Generation...")
+        
+        # Initialize generator
+        generator = UnityComicGenerator()
+        
+        # Generate 48-page comic
+        success = generator.generate_48_pages_comic()
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Unity Comic Generated Successfully!',
+                'pages': 48,
+                'viewer_url': '/unity-viewer',
+                'files_location': 'output/unity_pages/'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Unity Comic Generation Failed'
+            }), 500
+            
+    except Exception as e:
+        print(f"Unity comic generation error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/unity-viewer')
+def unity_viewer():
+    """Serve the Unity comic interactive viewer"""
+    return send_from_directory('output/unity_pages', 'interactive_viewer.html')
+
+@app.route('/unity-pages/<path:filename>')
+def unity_page_file(filename):
+    """Serve Unity page files"""
+    return send_from_directory('output/unity_pages', filename)
+
+@app.route('/frames/unity_resized/<path:filename>')
+def unity_resized_frame_file(filename):
+    """Serve Unity resized frame files"""
+    return send_from_directory('frames/unity_resized', filename)
+
 if __name__ == '__main__':
     print("🚀 Starting Enhanced Comic Generator...")
     print("✨ Features:")

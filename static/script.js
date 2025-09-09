@@ -203,3 +203,92 @@ function hideIFramePreview() {
   iFramePreview.style.display = "none";
   // no-op: background video removed
 }
+
+// 7. Unity Comic Generation
+function generateUnityComic() {
+  if (!selectedFile && !selectedLink) {
+    submissionResult.textContent = "Please select a video file or enter a YouTube link first.";
+    return;
+  }
+  
+  submissionResult.textContent = "🎮 Generating Unity Comic (48 pages)... This may take a few minutes.";
+  
+  // First upload the video if needed
+  if (selectedFile) {
+    var formdata = new FormData();
+    formdata.append("file", selectedFile);
+    
+    var requestOptions = {
+      method: "POST",
+      body: formdata,
+      redirect: "follow",
+    };
+    
+    fetch("/uploader", requestOptions)
+      .then((response) => response.text())
+      .then((result) => {
+        console.log("Video uploaded:", result);
+        // Now generate Unity comic
+        generateUnityComicFromUploadedVideo();
+      })
+      .catch((error) => {
+        console.log("Upload error:", error);
+        submissionResult.textContent = "Error uploading video: " + error;
+      });
+  } else if (selectedLink) {
+    var formdata = new FormData();
+    formdata.append("link", selectedLink);
+    
+    var requestOptions = {
+      method: "POST",
+      body: formdata,
+      redirect: "follow",
+    };
+    
+    fetch("/handle_link", requestOptions)
+      .then((response) => response.text())
+      .then((result) => {
+        console.log("Video downloaded:", result);
+        // Now generate Unity comic
+        generateUnityComicFromUploadedVideo();
+      })
+      .catch((error) => {
+        console.log("Download error:", error);
+        submissionResult.textContent = "Error downloading video: " + error;
+      });
+  }
+}
+
+function generateUnityComicFromUploadedVideo() {
+  submissionResult.textContent = "🎬 Creating 48-page Unity comic with interactive bubbles...";
+  
+  var requestOptions = {
+    method: "POST",
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    redirect: "follow",
+  };
+  
+  fetch("/generate-unity-comic", requestOptions)
+    .then((response) => response.json())
+    .then((result) => {
+      console.log("Unity comic result:", result);
+      if (result.success) {
+        submissionResult.innerHTML = `
+          <div style="color: #4CAF50; font-weight: bold;">
+            ✅ ${result.message}<br>
+            📄 ${result.pages} pages generated<br>
+            🎮 <a href="${result.viewer_url}" target="_blank" style="color: #ff6b6b;">Open Interactive Viewer</a><br>
+            📁 Files saved to: ${result.files_location}
+          </div>
+        `;
+      } else {
+        submissionResult.textContent = "❌ " + result.message;
+      }
+    })
+    .catch((error) => {
+      console.log("Unity comic error:", error);
+      submissionResult.textContent = "❌ Error generating Unity comic: " + error;
+    });
+}
