@@ -239,8 +239,12 @@ class UnityComicGenerator:
         
         return pages
     
-    def _create_png_pages(self, pages_data: List[Dict]) -> List[str]:
+    def _create_png_pages(self, pages_data: List[Dict], output_dir: str = None) -> List[str]:
         """Create high-quality PNG pages for Unity"""
+        if output_dir is None:
+            output_dir = 'output/unity_pages'
+        
+        os.makedirs(output_dir, exist_ok=True)
         png_pages = []
         
         for page_data in pages_data:
@@ -269,7 +273,7 @@ class UnityComicGenerator:
                 
                 # Save page as PNG
                 page_filename = f"page_{page_data['page_number']:03d}.png"
-                page_path = os.path.join('output/unity_pages', page_filename)
+                page_path = os.path.join(output_dir, page_filename)
                 cv2.imwrite(page_path, page_img, [cv2.IMWRITE_PNG_COMPRESSION, 0])
                 png_pages.append(page_path)
                 
@@ -329,11 +333,15 @@ class UnityComicGenerator:
         except Exception as e:
             print(f"⚠️ Error drawing bubble: {e}")
     
-    def _create_interactive_viewer(self, pages_data: List[Dict]):
+    def _create_interactive_viewer(self, pages_data: List[Dict], output_dir: str = None):
         """Create interactive HTML viewer with draggable bubbles"""
+        if output_dir is None:
+            output_dir = 'output/unity_pages'
+        
+        os.makedirs(output_dir, exist_ok=True)
         html_content = self._generate_interactive_html(pages_data)
         
-        with open('output/unity_pages/interactive_viewer.html', 'w', encoding='utf-8') as f:
+        with open(os.path.join(output_dir, 'interactive_viewer.html'), 'w', encoding='utf-8') as f:
             f.write(html_content)
     
     def _generate_interactive_html(self, pages_data: List[Dict]) -> str:
@@ -786,20 +794,25 @@ class UnityComicGenerator:
 </body>
 </html>'''
     
-    def _save_unity_data(self, pages_data: List[Dict]):
+    def _save_unity_data(self, pages_data: List[Dict], output_dir: str = None):
         """Save data in Unity-friendly format"""
+        if output_dir is None:
+            output_dir = 'output/unity_pages'
+        
+        os.makedirs(output_dir, exist_ok=True)
+        
         # Save pages data as JSON
-        with open('output/unity_pages/pages_data.json', 'w') as f:
+        with open(os.path.join(output_dir, 'pages_data.json'), 'w') as f:
             json.dump(pages_data, f, indent=2)
         
         # Create Unity import instructions
-        unity_instructions = """
+        unity_instructions = f"""
 # Unity Integration Instructions
 
 ## Files Generated:
-- 48 PNG pages (1600x1080 each) in output/unity_pages/
-- Interactive viewer: output/unity_pages/interactive_viewer.html
-- Pages data: output/unity_pages/pages_data.json
+- {len(pages_data)} PNG pages (1600x1080 each) in {output_dir}/
+- Interactive viewer: {output_dir}/interactive_viewer.html
+- Pages data: {output_dir}/pages_data.json
 
 ## Unity Setup:
 1. Import all PNG files into Unity as Sprites
@@ -818,7 +831,7 @@ class UnityComicGenerator:
 - Each page: 1600x1080 pixels
 - 2x2 grid: 4 panels per page
 - Panel size: 800x540 pixels each
-- Total: 48 pages = 192 panels
+- Total: {len(pages_data)} pages = {len(pages_data) * 4} panels
 
 ## Speech Bubbles:
 - Draggable in interactive viewer
@@ -827,7 +840,7 @@ class UnityComicGenerator:
 - Can be recreated in Unity UI system
 """
         
-        with open('output/unity_pages/UNITY_INTEGRATION.md', 'w') as f:
+        with open(os.path.join(output_dir, 'UNITY_INTEGRATION.md'), 'w') as f:
             f.write(unity_instructions)
 
 if __name__ == "__main__":

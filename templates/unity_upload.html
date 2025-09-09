@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 Unity Comic Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .upload-section {
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-section:hover {
+            border-color: #ff6b6b;
+            background: #fff5f5;
+        }
+        
+        .upload-section.dragover {
+            border-color: #ff6b6b;
+            background: #fff5f5;
+            transform: scale(1.02);
+        }
+        
+        .upload-icon {
+            font-size: 4em;
+            color: #ff6b6b;
+            margin-bottom: 20px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 107, 107, 0.3);
+        }
+        
+        .upload-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .options {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .option-group {
+            margin-bottom: 20px;
+        }
+        
+        .option-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .option-group input, .option-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+        
+        .option-group input:focus, .option-group select:focus {
+            outline: none;
+            border-color: #ff6b6b;
+        }
+        
+        .progress-section {
+            display: none;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            text-align: center;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .results-section {
+            display: none;
+            background: #d4edda;
+            border: 2px solid #c3e6cb;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .results-section h3 {
+            color: #155724;
+            margin-bottom: 20px;
+        }
+        
+        .result-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .result-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .result-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+        
+        .result-btn.secondary {
+            background: #6c757d;
+        }
+        
+        .result-btn.secondary:hover {
+            background: #5a6268;
+        }
+        
+        .error-section {
+            display: none;
+            background: #f8d7da;
+            border: 2px solid #f5c6cb;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .error-section h3 {
+            color: #721c24;
+            margin-bottom: 15px;
+        }
+        
+        .error-text {
+            color: #721c24;
+        }
+        
+        .file-info {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .file-info h4 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        
+        .file-details {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .supported-formats {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .supported-formats h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .formats-list {
+            color: #856404;
+            font-size: 0.9em;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #ff6b6b;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .header {
+                padding: 30px 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .result-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 Unity Comic Generator</h1>
+            <p>Transform any video into a professional comic with 48 pages, 2x2 grid layout, and interactive speech bubbles</p>
+        </div>
+        
+        <div class="content">
+            <div class="upload-section" id="uploadSection">
+                <div class="upload-icon">📁</div>
+                <h3>Upload Your Video</h3>
+                <p>Drag and drop your video file here or click to browse</p>
+                <input type="file" id="fileInput" class="file-input" accept=".mp4,.avi,.mov,.mkv,.wmv,.flv,.webm,.m4v">
+                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                    Choose Video File
+                </button>
+                
+                <div class="supported-formats">
+                    <h4>📹 Supported Formats</h4>
+                    <div class="formats-list">MP4, AVI, MOV, MKV, WMV, FLV, WebM, M4V (Max: 500MB)</div>
+                </div>
+            </div>
+            
+            <div class="file-info" id="fileInfo">
+                <h4>📄 Selected File</h4>
+                <div class="file-details" id="fileDetails"></div>
+            </div>
+            
+            <div class="options">
+                <h3>⚙️ Generation Options</h3>
+                
+                <div class="option-group">
+                    <label for="pagesInput">Number of Pages:</label>
+                    <input type="number" id="pagesInput" min="1" max="100" value="48">
+                    <small>Each page contains 4 panels in a 2x2 grid layout</small>
+                </div>
+                
+                <div class="option-group">
+                    <label for="qualitySelect">Output Quality:</label>
+                    <select id="qualitySelect">
+                        <option value="high">High Quality (No Compression)</option>
+                        <option value="medium">Medium Quality</option>
+                        <option value="fast">Fast Generation</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="progress-section" id="progressSection">
+                <h3>🔄 Generation Progress</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">Preparing...</div>
+            </div>
+            
+            <div class="results-section" id="resultsSection">
+                <h3>✅ Generation Complete!</h3>
+                <p id="resultsMessage"></p>
+                <div class="result-buttons">
+                    <a href="#" id="viewerBtn" class="result-btn">🌐 Open Interactive Viewer</a>
+                    <a href="#" id="downloadBtn" class="result-btn">📦 Download All Files (ZIP)</a>
+                    <button onclick="startNewGeneration()" class="result-btn secondary">🔄 Generate Another</button>
+                </div>
+            </div>
+            
+            <div class="error-section" id="errorSection">
+                <h3>❌ Generation Failed</h3>
+                <div class="error-text" id="errorText"></div>
+                <button onclick="startNewGeneration()" class="upload-btn" style="margin-top: 15px;">Try Again</button>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px;">
+                <button id="generateBtn" class="upload-btn" onclick="startGeneration()" disabled>
+                    🎬 Generate Unity Comic
+                </button>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>🎮 Unity Comic Generator • High-Quality PNG Output • Interactive Speech Bubbles</p>
+        </div>
+    </div>
+    
+    <script>
+        let selectedFile = null;
+        let currentJobId = null;
+        let progressInterval = null;
+        
+        // File input handling
+        document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+        
+        // Drag and drop handling
+        const uploadSection = document.getElementById('uploadSection');
+        
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+        
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+        
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+        
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+        
+        function handleFile(file) {
+            // Validate file type
+            const allowedTypes = ['video/mp4', 'video/avi', 'video/quicktime', 'video/x-msvideo', 'video/x-ms-wmv', 'video/x-flv', 'video/webm', 'video/x-m4v'];
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            const allowedExtensions = ['mp4', 'avi', 'mov', 'mkv', 'wmv', 'flv', 'webm', 'm4v'];
+            
+            if (!allowedExtensions.includes(fileExtension)) {
+                alert('Please select a valid video file (MP4, AVI, MOV, MKV, WMV, FLV, WebM, M4V)');
+                return;
+            }
+            
+            // Validate file size (500MB max)
+            if (file.size > 500 * 1024 * 1024) {
+                alert('File size must be less than 500MB');
+                return;
+            }
+            
+            selectedFile = file;
+            
+            // Show file info
+            const fileInfo = document.getElementById('fileInfo');
+            const fileDetails = document.getElementById('fileDetails');
+            
+            fileDetails.innerHTML = `
+                <strong>Name:</strong> ${file.name}<br>
+                <strong>Size:</strong> ${(file.size / (1024 * 1024)).toFixed(2)} MB<br>
+                <strong>Type:</strong> ${file.type || 'Video file'}
+            `;
+            
+            fileInfo.style.display = 'block';
+            
+            // Enable generate button
+            document.getElementById('generateBtn').disabled = false;
+        }
+        
+        function startGeneration() {
+            if (!selectedFile) {
+                alert('Please select a video file first');
+                return;
+            }
+            
+            const pages = parseInt(document.getElementById('pagesInput').value);
+            const quality = document.getElementById('qualitySelect').value;
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('pages', pages);
+            formData.append('quality', quality);
+            
+            // Show progress section
+            document.getElementById('progressSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+            document.getElementById('generateBtn').disabled = true;
+            document.getElementById('generateBtn').innerHTML = '<span class="loading-spinner"></span>Generating...';
+            
+            // Start upload
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentJobId = data.job_id;
+                    startProgressTracking();
+                } else {
+                    showError(data.error || 'Upload failed');
+                }
+            })
+            .catch(error => {
+                showError('Upload failed: ' + error.message);
+            });
+        }
+        
+        function startProgressTracking() {
+            if (!currentJobId) return;
+            
+            progressInterval = setInterval(() => {
+                fetch(`/status/${currentJobId}`)
+                .then(response => response.json())
+                .then(data => {
+                    updateProgress(data);
+                    
+                    if (data.status === 'completed') {
+                        clearInterval(progressInterval);
+                        showResults(data);
+                    } else if (data.status === 'error') {
+                        clearInterval(progressInterval);
+                        showError(data.message || 'Generation failed');
+                    }
+                })
+                .catch(error => {
+                    clearInterval(progressInterval);
+                    showError('Failed to get status: ' + error.message);
+                });
+            }, 1000);
+        }
+        
+        function updateProgress(data) {
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            progressFill.style.width = data.progress + '%';
+            progressText.textContent = data.message || 'Processing...';
+        }
+        
+        function showResults(data) {
+            document.getElementById('progressSection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'block';
+            
+            const resultsMessage = document.getElementById('resultsMessage');
+            resultsMessage.textContent = `Successfully generated ${data.pages_generated} pages with ${data.png_files} PNG files!`;
+            
+            // Set up result buttons
+            document.getElementById('viewerBtn').href = data.viewer_url;
+            document.getElementById('downloadBtn').href = data.download_url;
+            
+            // Reset generate button
+            document.getElementById('generateBtn').disabled = false;
+            document.getElementById('generateBtn').innerHTML = '🎬 Generate Unity Comic';
+        }
+        
+        function showError(message) {
+            document.getElementById('progressSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'block';
+            document.getElementById('errorText').textContent = message;
+            
+            // Reset generate button
+            document.getElementById('generateBtn').disabled = false;
+            document.getElementById('generateBtn').innerHTML = '🎬 Generate Unity Comic';
+        }
+        
+        function startNewGeneration() {
+            // Reset everything
+            selectedFile = null;
+            currentJobId = null;
+            
+            document.getElementById('fileInput').value = '';
+            document.getElementById('fileInfo').style.display = 'none';
+            document.getElementById('progressSection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+            document.getElementById('generateBtn').disabled = true;
+            document.getElementById('generateBtn').innerHTML = '🎬 Generate Unity Comic';
+            
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+        }
+    </script>
+</body>
+</html>

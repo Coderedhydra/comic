@@ -1307,6 +1307,131 @@ class EnhancedComicGenerator:
 # Global comic generator instance
 comic_generator = EnhancedComicGenerator()
 
+# Unity Comic Generation globals
+unity_generation_progress = {}
+unity_generation_results = {}
+
+def generate_unity_comic_async(job_id, video_path, pages=48):
+    """Generate Unity comic in background thread"""
+    try:
+        from datetime import datetime
+        
+        unity_generation_progress[job_id] = {
+            'status': 'processing',
+            'progress': 0,
+            'message': 'Starting Unity comic generation...',
+            'start_time': datetime.now().isoformat()
+        }
+        
+        # Import Unity generator
+        from unity_comic_generator import UnityComicGenerator
+        
+        # Initialize generator
+        generator = UnityComicGenerator()
+        generator.total_pages = pages
+        
+        # Update progress
+        unity_generation_progress[job_id].update({
+            'progress': 10,
+            'message': 'Extracting frames from video...'
+        })
+        
+        # Extract frames
+        frames = generator._extract_frames(video_path)
+        if not frames:
+            unity_generation_progress[job_id] = {
+                'status': 'error',
+                'progress': 0,
+                'message': 'Failed to extract frames from video',
+                'error': 'No frames extracted'
+            }
+            return
+        
+        unity_generation_progress[job_id].update({
+            'progress': 30,
+            'message': f'Extracted {len(frames)} frames, resizing for Unity...'
+        })
+        
+        # Resize frames
+        resized_frames = generator._resize_frames_for_unity(frames)
+        if not resized_frames:
+            unity_generation_progress[job_id] = {
+                'status': 'error',
+                'progress': 0,
+                'message': 'Failed to resize frames',
+                'error': 'Frame resizing failed'
+            }
+            return
+        
+        unity_generation_progress[job_id].update({
+            'progress': 50,
+            'message': f'Resized {len(resized_frames)} frames, extracting subtitles...'
+        })
+        
+        # Extract subtitles
+        subtitles = generator._extract_subtitles()
+        
+        unity_generation_progress[job_id].update({
+            'progress': 60,
+            'message': f'Extracted {len(subtitles)} subtitles, generating {pages} pages...'
+        })
+        
+        # Generate pages
+        pages_data = generator._generate_48_pages(resized_frames, subtitles)
+        
+        unity_generation_progress[job_id].update({
+            'progress': 80,
+            'message': f'Generated {len(pages_data)} pages, creating PNG files...'
+        })
+        
+        # Create job-specific output directory
+        job_output_dir = os.path.join('output/unity_pages', job_id)
+        os.makedirs(job_output_dir, exist_ok=True)
+        
+        # Create PNG pages
+        png_pages = generator._create_png_pages(pages_data, job_output_dir)
+        
+        unity_generation_progress[job_id].update({
+            'progress': 90,
+            'message': f'Created {len(png_pages)} PNG pages, generating interactive viewer...'
+        })
+        
+        # Create interactive viewer
+        generator._create_interactive_viewer(pages_data, job_output_dir)
+        
+        # Save Unity data
+        generator._save_unity_data(pages_data, job_output_dir)
+        
+        # Complete
+        unity_generation_progress[job_id] = {
+            'status': 'completed',
+            'progress': 100,
+            'message': f'Successfully generated {pages} pages with {len(png_pages)} PNG files',
+            'end_time': datetime.now().isoformat(),
+            'pages_generated': len(pages_data),
+            'png_files': len(png_pages),
+            'viewer_url': f'/unity-viewer/{job_id}',
+            'download_url': f'/unity-download-all/{job_id}'
+        }
+        
+        # Store results
+        unity_generation_results[job_id] = {
+            'pages_data': pages_data,
+            'png_pages': png_pages,
+            'video_path': video_path,
+            'pages': pages,
+            'created_at': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        unity_generation_progress[job_id] = {
+            'status': 'error',
+            'progress': 0,
+            'message': f'Generation failed: {str(e)}',
+            'error': str(e),
+            'end_time': datetime.now().isoformat()
+        }
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -1545,6 +1670,130 @@ def unity_page_file(filename):
 def unity_resized_frame_file(filename):
     """Serve Unity resized frame files"""
     return send_from_directory('frames/unity_resized', filename)
+
+# Unity Comic Flask Integration
+@app.route('/unity-upload')
+def unity_upload_page():
+    """Serve Unity comic upload page"""
+    return render_template('unity_upload.html')
+
+@app.route('/unity-upload-file', methods=['POST'])
+def unity_upload_file():
+    """Handle Unity comic file upload with progress tracking"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file uploaded'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        # Get optional parameters
+        pages = int(request.form.get('pages', 48))
+        pages = max(1, min(pages, 100))  # Limit between 1-100 pages
+        
+        # Create upload directory
+        os.makedirs('uploads', exist_ok=True)
+        
+        # Generate unique job ID
+        import uuid
+        job_id = str(uuid.uuid4())
+        
+        # Save uploaded file
+        from werkzeug.utils import secure_filename
+        filename = secure_filename(file.filename)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"{timestamp}_{job_id}_{filename}"
+        file_path = os.path.join('uploads', filename)
+        file.save(file_path)
+        
+        # Start background generation
+        import threading
+        thread = threading.Thread(
+            target=generate_unity_comic_async,
+            args=(job_id, file_path, pages)
+        )
+        thread.daemon = True
+        thread.start()
+        
+        return jsonify({
+            'success': True,
+            'job_id': job_id,
+            'message': f'File uploaded successfully. Generating {pages} pages...',
+            'status_url': f'/unity-status/{job_id}',
+            'pages': pages
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/unity-status/<job_id>')
+def unity_get_status(job_id):
+    """Get Unity comic generation status"""
+    if job_id not in unity_generation_progress:
+        return jsonify({'error': 'Job not found'}), 404
+    
+    return jsonify(unity_generation_progress[job_id])
+
+@app.route('/unity-viewer/<job_id>')
+def unity_viewer_job(job_id):
+    """Serve Unity comic viewer for specific job"""
+    if job_id not in unity_generation_results:
+        return jsonify({'error': 'Comic not found'}), 404
+    
+    job_output_dir = os.path.join('output/unity_pages', job_id)
+    viewer_path = os.path.join(job_output_dir, 'interactive_viewer.html')
+    
+    if os.path.exists(viewer_path):
+        return send_from_directory(job_output_dir, 'interactive_viewer.html')
+    else:
+        return jsonify({'error': 'Viewer not found'}), 404
+
+@app.route('/unity-download/<job_id>/<filename>')
+def unity_download_file(job_id, filename):
+    """Download individual Unity comic files"""
+    if job_id not in unity_generation_results:
+        return jsonify({'error': 'Job not found'}), 404
+    
+    job_output_dir = os.path.join('output/unity_pages', job_id)
+    file_path = os.path.join(job_output_dir, filename)
+    
+    if os.path.exists(file_path):
+        return send_file(file_path, as_attachment=True)
+    else:
+        return jsonify({'error': 'File not found'}), 404
+
+@app.route('/unity-download-all/<job_id>')
+def unity_download_all(job_id):
+    """Download all Unity comic files as ZIP"""
+    if job_id not in unity_generation_results:
+        return jsonify({'error': 'Job not found'}), 404
+    
+    try:
+        import zipfile
+        import tempfile
+        
+        job_output_dir = os.path.join('output/unity_pages', job_id)
+        
+        # Create temporary ZIP file
+        temp_zip = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
+        
+        with zipfile.ZipFile(temp_zip.name, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for root, dirs, files in os.walk(job_output_dir):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(file_path, job_output_dir)
+                    zipf.write(file_path, arcname)
+        
+        return send_file(
+            temp_zip.name,
+            as_attachment=True,
+            download_name=f'unity_comic_{job_id}.zip',
+            mimetype='application/zip'
+        )
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     print("🚀 Starting Enhanced Comic Generator...")
