@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test 800x540 6 Pages Layout</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        
+        .comic-container { 
+            max-width: 900px; 
+            margin: 0 auto; 
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .comic-title { 
+            text-align: center; 
+            padding: 20px; 
+            background: #333; 
+            color: white; 
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .comic-page { 
+            width: 800px;
+            height: 1080px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 800px;
+            grid-template-rows: 540px 540px;
+            gap: 0;
+            border: 3px solid #333;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+        
+        .panel { 
+            position: relative;
+            overflow: hidden;
+            background: #fff;
+            width: 800px;
+            height: 540px;
+            margin: 0;
+            padding: 0;
+            border: none;
+            box-sizing: border-box;
+        }
+        
+        .panel img { 
+            width: 800px; 
+            height: 540px; 
+            object-fit: none;
+            display: block;
+            margin: 0;
+            padding: 0;
+            border: none;
+        }
+        
+        .speech-bubble { 
+            position: absolute; 
+            background: white; 
+            border: 2px solid #333; 
+            border-radius: 15px; 
+            padding: 10px; 
+            font-size: 14px; 
+            max-width: 200px; 
+            word-wrap: break-word;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        .page-number {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="comic-container">
+        <div class="comic-title">Test Comic - 800x540 Images, 1x2 Grid, 6 Pages</div>
+        
+        <!-- Page 1 -->
+        <div class="page-number">Page 1</div>
+        <div class="comic-page">
+            <div class="panel">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPjgwMHg1NDAgUGFuZWwgMTwvdGV4dD48L3N2Zz4=" alt="Panel 1">
+                <div class="speech-bubble" style="top: 20px; left: 20px;">Panel 1 Text</div>
+            </div>
+            <div class="panel">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPjgwMHg1NDAgUGFuZWwgMjwvdGV4dD48L3N2Zz4=" alt="Panel 2">
+                <div class="speech-bubble" style="top: 20px; left: 20px;">Panel 2 Text</div>
+            </div>
+        </div>
+        
+        <!-- Page 2 -->
+        <div class="page-number">Page 2</div>
+        <div class="comic-page">
+            <div class="panel">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPjgwMHg1NDAgUGFuZWwgMzwvdGV4dD48L3N2Zz4=" alt="Panel 3">
+                <div class="speech-bubble" style="top: 20px; left: 20px;">Panel 3 Text</div>
+            </div>
+            <div class="panel">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPjgwMHg1NDAgUGFuZWwgNDwvdGV4dD48L3N2Zz4=" alt="Panel 4">
+                <div class="speech-bubble" style="top: 20px; left: 20px;">Panel 4 Text</div>
+            </div>
+        </div>
+        
+        <!-- Page 3 -->
+        <div class="page-number">Page 3</div>
+        <div class="comic-page">
+            <div class="panel">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPjgwMHg1NDAgUGFuZWwgNTwvdGV4dD48L3N2Zz4=" alt="Panel 5">
+                <div class="speech-bubble" style="top: 20px; left: 20px;">Panel 5 Text</div>
+            </div>
+            <div class="panel">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPjgwMHg1NDAgUGFuZWwgNjwvdGV4dD48L3N2Zz4=" alt="Panel 6">
+                <div class="speech-bubble" style="top: 20px; left: 20px;">Panel 6 Text</div>
+            </div>
+        </div>
+        
+        <!-- Page 4 -->
+        <div class="page-number">Page 4</div>
+        <div class="comic-page">
+            <div class="panel">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPjgwMHg1NDAgUGFuZWwgNzwvdGV4dD48L3N2Zz4=" alt="Panel 7">
+                <div class="speech-bubble" style="top: 20px; left: 20px;">Panel 7 Text</div>
+            </div>
+            <div class="panel">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPjgwMHg1NDAgUGFuZWwgODwvdGV4dD48L3N2Zz4=" alt="Panel 8">
+                <div class="speech-bubble" style="top: 20px; left: 20px;">Panel 8 Text</div>
+            </div>
+        </div>
+        
+        <!-- Page 5 -->
+        <div class="page-number">Page 5</div>
+        <div class="comic-page">
+            <div class="panel">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPjgwMHg1NDAgUGFuZWwgOTwvdGV4dD48L3N2Zz4=" alt="Panel 9">
+                <div class="speech-bubble" style="top: 20px; left: 20px;">Panel 9 Text</div>
+            </div>
+            <div class="panel">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPjgwMHg1NDAgUGFuZWwgMTA8L3RleHQ+PC9zdmc+" alt="Panel 10">
+                <div class="speech-bubble" style="top: 20px; left: 20px;">Panel 10 Text</div>
+            </div>
+        </div>
+        
+        <!-- Page 6 -->
+        <div class="page-number">Page 6</div>
+        <div class="comic-page">
+            <div class="panel">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPjgwMHg1NDAgUGFuZWwgMTE8L3RleHQ+PC9zdmc+" alt="Panel 11">
+                <div class="speech-bubble" style="top: 20px; left: 20px;">Panel 11 Text</div>
+            </div>
+            <div class="panel">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPjgwMHg1NDAgUGFuZWwgMTI8L3RleHQ+PC9zdmc+" alt="Panel 12">
+                <div class="speech-bubble" style="top: 20px; left: 20px;">Panel 12 Text</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gap Fix Test</title>
+    <style>
+        body { margin: 0; padding: 20px; background: #f0f0f0; font-family: Arial, sans-serif; }
+        .comic-container { max-width: 1200px; margin: 0 auto; }
+        .comic-page { 
+            background: white; 
+            width: 800px;
+            height: 1080px;
+            padding: 0;
+            margin: 0;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+            box-sizing: content-box;
+            position: relative;
+            overflow: hidden;
+        }
+        .comic-grid { 
+            display: grid; 
+            grid-template-columns: 400px 400px; 
+            grid-template-rows: 540px 540px; 
+            gap: 0; /* No gap between panels */
+            width: 800px;
+            height: 1080px;
+            margin: 0;
+            padding: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            border: 2px solid #333; /* Single border around entire grid */
+            box-sizing: border-box;
+        }
+        .page-wrapper {
+            margin: 30px auto;
+            width: 800px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .panel { 
+            position: relative; 
+            border: none; /* Remove all borders to eliminate gaps */
+            overflow: hidden; 
+            width: 400px;
+            height: 540px;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            flex-shrink: 0;
+        }
+        .panel img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain;
+            object-position: center;
+            background-color: #fff;
+        }
+        .test-info {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #e8f5e8;
+            border: 1px solid #4CAF50;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="comic-container">
+        <div class="test-info">
+            <h2>✅ Gap Fix Test - No Gaps Between Images</h2>
+            <p>This test shows the fixed layout with no gaps between panels. Each panel is exactly 400x540px with no borders between them.</p>
+        </div>
+        
+        <div class="page-wrapper">
+            <div class="comic-page">
+                <div class="comic-grid">
+                    <div class="panel">
+                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZmY2NjY2Ii8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPlBhbmVsIDE8L3RleHQ+Cjwvc3ZnPg==" alt="Panel 1">
+                    </div>
+                    <div class="panel">
+                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNjZmZmZmIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPlBhbmVsIDI8L3RleHQ+Cjwvc3ZnPg==" alt="Panel 2">
+                    </div>
+                    <div class="panel">
+                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZmZmZjY2Ii8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPlBhbmVsIDM8L3RleHQ+Cjwvc3ZnPg==" alt="Panel 3">
+                    </div>
+                    <div class="panel">
+                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZmY2NmZmIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPlBhbmVsIDQ8L3RleHQ+Cjwvc3ZnPg==" alt="Panel 4">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-info">
+            <h3>🔧 What was fixed:</h3>
+            <ul style="text-align: left; max-width: 600px; margin: 0 auto;">
+                <li>✅ Removed individual panel borders that were creating gaps</li>
+                <li>✅ Added single border around entire grid for comic book appearance</li>
+                <li>✅ Set gap: 0 in CSS grid to ensure no spacing between panels</li>
+                <li>✅ Used box-sizing: border-box for proper dimension calculation</li>
+                <li>✅ Each panel is exactly 400x540px with no gaps between them</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
