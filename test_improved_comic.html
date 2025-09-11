@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Improved Comic - Enhanced Colors & Draggable Bubbles</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        
+        .comic-container { 
+            max-width: 900px; 
+            margin: 0 auto; 
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .comic-title { 
+            text-align: center; 
+            padding: 20px; 
+            background: #333; 
+            color: white; 
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .comic-page { 
+            width: 800px;
+            height: 1080px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 800px;
+            grid-template-rows: 540px 540px;
+            gap: 0;
+            border: 3px solid #333;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+        
+        .panel { 
+            position: relative;
+            overflow: hidden;
+            background: #fff;
+            width: 800px;
+            height: 540px;
+            margin: 0;
+            padding: 0;
+            border: none;
+            box-sizing: border-box;
+        }
+        
+        .panel img { 
+            width: 800px; 
+            height: 540px; 
+            object-fit: none;
+            display: block;
+            margin: 0;
+            padding: 0;
+            border: none;
+        }
+        
+        .speech-bubble { 
+            position: absolute; 
+            background: white; 
+            border: 2px solid #333; 
+            border-radius: 20px; 
+            padding: 12px 24px; 
+            width: 180px; 
+            height: 60px; 
+            font-size: 14px; 
+            font-weight: bold;
+            box-shadow: 3px 3px 8px rgba(0,0,0,0.4);
+            z-index: 10;
+            text-align: center;
+            color: #333;
+            cursor: move;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            pointer-events: auto;
+        }
+        
+        .speech-bubble:hover { 
+            transform: scale(1.02); 
+            box-shadow: 4px 4px 12px rgba(0,0,0,0.5); 
+            background: #f8f8f8;
+        }
+        
+        .speech-bubble::after { 
+            content: ''; 
+            position: absolute; 
+            bottom: -12px; 
+            left: 30px; 
+            width: 0; 
+            height: 0; 
+            border-left: 12px solid transparent; 
+            border-right: 12px solid transparent; 
+            border-top: 12px solid #333; 
+        }
+        
+        .speech-bubble::before { 
+            content: ''; 
+            position: absolute; 
+            bottom: -10px; 
+            left: 32px; 
+            width: 0; 
+            height: 0; 
+            border-left: 10px solid transparent; 
+            border-right: 10px solid transparent; 
+            border-top: 10px solid white; 
+        }
+        
+        .page-number {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="comic-container">
+        <div class="comic-title">Improved Comic - Enhanced Colors & Draggable Bubbles</div>
+        
+        <!-- Page 1 -->
+        <div class="page-number">Page 1</div>
+        <div class="comic-page">
+            <div class="panel">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImdyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmZjY2NjYiLz48c3RvcCBvZmZzZXQ9IjUwJSIgc3RvcC1jb2xvcj0iIzY2ZmY2NiIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzY2NjZmZiIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JhZCkiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjI0IiBmaWxsPSIjMzMzIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+ODAweDU0MCBFbmhhbmNlZCBDb2xvcnM8L3RleHQ+PC9zdmc+" alt="Panel 1">
+                <div class="speech-bubble" style="left: 20px; top: 20px;">Drag me! I'm a proper speech bubble</div>
+            </div>
+            <div class="panel">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImdyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmZmZmNjYiLz48c3RvcCBvZmZzZXQ9IjUwJSIgc3RvcC1jb2xvcj0iI2ZmNjZmZiIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzY2ZmZmZiIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JhZCkiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjI0IiBmaWxsPSIjMzMzIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+MToyIFJhdGlvIEJ1YmJsZTwvdGV4dD48L3N2Zz4=" alt="Panel 2">
+                <div class="speech-bubble" style="left: 20px; top: 20px;">1:3 ratio bubble design</div>
+            </div>
+        </div>
+        
+        <!-- Page 2 -->
+        <div class="page-number">Page 2</div>
+        <div class="comic-page">
+            <div class="panel">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImdyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmZmZmNjYiLz48c3RvcCBvZmZzZXQ9IjUwJSIgc3RvcC1jb2xvcj0iI2ZmNjZmZiIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzY2ZmZmZiIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JhZCkiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjI0IiBmaWxsPSIjMzMzIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+QnJpZ2h0ZXIgQ29sb3JzPC90ZXh0Pjwvc3ZnPg==" alt="Panel 3">
+                <div class="speech-bubble" style="left: 20px; top: 20px;">Only bubble moves, not container</div>
+            </div>
+            <div class="panel">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjU0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImdyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmZmZmNjYiLz48c3RvcCBvZmZzZXQ9IjUwJSIgc3RvcC1jb2xvcj0iI2ZmNjZmZiIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzY2ZmZmZiIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JhZCkiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjI0IiBmaWxsPSIjMzMzIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+U21vb3RoIERyYWdnaW5nPC90ZXh0Pjwvc3ZnPg==" alt="Panel 4">
+                <div class="speech-bubble" style="left: 20px; top: 20px;">Smooth dragging experience</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Dragging functionality for speech bubbles
+        function makeDraggable(element) {
+            let isDragging = false;
+            let currentX;
+            let currentY;
+            let initialX;
+            let initialY;
+            let xOffset = 0;
+            let yOffset = 0;
+            
+            element.addEventListener('mousedown', dragStart);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', dragEnd);
+            
+            function dragStart(e) {
+                if (e.target === element || element.contains(e.target)) {
+                    initialX = e.clientX - xOffset;
+                    initialY = e.clientY - yOffset;
+                    
+                    if (e.target === element || element.contains(e.target)) {
+                        isDragging = true;
+                        element.style.cursor = 'grabbing';
+                        element.style.zIndex = '1000';
+                    }
+                }
+            }
+            
+            function drag(e) {
+                if (isDragging) {
+                    e.preventDefault();
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+                    
+                    xOffset = currentX;
+                    yOffset = currentY;
+                    
+                    element.style.transform = `translate(${currentX}px, ${currentY}px)`;
+                }
+            }
+            
+            function dragEnd(e) {
+                initialX = currentX;
+                initialY = currentY;
+                isDragging = false;
+                element.style.cursor = 'move';
+                element.style.zIndex = '10';
+            }
+        }
+        
+        // Make all bubbles draggable
+        document.addEventListener('DOMContentLoaded', function() {
+            const bubbles = document.querySelectorAll('.speech-bubble');
+            bubbles.forEach(makeDraggable);
+        });
+    </script>
+</body>
+</html>

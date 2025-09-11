@@ -308,11 +308,52 @@ class EnhancedComicGenerator:
             self._enhance_all_images()
     
     def _enhance_quality_colors(self):
-        """Enhance image quality and colors"""
+        """Enhance image quality and colors with improved vibrancy"""
         try:
-            from backend.quality_color_enhancer import QualityColorEnhancer
-            enhancer = QualityColorEnhancer()
-            enhancer.batch_enhance(self.frames_dir)
+            import cv2
+            import numpy as np
+            
+            frames_dir = "frames/resized_800x540"
+            if not os.path.exists(frames_dir):
+                print(f"❌ Frames directory not found: {frames_dir}")
+                return
+            
+            frame_files = [f for f in os.listdir(frames_dir) if f.endswith('.png')]
+            print(f"🎨 Enhancing colors and vibrancy for {len(frame_files)} frames...")
+            
+            for frame_file in frame_files:
+                try:
+                    frame_path = os.path.join(frames_dir, frame_file)
+                    img = cv2.imread(frame_path)
+                    
+                    if img is not None:
+                        # Convert to LAB color space for better color manipulation
+                        lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+                        l, a, b = cv2.split(lab)
+                        
+                        # Enhance saturation (a and b channels)
+                        a = cv2.multiply(a, 1.3)  # Increase red-green saturation
+                        b = cv2.multiply(b, 1.3)  # Increase blue-yellow saturation
+                        
+                        # Enhance lightness slightly
+                        l = cv2.multiply(l, 1.1)
+                        
+                        # Merge channels back
+                        enhanced_lab = cv2.merge([l, a, b])
+                        enhanced_img = cv2.cvtColor(enhanced_lab, cv2.COLOR_LAB2BGR)
+                        
+                        # Apply additional contrast enhancement
+                        enhanced_img = cv2.convertScaleAbs(enhanced_img, alpha=1.2, beta=10)
+                        
+                        # Save enhanced image
+                        cv2.imwrite(frame_path, enhanced_img)
+                        print(f"  ✓ Enhanced colors for {frame_file}")
+                        
+                except Exception as e:
+                    print(f"  ❌ Error enhancing {frame_file}: {e}")
+            
+            print("✅ Color enhancement completed!")
+            
         except Exception as e:
             print(f"⚠️ Quality enhancement failed: {e}")
     
@@ -1137,33 +1178,60 @@ class EnhancedComicGenerator:
             position: absolute; 
             background: white; 
             border: 2px solid #333; 
-            border-radius: 10px; 
-            padding: 8px 12px; 
-            max-width: 150px; 
-            font-size: 12px; 
+            border-radius: 20px; 
+            padding: 12px 24px; 
+            width: 180px; 
+            height: 60px; 
+            font-size: 14px; 
             font-weight: bold;
-            box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+            box-shadow: 3px 3px 8px rgba(0,0,0,0.4);
             z-index: 10;
             text-align: center;
             color: #333;
             cursor: move;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            pointer-events: auto;
         }
         
         .speech-bubble:hover { 
-            transform: scale(1.05); 
-            box-shadow: 2px 2px 10px rgba(0,0,0,0.4); 
+            transform: scale(1.02); 
+            box-shadow: 4px 4px 12px rgba(0,0,0,0.5); 
+            background: #f8f8f8;
         }
         
         .speech-bubble::after { 
             content: ''; 
             position: absolute; 
-            bottom: -8px; 
-            left: 15px; 
+            bottom: -12px; 
+            left: 30px; 
             width: 0; 
             height: 0; 
-            border-left: 8px solid transparent; 
-            border-right: 8px solid transparent; 
-            border-top: 8px solid #333; 
+            border-left: 12px solid transparent; 
+            border-right: 12px solid transparent; 
+            border-top: 12px solid #333; 
+        }
+        
+        .speech-bubble::before { 
+            content: ''; 
+            position: absolute; 
+            bottom: -10px; 
+            left: 32px; 
+            width: 0; 
+            height: 0; 
+            border-left: 10px solid transparent; 
+            border-right: 10px solid transparent; 
+            border-top: 10px solid white; 
+        }
+        
+        .page-number {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #333;
         }
         
         .loading { 
@@ -1219,52 +1287,65 @@ class EnhancedComicGenerator:
                 container.innerHTML = '';
                 
                 if (data && data.length > 0) {
-                    // Take first page only for simplicity
-                    const pageData = data[0];
-                    
-                    if (pageData.panels && pageData.panels.length > 0) {
-                        // Create simple 2x2 grid
-                        const pageDiv = document.createElement('div');
-                        pageDiv.className = 'comic-page';
+                    // Create all 6 pages
+                    for (let pageIndex = 0; pageIndex < Math.min(6, data.length); pageIndex++) {
+                        const pageData = data[pageIndex];
                         
-                        // Add 4 panels
-                        for (let i = 0; i < 4; i++) {
-                            const panelDiv = document.createElement('div');
-                            panelDiv.className = 'panel';
+                        if (pageData.panels && pageData.panels.length > 0) {
+                            // Create page title
+                            const pageTitle = document.createElement('div');
+                            pageTitle.className = 'page-number';
+                            pageTitle.textContent = `Page ${pageIndex + 1}`;
+                            container.appendChild(pageTitle);
                             
-                            const img = document.createElement('img');
-                            // Use available frames, cycle if needed
-                            const frameIndex = i % pageData.panels.length;
-                            img.src = '/frames/resized_800x540/' + pageData.panels[frameIndex].image;
-                            img.alt = `Panel ${i + 1}`;
+                            // Create 1x2 grid page
+                            const pageDiv = document.createElement('div');
+                            pageDiv.className = 'comic-page';
                             
-                            // Handle missing images
-                            img.onerror = function() {
-                                this.style.display = 'none';
-                                panelDiv.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #ddd; color: #666; font-size: 18px;">No Image</div>';
-                            };
-                            
-                            panelDiv.appendChild(img);
-                            
-                            // Add speech bubble if available
-                            if (pageData.bubbles && pageData.bubbles[frameIndex]) {
-                                const bubble = pageData.bubbles[frameIndex];
-                                const bubbleDiv = document.createElement('div');
-                                bubbleDiv.className = 'speech-bubble';
-                                bubbleDiv.textContent = bubble.dialog || 'Action!';
+                            // Add 2 panels per page
+                            for (let i = 0; i < 2; i++) {
+                                const panelDiv = document.createElement('div');
+                                panelDiv.className = 'panel';
                                 
-                                // Position bubble
-                                bubbleDiv.style.left = '20px';
-                                bubbleDiv.style.top = '20px';
+                                const img = document.createElement('img');
+                                // Use available frames, cycle if needed
+                                const frameIndex = i % pageData.panels.length;
+                                img.src = '/frames/resized_800x540/' + pageData.panels[frameIndex].image;
+                                img.alt = `Page ${pageIndex + 1}, Panel ${i + 1}`;
                                 
-                                panelDiv.appendChild(bubbleDiv);
+                                // Handle missing images
+                                img.onerror = function() {
+                                    this.style.display = 'none';
+                                    panelDiv.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #ddd; color: #666; font-size: 18px;">No Image</div>';
+                                };
+                                
+                                panelDiv.appendChild(img);
+                                
+                                // Add speech bubble if available
+                                if (pageData.bubbles && pageData.bubbles[frameIndex]) {
+                                    const bubble = pageData.bubbles[frameIndex];
+                                    const bubbleDiv = document.createElement('div');
+                                    bubbleDiv.className = 'speech-bubble';
+                                    bubbleDiv.textContent = bubble.dialog || 'Action!';
+                                    
+                                    // Position bubble
+                                    bubbleDiv.style.left = '20px';
+                                    bubbleDiv.style.top = '20px';
+                                    
+                                    // Make bubble draggable
+                                    makeDraggable(bubbleDiv);
+                                    
+                                    panelDiv.appendChild(bubbleDiv);
+                                }
+                                
+                                pageDiv.appendChild(panelDiv);
                             }
                             
-                            pageDiv.appendChild(panelDiv);
+                            container.appendChild(pageDiv);
                         }
-                        
-                        container.appendChild(pageDiv);
-                    } else {
+                    }
+                    
+                    if (data.length === 0) {
                         container.innerHTML = '<div class="loading">No panels found</div>';
                     }
                 } else {
@@ -1275,6 +1356,56 @@ class EnhancedComicGenerator:
                 console.error('Error loading comic:', error);
                 document.getElementById('comic-content').innerHTML = '<div class="loading">Error loading comic: ' + error.message + '</div>';
             });
+        
+        // Dragging functionality for speech bubbles
+        function makeDraggable(element) {
+            let isDragging = false;
+            let currentX;
+            let currentY;
+            let initialX;
+            let initialY;
+            let xOffset = 0;
+            let yOffset = 0;
+            
+            element.addEventListener('mousedown', dragStart);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', dragEnd);
+            
+            function dragStart(e) {
+                // Only start dragging if clicking on the bubble itself
+                if (e.target === element || element.contains(e.target)) {
+                    initialX = e.clientX - xOffset;
+                    initialY = e.clientY - yOffset;
+                    
+                    if (e.target === element || element.contains(e.target)) {
+                        isDragging = true;
+                        element.style.cursor = 'grabbing';
+                        element.style.zIndex = '1000';
+                    }
+                }
+            }
+            
+            function drag(e) {
+                if (isDragging) {
+                    e.preventDefault();
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+                    
+                    xOffset = currentX;
+                    yOffset = currentY;
+                    
+                    element.style.transform = `translate(${currentX}px, ${currentY}px)`;
+                }
+            }
+            
+            function dragEnd(e) {
+                initialX = currentX;
+                initialY = currentY;
+                isDragging = false;
+                element.style.cursor = 'move';
+                element.style.zIndex = '10';
+            }
+        }
         
         // Simple functions
         function printComic() {
