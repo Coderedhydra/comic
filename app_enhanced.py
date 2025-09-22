@@ -159,14 +159,13 @@ class EnhancedComicGenerator:
                     print(f"⚠️ Full story extraction failed: {e}")
                     filtered_subs = None
             
-            # 3. Generate keyframes based on emotion and eye state
-            print("🎯 Generating emotion-based keyframes with eye detection...")
+            # 3. Generate STORY SUMMARY with 48 panels (12 pages x 4 panels)
+            print("📖 Creating intelligent story summarization for 12-page comic...")
             
-            # Always use emotion-based selection with eye detection
             try:
-                from backend.emotion_keyframe_selector import generate_emotion_keyframes
+                from backend.comic_story_summarizer import create_comic_story_summary
                 
-                # Use filtered subtitles if available, otherwise load all
+                # Use all available subtitles for comprehensive story analysis
                 subs_to_use = filtered_subs
                 if not subs_to_use and os.path.exists('test1.srt'):
                     with open('test1.srt', 'r', encoding='utf-8') as f:
@@ -174,23 +173,28 @@ class EnhancedComicGenerator:
                         subs_to_use = list(srt.parse(f.read()))
                 
                 if subs_to_use:
-                    print("🎭 Using emotion-based keyframe selection with eye state detection")
-                    success = generate_emotion_keyframes(self.video_path, subs_to_use, max_frames=48)
+                    print("🎭 Analyzing entire video for main story points...")
+                    print("👁️ Filtering out closed/half-closed eyes...")
+                    print("📚 Creating 48-panel story summary...")
+                    
+                    # Create 48-panel story summary
+                    success = create_comic_story_summary(self.video_path, subs_to_use, target_panels=48)
                     
                     if not success:
-                        print("⚠️ Emotion selection failed, trying engaging method...")
+                        print("⚠️ Story summarization failed, trying emotion-based method...")
                         try:
-                            from backend.keyframes.keyframes_engaging import generate_keyframes_engaging
-                            success = generate_keyframes_engaging(self.video_path, subs_to_use, max_frames=48)
+                            from backend.emotion_keyframe_selector import generate_emotion_keyframes
+                            success = generate_emotion_keyframes(self.video_path, subs_to_use, max_frames=48)
                         except:
-                            print("⚠️ Engaging method not available, using simple method...")
+                            print("⚠️ Falling back to simple keyframe extraction...")
                             generate_keyframes_simple(self.video_path)
                 else:
-                    print("⚠️ No subtitles available, using simple keyframe extraction")
+                    print("⚠️ No subtitles available for story analysis")
+                    print("🔄 Using simple keyframe extraction...")
                     generate_keyframes_simple(self.video_path)
                     
             except Exception as e:
-                print(f"⚠️ Emotion keyframe selection error: {e}")
+                print(f"⚠️ Story summarization error: {e}")
                 print("🔄 Falling back to simple keyframe extraction...")
                 generate_keyframes_simple(self.video_path)
             
@@ -744,14 +748,91 @@ class EnhancedComicGenerator:
         return pages
     
     def _generate_story_pages(self, frame_files, bubbles):
-        """Generate pages based on story extraction"""
-        # Use 2x2 grid with 12 PAGES at 800x1080 resolution
-        from backend.fixed_12_pages_800x1080 import generate_12_pages_800x1080
+        """Generate exactly 12 pages with 4 panels each (48 total panels)"""
+        pages = []
         
-        print(f"📖 Generating 12-page comic (800x1080 resolution)")
-        print(f"📊 Target: 48 meaningful panels from {len(frame_files)} frames")
+        print(f"📖 Generating exactly 12 pages with 4 panels each")
+        print(f"📊 Using {len(frame_files)} frames and {len(bubbles)} bubbles")
         
-        return generate_12_pages_800x1080(frame_files, bubbles)
+        # Ensure we have exactly 48 frames (pad or trim if needed)
+        target_frames = 48
+        if len(frame_files) < target_frames:
+            # Pad by repeating last frames
+            while len(frame_files) < target_frames:
+                if frame_files:
+                    frame_files.append(frame_files[-1])
+                else:
+                    frame_files.append('placeholder.png')
+        elif len(frame_files) > target_frames:
+            # Trim to exactly 48
+            frame_files = frame_files[:target_frames]
+        
+        # Ensure we have exactly 48 bubbles
+        if len(bubbles) < target_frames:
+            # Add story summary bubbles
+            story_summaries = [
+                "The story begins with our protagonist facing a new challenge in their world.",
+                "Character relationships develop as we learn about their backgrounds and motivations.",
+                "Conflict emerges as opposing forces clash, creating tension and drama.",
+                "Plot complications arise, testing our heroes' resolve and determination.",
+                "Key revelations change our understanding of the characters and situation.",
+                "Emotional stakes increase as personal relationships are put to the test.",
+                "Action sequences showcase the abilities and courage of our protagonists.",
+                "Critical turning points force characters to make difficult life-changing decisions.",
+                "The climax builds as all story elements converge in dramatic confrontation.",
+                "Truth is revealed, changing everything we thought we knew about the story.",
+                "Resolution begins as characters face the consequences of their choices.",
+                "The story concludes with hope, growth, and lessons learned from the journey."
+            ]
+            
+            while len(bubbles) < target_frames:
+                missing_index = len(bubbles)
+                from backend.class_def import bubble
+                
+                new_bubble = bubble(
+                    bubble_offset_x=30 + (missing_index % 2) * 120,
+                    bubble_offset_y=30 + ((missing_index // 4) % 3) * 50,
+                    lip_x=-1,
+                    lip_y=-1,
+                    dialog=story_summaries[missing_index % len(story_summaries)],
+                    emotion='normal'
+                )
+                bubbles.append(new_bubble)
+        elif len(bubbles) > target_frames:
+            bubbles = bubbles[:target_frames]
+        
+        # Create exactly 12 pages with 4 panels each
+        for page_num in range(12):
+            page_panels = []
+            page_bubbles = []
+            
+            # Get 4 panels for this page
+            for panel_in_page in range(4):
+                frame_index = page_num * 4 + panel_in_page
+                
+                if frame_index < len(frame_files):
+                    from backend.class_def import panel
+                    
+                    panel_obj = panel(
+                        image=frame_files[frame_index],
+                        row_span=6,  # 2x2 grid in 12-unit system
+                        col_span=6
+                    )
+                    page_panels.append(panel_obj)
+                    
+                    # Add corresponding bubble
+                    if frame_index < len(bubbles):
+                        page_bubbles.append(bubbles[frame_index])
+            
+            # Create page with exactly 4 panels
+            from backend.class_def import Page
+            page = Page(panels=page_panels, bubbles=page_bubbles)
+            pages.append(page)
+            
+            print(f"📄 Created page {page_num + 1}/12 with {len(page_panels)} panels")
+        
+        print(f"✅ Generated exactly {len(pages)} pages with 4 panels each = {len(pages) * 4} total panels")
+        return pages
         
         # Get adaptive layout configuration
         if STORY_EXTRACTOR_AVAILABLE:
@@ -1316,6 +1397,9 @@ class EnhancedComicGenerator:
         <button onclick="checkDimensions()" style="margin-top: 3px; padding: 4px 8px; background: #607D8B; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; width: 100%; font-size: 10px;">
             📏 Check
         </button>
+        <button onclick="replacePanel()" style="margin-top: 3px; padding: 4px 8px; background: #E91E63; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; width: 100%; font-size: 10px;">
+            🔄 Replace Panel
+        </button>
     </div>
     <script>
         // Load comic data
@@ -1455,7 +1539,10 @@ class EnhancedComicGenerator:
             });
             
         // Initialize editing functionality after comic loads
-        setTimeout(initializeEditor, 1000);
+        setTimeout(() => {
+            initializeEditor();
+            loadPanelReplacements();
+        }, 1000);
         
         // Editing functionality
         let currentEditBubble = null;
@@ -1808,6 +1895,85 @@ class EnhancedComicGenerator:
             printComic();
         }
         
+        // Panel replacement functionality
+        function replacePanel() {
+            const panelNumber = prompt('Enter panel number to replace (1-48):');
+            if (!panelNumber || isNaN(panelNumber)) {
+                alert('Please enter a valid panel number (1-48)');
+                return;
+            }
+            
+            const panelNum = parseInt(panelNumber);
+            if (panelNum < 1 || panelNum > 48) {
+                alert('Panel number must be between 1 and 48');
+                return;
+            }
+            
+            // Create file input
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.style.display = 'none';
+            
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                    alert('Please select a valid image file');
+                    return;
+                }
+                
+                // Create FileReader to read the image
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const imageUrl = e.target.result;
+                    
+                    // Find the panel to replace
+                    const panels = document.querySelectorAll('.panel img');
+                    const targetPanel = panels[panelNum - 1];
+                    
+                    if (targetPanel) {
+                        // Replace the image
+                        targetPanel.src = imageUrl;
+                        targetPanel.alt = `Custom Panel ${panelNum}`;
+                        
+                        // Store the replacement in localStorage for persistence
+                        const replacements = JSON.parse(localStorage.getItem('panelReplacements') || '{}');
+                        replacements[panelNum] = imageUrl;
+                        localStorage.setItem('panelReplacements', JSON.stringify(replacements));
+                        
+                        showSaveMessage(`✅ Panel ${panelNum} replaced successfully!`);
+                    } else {
+                        alert(`Panel ${panelNum} not found`);
+                    }
+                };
+                
+                reader.readAsDataURL(file);
+            });
+            
+            // Trigger file selection
+            document.body.appendChild(fileInput);
+            fileInput.click();
+            document.body.removeChild(fileInput);
+        }
+        
+        // Load panel replacements on page load
+        function loadPanelReplacements() {
+            const replacements = JSON.parse(localStorage.getItem('panelReplacements') || '{}');
+            
+            Object.keys(replacements).forEach(panelNum => {
+                const panels = document.querySelectorAll('.panel img');
+                const targetPanel = panels[parseInt(panelNum) - 1];
+                
+                if (targetPanel) {
+                    targetPanel.src = replacements[panelNum];
+                    targetPanel.alt = `Custom Panel ${panelNum}`;
+                }
+            });
+        }
+        
         // Add keyboard shortcut for export
         document.addEventListener('keydown', (e) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
@@ -1817,6 +1983,10 @@ class EnhancedComicGenerator:
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
                 saveEditableHTML();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+                e.preventDefault();
+                replacePanel();
             }
         });
         
