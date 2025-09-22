@@ -230,8 +230,8 @@ class EnhancedComicGenerator:
             print("\n📸 Extracting individual panels...")
             self._extract_panels()
             
-            # 13. Generate page images at 800x1080
-            print("\n📄 Generating page images (800x1080)...")
+            # 13. Generate page images at 600x400
+            print("\n📄 Generating page images (600x400)...")
             self._generate_page_images()
             
             execution_time = (time.time() - start_time) / 60
@@ -606,13 +606,13 @@ class EnhancedComicGenerator:
     
     def _generate_story_pages(self, frame_files, bubbles):
         """Generate pages based on story extraction"""
-        # Use 2x2 grid with 12 PAGES at 800x1080 resolution
-        from backend.fixed_12_pages_800x1080 import generate_12_pages_800x1080
+        # Use 2x2 grid with 12 PAGES at 600x400 resolution
+        from backend.fixed_12_pages_600x400 import generate_12_pages_600x400
         
-        print(f"📖 Generating 12-page comic (800x1080 resolution)")
+        print(f"📖 Generating 12-page comic (600x400 resolution)")
         print(f"📊 Target: 48 meaningful panels from {len(frame_files)} frames")
         
-        return generate_12_pages_800x1080(frame_files, bubbles)
+        return generate_12_pages_600x400(frame_files, bubbles)
         
         # Get adaptive layout configuration
         if STORY_EXTRACTOR_AVAILABLE:
@@ -805,9 +805,9 @@ class EnhancedComicGenerator:
         body { margin: 0; padding: 20px; background: #2c3e50; color: white; font-family: Arial, sans-serif; }
         .header { text-align: center; margin-bottom: 30px; }
         .comic-container { max-width: 1200px; margin: 0 auto; }
-        .comic-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; margin-top: 30px; }
+        .comic-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; margin-top: 30px; }
         .comic-panel { background: white; border: 4px solid #333; box-shadow: 0 5px 20px rgba(0,0,0,0.3); position: relative; overflow: hidden; }
-        .comic-panel img { width: 100%; height: 400px; object-fit: cover; display: block; }
+        .comic-panel img { width: 100%; height: 200px; object-fit: cover; display: block; }
         .panel-info { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.8); color: white; padding: 15px; }
         .panel-text { font-size: 14px; margin-bottom: 8px; line-height: 1.4; }
         .emotion-badges { display: flex; gap: 10px; font-size: 12px; }
@@ -908,7 +908,7 @@ class EnhancedComicGenerator:
             print(f"⚠️ Panel extraction failed: {e}")
     
     def _generate_page_images(self):
-        """Generate page images at 800x1080 resolution"""
+        """Generate page images at 600x400 resolution"""
         try:
             from backend.page_image_generator import PageImageGenerator
             
@@ -928,7 +928,7 @@ class EnhancedComicGenerator:
             saved_pages = generator.generate_page_images(pages_data, "frames/final")
             
             if saved_pages:
-                print(f"✅ Generated {len(saved_pages)} page images (800x1080)")
+                print(f"✅ Generated {len(saved_pages)} page images (600x400)")
                 print("📄 Page gallery available at: output/page_images/index.html")
                 
                 # Open the gallery in browser
@@ -953,8 +953,8 @@ class EnhancedComicGenerator:
         .comic-container { max-width: 1200px; margin: 0 auto; }
         .comic-page { 
             background: white; 
-            width: 800px; /* Exact image width */
-            height: 1080px; /* Exact image height */
+            width: 600px; /* Exact image width */
+            height: 400px; /* Exact image height */
             padding: 0; /* No padding */
             margin: 0; /* No margin */
             box-shadow: 0 0 10px rgba(0,0,0,0.1); 
@@ -964,11 +964,11 @@ class EnhancedComicGenerator:
         }
         .comic-grid { 
             display: grid; 
-            grid-template-columns: 400px 400px; 
-            grid-template-rows: 540px 540px; 
+            grid-template-columns: 300px 300px; 
+            grid-template-rows: 200px 200px; 
             gap: 0; /* No gap between panels */
-            width: 800px;
-            height: 1080px;
+            width: 600px;
+            height: 400px;
             margin: 0;
             padding: 0;
             position: absolute;
@@ -977,7 +977,7 @@ class EnhancedComicGenerator:
         }
         .page-wrapper {
             margin: 30px auto;
-            width: 800px;
+            width: 600px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -1019,32 +1019,17 @@ class EnhancedComicGenerator:
         }
         .panel { 
             position: relative; 
-            border: 1px solid #333;
-            overflow: hidden; 
-            width: 400px;
-            height: 540px;
+            border: none; /* Remove individual borders for zero gaps */
+            overflow: hidden;
+            /* No borders for perfect zero-gap layout */ 
+            width: 300px;
+            height: 200px;
             box-sizing: border-box; /* Border included in dimensions */
             margin: 0;
             padding: 0;
             flex-shrink: 0; /* Don't shrink */
         }
-        /* Remove double borders between adjacent panels */
-        .panel:nth-child(1) {
-            border-right: none;
-            border-bottom: none;
-        }
-        .panel:nth-child(2) {
-            border-left: 1px solid #333;
-            border-bottom: none;
-        }
-        .panel:nth-child(3) {
-            border-right: none;
-            border-top: 1px solid #333;
-        }
-        .panel:nth-child(4) {
-            border-left: 1px solid #333;
-            border-top: 1px solid #333;
-        }
+        /* All individual panel borders removed for perfect zero gaps */
         .panel img { 
             width: 100%; 
             height: 100%; 
@@ -1058,12 +1043,12 @@ class EnhancedComicGenerator:
         /* .panel img { object-fit: fill; } */ /* Stretch to fit (may distort) */
         /* .panel img { object-fit: scale-down; } */ /* Shrink if needed */
         
-        /* Exact 800x1080 mode - no individual borders */
+        /* Exact 600x400 mode - no individual borders */
         .exact-size .panel { 
             border: none !important; 
         }
-        .exact-size .comic-grid { 
-            border: 1px solid #333;
+        .comic-grid { 
+            border: 2px solid #333; /* Single outer border only */
             box-sizing: border-box;
         }
         
@@ -1083,7 +1068,7 @@ class EnhancedComicGenerator:
             outline: 2px solid red;
         }
         .debug-mode .comic-page::before {
-            content: "Page: 800×1080";
+            content: "Page: 600×400";
             position: absolute;
             top: -25px;
             left: 0;
@@ -1177,13 +1162,13 @@ class EnhancedComicGenerator:
         <button onclick="saveEditableHTML()" style="margin-top: 10px; padding: 8px 15px; background: #FF9800; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
             💾 Save Editable Comic
         </button>
-        <button onclick="exportToPDF()" style="margin-top: 5px; padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
+        <button onclick="exportToPDF()" style="margin-top: 5px; padding: 4px 8px; background: #4CAF50; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; width: 60%; font-size: 12px;">
             📄 Export to PDF
         </button>
-                   <button onclick="printComic()" style="margin-top: 5px; padding: 8px 15px; background: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
+                   <button onclick="printComic()" style="margin-top: 5px; padding: 4px 8px; background: #2196F3; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; width: 60%; font-size: 12px;">
                🖨️ Print Comic
            </button>
-           <button onclick="viewPageImages()" style="margin-top: 5px; padding: 8px 15px; background: #9C27B0; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
+           <button onclick="viewPageImages()" style="margin-top: 5px; padding: 4px 8px; background: #9C27B0; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; width: 60%; font-size: 12px;">
                🖼️ View Page Images
            </button>
            <button onclick="toggleUnityMode()" style="margin-top: 5px; padding: 8px 15px; background: #FF5722; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
@@ -1220,14 +1205,14 @@ class EnhancedComicGenerator:
                             pageTitle.textContent = `Page ${pageIndex + 1}`;
                             pageWrapper.appendChild(pageTitle);
                             
-                            // Create page container (exact 800x1080)
+                            // Create page container (exact 600x400)
                             const pageDiv = document.createElement('div');
                             pageDiv.className = 'comic-page';
                             
                             // Add page info (resolution)
                             const pageInfo = document.createElement('div');
                             pageInfo.className = 'page-info';
-                            pageInfo.textContent = '800x1080';
+                            pageInfo.textContent = '600x400';
                             pageDiv.appendChild(pageInfo);
                             
                             // Create grid for this page
@@ -1492,13 +1477,13 @@ class EnhancedComicGenerator:
                 const computed = window.getComputedStyle(page);
                 
                 const info = `📏 Page Dimensions Check:\n\n` +
-                    `Page Width: ${pageRect.width}px (should be 800)\n` +
-                    `Page Height: ${pageRect.height}px (should be 1080)\n` +
+                    `Page Width: ${pageRect.width}px (should be 600)\n` +
+                    `Page Height: ${pageRect.height}px (should be 400)\n` +
                     `Grid Width: ${gridRect ? gridRect.width : 'N/A'}px\n` +
                     `Grid Height: ${gridRect ? gridRect.height : 'N/A'}px\n` +
                     `Padding: ${computed.padding}\n` +
                     `Box-sizing: ${computed.boxSizing}\n\n` +
-                    `${pageRect.width === 800 && pageRect.height === 1080 ? '✅ EXACT MATCH!' : '❌ Size mismatch!'}\n\n` +
+                    `${pageRect.width === 600 && pageRect.height === 400 ? '✅ EXACT MATCH!' : '❌ Size mismatch!'}\n\n` +
                     `Exact-size mode: ${container.classList.contains('exact-size') ? 'ON' : 'OFF'}`;
                 
                 alert(info);
@@ -1549,7 +1534,7 @@ class EnhancedComicGenerator:
                         width: 100% !important;
                     }
                     
-                    /* Each comic page exactly 800x1080 */
+                    /* Each comic page exactly 600x400 */
                     .comic-page { 
                         page-break-inside: avoid !important;
                         page-break-after: always !important;
@@ -1557,8 +1542,8 @@ class EnhancedComicGenerator:
                         padding: 0 !important;
                         box-shadow: none !important;
                         background: white !important;
-                        width: 800px !important;
-                        height: 1080px !important;
+                        width: 600px !important;
+                        height: 400px !important;
                         box-sizing: border-box !important;
                         position: relative !important;
                     }
@@ -1571,16 +1556,16 @@ class EnhancedComicGenerator:
                         display: none !important;
                     }
                     
-                    /* Comic grid exact 800x1080 with 4 panels */
+                    /* Comic grid exact 600x400 with 4 panels */
                     .comic-grid {
-                        width: 800px !important;
-                        height: 1080px !important;
+                        width: 600px !important;
+                        height: 400px !important;
                         margin: 0 !important;
                         padding: 0 !important;
                         gap: 0 !important; /* No gap for exact panel sizing */
                         display: grid !important;
-                        grid-template-columns: 400px 400px !important;
-                        grid-template-rows: 540px 540px !important;
+                        grid-template-columns: 300px 300px !important;
+                        grid-template-rows: 200px 200px !important;
                     }
                     
                     /* Show page info in print */
@@ -1593,11 +1578,11 @@ class EnhancedComicGenerator:
                         color: #999 !important;
                     }
                     
-                    /* Panels exact 400x540 each - no gaps */
+                    /* Panels exact 300x200 each - no gaps */
                     .panel {
-                        width: 400px !important;
-                        height: 540px !important;
-                        border: 1px solid #000 !important;
+                        width: 300px !important;
+                        height: 200px !important;
+                        border: none !important; /* Remove borders for zero gaps */
                         overflow: hidden !important;
                         position: relative !important;
                         box-sizing: border-box !important;

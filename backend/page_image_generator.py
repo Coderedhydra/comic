@@ -1,5 +1,5 @@
 """
-Generate image files for each comic page at 800x1080 resolution
+Generate image files for each comic page at 600x400 resolution
 Simple version that creates HTML canvases instead of actual image files
 """
 
@@ -12,7 +12,7 @@ class PageImageGenerator:
     
     def __init__(self, output_dir: str = "output/page_images"):
         self.output_dir = output_dir
-        self.page_size = (800, 1080)  # Width x Height
+        self.page_size = (600, 400)  # Width x Height
         
     def generate_page_images(self, pages_data: List[Dict], frames_dir: str) -> List[str]:
         """Generate HTML pages that render as images"""
@@ -33,7 +33,7 @@ class PageImageGenerator:
         return generated_files
     
     def _create_page_html(self, page: Dict, frames_dir: str, page_num: int, output_path: str):
-        """Create HTML that renders a comic page at 800x1080"""
+        """Create HTML that renders a comic page at 600x400"""
         
         panels_html = ""
         panels = page.get('panels', [])
@@ -86,9 +86,9 @@ class PageImageGenerator:
             display: grid;
             grid-template-columns: 1fr 1fr;
             grid-template-rows: 1fr 1fr;
-            gap: 10px;
-            padding: 20px;
-            height: calc(100% - 60px);
+            gap: 0;
+            padding: 0;
+            height: 100%;
         }}
         
         .panel {{
@@ -163,14 +163,14 @@ class PageImageGenerator:
             
             /* Set exact page size for printing */
             @page {{
-                /* 800x1080 pixels = 8.33x11.25 inches at 96 DPI */
+                /* 600x400 pixels = 6.25x4.17 inches at 96 DPI */
                 /* For better print quality, we'll use 150 DPI */
-                size: 5.33in 7.2in;  /* 800px/150dpi x 1080px/150dpi */
+                size: 4in 2.67in;  /* 600px/150dpi x 400px/150dpi */
                 margin: 0;
             }}
             
             /* Alternative page sizes you can use: */
-            /* @page {{ size: A5 portrait; margin: 0; }} */  /* Close to 800x1080 ratio */
+            /* @page {{ size: A6 landscape; margin: 0; }} */  /* Close to 600x400 ratio */
             /* @page {{ size: 8.5in 11in; margin: 0.5in; }} */ /* US Letter with margins */
             
             .page-container {{
@@ -217,13 +217,13 @@ class PageImageGenerator:
     <script>
         function downloadAsImage() {{
             // Show print instructions
-            alert('🖨️ Print Settings for 800x1080 Image:\\n\\n' +
-                  '1. Paper Size: "A5" or "5.33 x 7.2 inches"\\n' +
-                  '2. Orientation: Portrait\\n' +
+            alert('🖨️ Print Settings for 600x400 Image:\\n\\n' +
+                  '1. Paper Size: "A6 landscape" or "4 x 2.67 inches"\\n' +
+                  '2. Orientation: Landscape\\n' +
                   '3. Margins: None (0)\\n' +
                   '4. Scale: 100% or "Actual size"\\n' +
                   '5. Destination: "Save as PDF" for digital\\n' +
-                  '\\nThe page will print at exactly 800x1080 pixels!');
+                  '\\nThe page will print at exactly 600x400 pixels!');
             
             // Trigger print dialog
             window.print();
@@ -234,7 +234,7 @@ class PageImageGenerator:
             const container = document.querySelector('.page-container');
             const maxWidth = window.innerWidth - 40;
             const maxHeight = window.innerHeight - 40;
-            const scale = Math.min(maxWidth / 800, maxHeight / 1080, 1);
+            const scale = Math.min(maxWidth / 600, maxHeight / 400, 1);
             
             if (scale < 1) {{
                 container.style.transform = `scale(${{scale}})`;
@@ -415,7 +415,7 @@ class PageImageGenerator:
 <body>
     <div class="header">
         <h1>📚 Comic Page Images</h1>
-        <p>All pages rendered at 800x1080 resolution</p>
+        <p>All pages rendered at 600x400 resolution</p>
         <p>{num_pages} pages generated</p>
         
         <div class="instructions">

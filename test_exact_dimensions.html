@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Test Exact 800x1080 Dimensions</title>
+    <title>Test Exact 600x400 Dimensions</title>
     <style>
         body {
             margin: 0;
@@ -9,10 +9,10 @@
             background: #f0f0f0;
         }
         
-        /* Test container - exactly 800x1080 */
+        /* Test container - exactly 600x400 */
         .test-page {
-            width: 800px;
-            height: 1080px;
+            width: 600px;
+            height: 400px;
             background: white;
             margin: 20px auto;
             position: relative;
@@ -23,20 +23,20 @@
         /* Grid filling entire container */
         .test-grid {
             display: grid;
-            grid-template-columns: 400px 400px;
-            grid-template-rows: 540px 540px;
+            grid-template-columns: 300px 300px;
+            grid-template-rows: 200px 200px;
             gap: 0;
-            width: 800px;
-            height: 1080px;
+            width: 600px;
+            height: 400px;
             position: absolute;
             top: 0;
             left: 0;
         }
         
-        /* Panels exactly 400x540 */
+        /* Panels exactly 300x200 */
         .test-panel {
-            width: 400px;
-            height: 540px;
+            width: 300px;
+            height: 200px;
             border: 1px solid blue;
             box-sizing: border-box;
             display: flex;
@@ -61,15 +61,15 @@
 </head>
 <body>
     <div class="info">
-        Page should be exactly 800x1080
+        Page should be exactly 600x400
     </div>
     
     <div class="test-page" id="testPage">
         <div class="test-grid">
-            <div class="test-panel">Panel 1<br>400×540</div>
-            <div class="test-panel">Panel 2<br>400×540</div>
-            <div class="test-panel">Panel 3<br>400×540</div>
-            <div class="test-panel">Panel 4<br>400×540</div>
+            <div class="test-panel">Panel 1<br>300×200</div>
+            <div class="test-panel">Panel 2<br>300×200</div>
+            <div class="test-panel">Panel 3<br>300×200</div>
+            <div class="test-panel">Panel 4<br>300×200</div>
         </div>
     </div>
     
@@ -82,8 +82,8 @@
             
             info.innerHTML = `
                 Page: ${rect.width} × ${rect.height}<br>
-                Expected: 800 × 1080<br>
-                ${rect.width === 800 && rect.height === 1080 ? '✅ MATCH!' : '❌ MISMATCH!'}
+                Expected: 600 × 400<br>
+                ${rect.width === 600 && rect.height === 400 ? '✅ MATCH!' : '❌ MISMATCH!'}
             `;
             
             // Log details
