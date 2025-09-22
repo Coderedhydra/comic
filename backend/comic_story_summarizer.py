@@ -156,74 +156,119 @@ class ComicStorySummarizer:
         
         return max(0.1, importance)  # Minimum 0.1 importance
     
-    def extract_story_summary(self, video_path: str, subtitles: List, target_panels: int = 48) -> List[Dict]:
+    def extract_complete_story_summary(self, video_path: str, subtitles: List, target_panels: int = 48) -> List[Dict]:
         """
-        Extract main story points from video for comic summarization
-        Returns list of selected story moments with metadata
+        Extract COMPLETE story from entire video for comprehensive comic summary
+        Returns chronologically ordered story moments covering the WHOLE video
         """
-        print(f"📖 Analyzing story for {target_panels}-panel comic summary...")
+        print(f"📖 Analyzing ENTIRE video for complete {target_panels}-panel story summary...")
         
         if not subtitles:
             print("❌ No subtitles available for story analysis")
             return []
         
-        # Analyze each subtitle for story importance
-        story_moments = []
+        # Sort subtitles by time to ensure chronological order
+        subtitles.sort(key=lambda x: x.start.total_seconds())
         
-        for i, subtitle in enumerate(subtitles):
-            importance = self.analyze_story_importance(subtitle.content)
-            
-            story_moments.append({
-                'index': i,
-                'subtitle': subtitle,
-                'importance': importance,
-                'start_time': subtitle.start.total_seconds(),
-                'end_time': subtitle.end.total_seconds(),
-                'text': subtitle.content,
-                'selected': False
-            })
+        # Calculate video duration
+        video_duration = subtitles[-1].end.total_seconds() if subtitles else 100
+        print(f"📹 Video duration: {video_duration:.1f} seconds")
         
-        # Sort by importance (highest first)
-        story_moments.sort(key=lambda x: x['importance'], reverse=True)
-        
-        # Select top story moments, ensuring good distribution across video
-        video_duration = story_moments[-1]['end_time'] if story_moments else 100
-        selected_moments = []
-        time_slots = []
-        
-        # Divide video into time segments to ensure even distribution
+        # Divide entire video into exactly 48 equal time segments
+        # This ensures COMPLETE coverage of the whole story
         segment_duration = video_duration / target_panels
+        selected_moments = []
         
-        for segment in range(target_panels):
-            segment_start = segment * segment_duration
-            segment_end = (segment + 1) * segment_duration
+        print(f"⏱️ Creating {target_panels} segments of {segment_duration:.1f} seconds each")
+        
+        for segment_idx in range(target_panels):
+            segment_start = segment_idx * segment_duration
+            segment_end = (segment_idx + 1) * segment_duration
+            segment_mid = segment_start + (segment_duration / 2)
             
-            # Find best moment in this time segment
-            segment_moments = [
-                m for m in story_moments 
-                if segment_start <= m['start_time'] < segment_end
-                and not m['selected']
+            print(f"📍 Segment {segment_idx + 1}: {segment_start:.1f}s - {segment_end:.1f}s")
+            
+            # Find ALL subtitles in this time segment
+            segment_subtitles = [
+                sub for sub in subtitles
+                if (sub.start.total_seconds() <= segment_end and 
+                    sub.end.total_seconds() >= segment_start)
             ]
             
-            if segment_moments:
-                # Select highest importance moment in this segment
-                best_moment = max(segment_moments, key=lambda x: x['importance'])
-                best_moment['selected'] = True
-                selected_moments.append(best_moment)
+            if segment_subtitles:
+                # Choose the subtitle closest to the middle of this segment
+                # This ensures even distribution across the ENTIRE video
+                best_subtitle = min(
+                    segment_subtitles,
+                    key=lambda x: abs(x.start.total_seconds() - segment_mid)
+                )
+                
+                # Calculate story position (beginning, middle, end)
+                story_position = segment_idx / (target_panels - 1) if target_panels > 1 else 0
+                
+                # Determine story phase
+                if story_position < 0.25:
+                    phase = "Beginning"
+                elif story_position < 0.5:
+                    phase = "Rising Action"
+                elif story_position < 0.75:
+                    phase = "Climax"
+                else:
+                    phase = "Resolution"
+                
+                selected_moments.append({
+                    'segment': segment_idx + 1,
+                    'subtitle': best_subtitle,
+                    'start_time': best_subtitle.start.total_seconds(),
+                    'end_time': best_subtitle.end.total_seconds(),
+                    'text': best_subtitle.content,
+                    'story_position': story_position,
+                    'phase': phase,
+                    'panel_number': segment_idx + 1
+                })
+                
+                print(f"  ✅ Selected: '{best_subtitle.content[:40]}...' ({phase})")
             else:
-                # If no moments in segment, find nearest unselected moment
-                unselected = [m for m in story_moments if not m['selected']]
-                if unselected:
-                    # Find closest to segment middle
-                    segment_mid = segment_start + segment_duration / 2
-                    nearest = min(unselected, key=lambda x: abs(x['start_time'] - segment_mid))
-                    nearest['selected'] = True
-                    selected_moments.append(nearest)
+                # If no subtitle in segment, create a narrative bridge
+                story_position = segment_idx / (target_panels - 1) if target_panels > 1 else 0
+                
+                if story_position < 0.25:
+                    bridge_text = f"The story continues to develop as events unfold..."
+                elif story_position < 0.5:
+                    bridge_text = f"Tension builds as the plot thickens..."
+                elif story_position < 0.75:
+                    bridge_text = f"The climax approaches with rising stakes..."
+                else:
+                    bridge_text = f"The story moves toward its conclusion..."
+                
+                # Create a fake subtitle for this segment
+                class FakeSubtitle:
+                    def __init__(self, content, start_time):
+                        self.content = content
+                        self.start = timedelta(seconds=start_time)
+                        self.end = timedelta(seconds=start_time + segment_duration)
+                
+                fake_sub = FakeSubtitle(bridge_text, segment_mid)
+                
+                selected_moments.append({
+                    'segment': segment_idx + 1,
+                    'subtitle': fake_sub,
+                    'start_time': segment_mid,
+                    'end_time': segment_mid + segment_duration,
+                    'text': bridge_text,
+                    'story_position': story_position,
+                    'phase': "Transition",
+                    'panel_number': segment_idx + 1
+                })
+                
+                print(f"  🔗 Bridge: '{bridge_text}'")
         
-        # Sort selected moments by time order
+        # Ensure chronological order
         selected_moments.sort(key=lambda x: x['start_time'])
         
-        print(f"✅ Selected {len(selected_moments)} key story moments")
+        print(f"✅ Created COMPLETE story summary with {len(selected_moments)} panels")
+        print(f"📚 Story coverage: Beginning → Rising Action → Climax → Resolution")
+        
         return selected_moments
     
     def generate_story_frames(self, video_path: str, story_moments: List[Dict], output_dir: str = 'frames/final') -> bool:
@@ -326,18 +371,24 @@ class ComicStorySummarizer:
 
 def create_comic_story_summary(video_path: str, subtitles: List, target_panels: int = 48) -> bool:
     """
-    Main function to create 48-panel comic story summary
+    Main function to create COMPLETE 48-panel comic story summary covering entire video
     """
     summarizer = ComicStorySummarizer()
     
-    # Extract key story moments
-    story_moments = summarizer.extract_story_summary(video_path, subtitles, target_panels)
+    # Extract COMPLETE story covering entire video
+    story_moments = summarizer.extract_complete_story_summary(video_path, subtitles, target_panels)
     
     if not story_moments:
         print("❌ No story moments extracted")
         return False
     
-    # Generate frames for story moments
+    print(f"📖 Story Summary Structure:")
+    print(f"   📍 Panels 1-12: Beginning & Setup")
+    print(f"   📍 Panels 13-24: Rising Action & Development") 
+    print(f"   📍 Panels 25-36: Climax & Major Events")
+    print(f"   📍 Panels 37-48: Resolution & Conclusion")
+    
+    # Generate frames for complete story moments
     success = summarizer.generate_story_frames(video_path, story_moments)
     
     return success

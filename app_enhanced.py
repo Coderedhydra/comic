@@ -582,23 +582,68 @@ class EnhancedComicGenerator:
         except Exception as e:
             print(f"Bubble creation failed: {e}")
         
-        # Ensure we have at least as many bubbles as frames
+        # Ensure we have at least as many bubbles as frames with COMPLETE story progression
         frame_files = sorted([f for f in os.listdir(self.frames_dir) if f.endswith('.png')])
         while len(bubbles) < len(frame_files):
             i = len(bubbles)
-            story_summaries = [
-                "The story begins with establishing the main characters and setting.",
-                "Conflict emerges as opposing forces clash in dramatic fashion.",
-                "Character development deepens through meaningful interactions.",
-                "Plot complications arise, testing our heroes' resolve and skills.",
-                "Emotional stakes increase as personal relationships are affected.",
-                "Action sequences reveal the true nature of each character.",
-                "Pivotal decisions shape the direction of the entire narrative.",
-                "Unexpected alliances form in the face of greater challenges.",
-                "The climax builds as all story elements converge dramatically.",
-                "Truth is revealed, changing everything we thought we knew.",
-                "Final confrontation determines the fate of all involved parties.",
-                "Resolution brings closure while hinting at future possibilities."
+            
+            # Create comprehensive 48-panel story progression
+            complete_story_progression = [
+                # Beginning (Panels 1-12)
+                "Our story opens as we meet the main characters in their world.",
+                "The setting is established and we learn about the characters' lives.",
+                "Initial conflict or challenge is introduced to the protagonist.",
+                "Characters begin their journey or face their first obstacles.",
+                "Relationships and alliances start to form between characters.",
+                "The main quest or goal becomes clear to our heroes.",
+                "First major challenge tests the characters' abilities and resolve.",
+                "Important backstory is revealed about key characters.",
+                "The stakes are raised as the true scope of the conflict emerges.",
+                "Characters must make difficult choices that will affect their future.",
+                "New allies or enemies are introduced to complicate the situation.",
+                "The first act concludes as characters commit to their path forward.",
+                
+                # Rising Action (Panels 13-24)
+                "The journey continues as characters face greater challenges.",
+                "Relationships deepen and character development accelerates.",
+                "Major obstacles force characters to grow and adapt their strategies.",
+                "Conflicts intensify as opposing forces clash more directly.",
+                "Important revelations change how characters view their situation.",
+                "Trust is tested as characters face betrayal or difficult choices.",
+                "The antagonist's true power and motivation become clearer.",
+                "Characters suffer setbacks that test their determination.",
+                "New skills or knowledge are gained through trials and experience.",
+                "Alliances shift as the complexity of the conflict is revealed.",
+                "Personal stakes become intertwined with the larger conflict.",
+                "The second act builds toward the major confrontation ahead.",
+                
+                # Climax (Panels 25-36)
+                "The major confrontation begins as all forces converge.",
+                "Characters face their greatest fears and challenges.",
+                "Everything the characters have learned is put to the test.",
+                "The conflict reaches its most intense and dangerous point.",
+                "Sacrifices must be made as the stakes reach their highest level.",
+                "Truth is finally revealed about the central mystery or conflict.",
+                "Characters must overcome their personal flaws to succeed.",
+                "The final battle or confrontation determines everyone's fate.",
+                "Heroes and villains clash in the most dramatic moments.",
+                "Unexpected twists change the nature of the conflict entirely.",
+                "Characters discover inner strength they didn't know they possessed.",
+                "The climax reaches its peak as the outcome hangs in the balance.",
+                
+                # Resolution (Panels 37-48)
+                "The immediate conflict is resolved through the heroes' actions.",
+                "Characters deal with the consequences of their choices and actions.",
+                "Relationships are redefined in light of everything that has happened.",
+                "The world has changed as a result of the characters' journey.",
+                "Personal growth is evident in how characters have developed.",
+                "Loose ends are tied up and mysteries are finally explained.",
+                "Characters reflect on their journey and what they have learned.",
+                "New beginnings emerge from the resolution of the conflict.",
+                "The community or world is restored to peace and stability.",
+                "Characters find their place in the new order they have created.",
+                "Lessons learned are shared and wisdom is passed on.",
+                "The story concludes with hope for the future and closure for all."
             ]
             
             bubble_obj = bubble(
@@ -606,7 +651,7 @@ class EnhancedComicGenerator:
                 bubble_offset_y=25 + ((i // 2) % 3) * 60,
                 lip_x=-1,
                 lip_y=-1,
-                dialog=story_summaries[i % len(story_summaries)],
+                dialog=complete_story_progression[i % len(complete_story_progression)],
                 emotion='normal'
             )
             bubbles.append(bubble_obj)
