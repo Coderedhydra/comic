@@ -159,40 +159,48 @@ class EnhancedComicGenerator:
                     print(f"⚠️ Full story extraction failed: {e}")
                     filtered_subs = None
             
-            # 3. AI-POWERED COMPLETE STORY ANALYSIS covering entire video
-            print("🧠 AI analyzing complete video story with expression matching...")
+            # 3. ADVANCED AI-POWERED COMIC GENERATION (based on automated-comic-generation pattern)
+            print("🚀 Advanced AI Comic Generation with Enhancement and Editable Bubbles...")
             
             try:
-                from backend.ai_story_analyzer import create_ai_story_comic
+                from backend.advanced_comic_generator import create_advanced_ai_comic
                 
-                # Use all available subtitles for AI story analysis
+                # Use all available subtitles for advanced AI analysis
                 subs_to_use = filtered_subs
                 if not subs_to_use and os.path.exists('test1.srt'):
                     with open('test1.srt', 'r', encoding='utf-8') as f:
                         import srt
                         subs_to_use = list(srt.parse(f.read()))
                 
-                print("🎭 AI Story Analysis Features:")
-                print("   🧠 Complete video understanding and story structure")
-                print("   😊 Facial expression analysis and emotion matching")
-                print("   👁️ Eye state detection for quality frames")
-                print("   📍 48 story checkpoints covering entire video")
-                print("   🎬 Smart frame selection based on story phases")
+                print("🎭 Advanced AI Features (Based on automated-comic-generation pattern):")
+                print("   🧠 Complete video story understanding and structure analysis")
+                print("   😊 Advanced facial expression analysis and emotion matching")
+                print("   👁️ Multi-layer eye state detection for quality frames")
+                print("   📍 48 intelligent story checkpoints covering entire video")
+                print("   🎬 AI-enhanced frame selection with quality scoring")
+                print("   💬 Smart bubble positioning based on face detection")
+                print("   ✏️ Fully editable bubbles with contextual text generation")
+                print("   🎨 Dynamic bubble styling based on detected emotions")
                 
-                # Create AI-powered story comic
-                success = create_ai_story_comic(self.video_path, subs_to_use or [], target_panels=48)
+                # Create advanced AI-powered comic
+                success = create_advanced_ai_comic(self.video_path, subs_to_use or [], target_panels=48)
                 
                 if not success:
-                    print("⚠️ AI story analysis failed, trying complete story builder...")
+                    print("⚠️ Advanced AI comic generation failed, trying AI story analyzer...")
                     try:
-                        from backend.complete_story_builder import create_complete_story_comic
-                        success = create_complete_story_comic(self.video_path, subs_to_use or [], target_panels=48)
+                        from backend.ai_story_analyzer import create_ai_story_comic
+                        success = create_ai_story_comic(self.video_path, subs_to_use or [], target_panels=48)
                     except:
-                        print("⚠️ Falling back to simple keyframe extraction...")
-                        generate_keyframes_simple(self.video_path)
+                        print("⚠️ Falling back to complete story builder...")
+                        try:
+                            from backend.complete_story_builder import create_complete_story_comic
+                            success = create_complete_story_comic(self.video_path, subs_to_use or [], target_panels=48)
+                        except:
+                            print("⚠️ Using simple keyframe extraction...")
+                            generate_keyframes_simple(self.video_path)
                     
             except Exception as e:
-                print(f"⚠️ AI story analysis error: {e}")
+                print(f"⚠️ Advanced AI comic generation error: {e}")
                 print("🔄 Falling back to simple keyframe extraction...")
                 generate_keyframes_simple(self.video_path)
             
