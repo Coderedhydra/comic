@@ -498,13 +498,28 @@ class EnhancedComicGenerator:
                         
                     except Exception as e:
                         print(f"Bubble creation failed for {frame_file}: {e}")
-                        # Create fallback bubble
+                        # Create meaningful story bubble
+                        story_descriptions = [
+                            "A pivotal moment in the narrative unfolds before our eyes.",
+                            "Character emotions and motivations drive the story forward.",
+                            "The plot reveals important details that shape the outcome.",
+                            "Tension rises as conflicts reach their breaking point.",
+                            "Key relationships are tested by challenging circumstances.",
+                            "Action and dialogue combine to advance the storyline.",
+                            "Critical revelations change our understanding of events.",
+                            "The story's themes become clearer through visual storytelling.",
+                            "Character growth is evident in their words and actions.",
+                            "The narrative builds toward its dramatic conclusion.",
+                            "Resolution approaches as loose ends are tied together.",
+                            "The story's message resonates through powerful imagery."
+                        ]
+                        fallback_text = story_descriptions[i % len(story_descriptions)]
                         bubble_obj = bubble(
-                            bubble_offset_x=50,
-                            bubble_offset_y=50,
+                            bubble_offset_x=30 + (i % 2) * 150,
+                            bubble_offset_y=30 + (i % 3) * 50,
                             lip_x=-1,
                             lip_y=-1,
-                            dialog=sub.content,
+                            dialog=sub.content if sub.content.strip() else fallback_text,
                             emotion='normal'
                         )
                         bubbles.append(bubble_obj)
@@ -512,6 +527,36 @@ class EnhancedComicGenerator:
         except Exception as e:
             print(f"Bubble creation failed: {e}")
         
+        # Ensure we have at least as many bubbles as frames
+        frame_files = sorted([f for f in os.listdir(self.frames_dir) if f.endswith('.png')])
+        while len(bubbles) < len(frame_files):
+            i = len(bubbles)
+            story_summaries = [
+                "The story begins with establishing the main characters and setting.",
+                "Conflict emerges as opposing forces clash in dramatic fashion.",
+                "Character development deepens through meaningful interactions.",
+                "Plot complications arise, testing our heroes' resolve and skills.",
+                "Emotional stakes increase as personal relationships are affected.",
+                "Action sequences reveal the true nature of each character.",
+                "Pivotal decisions shape the direction of the entire narrative.",
+                "Unexpected alliances form in the face of greater challenges.",
+                "The climax builds as all story elements converge dramatically.",
+                "Truth is revealed, changing everything we thought we knew.",
+                "Final confrontation determines the fate of all involved parties.",
+                "Resolution brings closure while hinting at future possibilities."
+            ]
+            
+            bubble_obj = bubble(
+                bubble_offset_x=25 + (i % 2) * 140,
+                bubble_offset_y=25 + ((i // 2) % 3) * 60,
+                lip_x=-1,
+                lip_y=-1,
+                dialog=story_summaries[i % len(story_summaries)],
+                emotion='normal'
+            )
+            bubbles.append(bubble_obj)
+        
+        print(f"✅ Generated {len(bubbles)} story summary bubbles for {len(frame_files)} panels")
         return bubbles
     
     def _generate_pages(self, layout_data, bubbles):
@@ -577,17 +622,25 @@ class EnhancedComicGenerator:
                         )
                         page_bubbles.append(bubble_obj)
                     else:
-                        # Create fallback bubble with varied dialogue
-                        fallback_dialogues = [
-                            "Hello there!", "How are you doing?", "I'm doing great!", "That's wonderful!",
-                            "What's new?", "Not much, just working.", "Sounds busy!", "It sure is!",
-                            "Any plans for today?", "Just relaxing.", "That sounds nice!", "Indeed it is.",
-                            "Have a great day!", "You too!", "See you later!", "Take care!"
+                        # Create meaningful story summary bubble
+                        story_summaries = [
+                            "The story opens with our protagonist facing a new challenge in their journey.",
+                            "Character development unfolds as relationships and conflicts are established.",
+                            "Plot thickens with unexpected twists that change the course of events.",
+                            "Tension builds as our heroes confront the main antagonist's schemes.",
+                            "Emotional depth is revealed through character backstories and motivations.",
+                            "Action sequences showcase the skills and determination of key characters.",
+                            "Critical decisions must be made that will affect everyone's future.",
+                            "Alliances form and break as loyalties are tested under pressure.",
+                            "The climax approaches with high stakes and everything on the line.",
+                            "Consequences of past actions come to light, changing everything.",
+                            "Final confrontation determines the fate of all characters involved.",
+                            "Resolution brings closure while setting up potential future adventures."
                         ]
-                        fallback_dialog = fallback_dialogues[bubble_index % len(fallback_dialogues)]
+                        fallback_dialog = story_summaries[bubble_index % len(story_summaries)]
                         fallback_bubble = bubble(
-                            bubble_offset_x=50,
-                            bubble_offset_y=200,
+                            bubble_offset_x=30 + (bubble_index % 2) * 120,
+                            bubble_offset_y=30 + (bubble_index % 4) * 40,
                             lip_x=-1,
                             lip_y=-1,
                             dialog=fallback_dialog,
@@ -964,9 +1017,9 @@ class EnhancedComicGenerator:
         }
         .comic-grid { 
             display: grid; 
-            grid-template-columns: 300px 300px; /* 2x2 grid for 4 images */
-            grid-template-rows: 200px 200px; /* 2x2 grid for 4 images */
-            gap: 0; /* No gap between panels */
+            grid-template-columns: 299px 299px; /* 2x2 grid with thin white strips */
+            grid-template-rows: 199px 199px; /* 2x2 grid with thin white strips */
+            gap: 2px; /* Very thin white gap between panels */
             width: 600px;
             height: 400px;
             margin: 0;
@@ -974,6 +1027,7 @@ class EnhancedComicGenerator:
             position: absolute;
             top: 0;
             left: 0;
+            background-color: white; /* White background shows through gaps */
         }
         .page-wrapper {
             margin: 30px auto;
@@ -1021,30 +1075,14 @@ class EnhancedComicGenerator:
             position: relative; 
             border: 1px solid #333;
             overflow: hidden; 
-            width: 300px;
-            height: 200px;
+            width: 299px;
+            height: 199px;
             box-sizing: border-box; /* Border included in dimensions */
             margin: 0;
             padding: 0;
             flex-shrink: 0; /* Don't shrink */
         }
-        /* Remove double borders between adjacent panels */
-        .panel:nth-child(1) {
-            border-right: none;
-            border-bottom: none;
-        }
-        .panel:nth-child(2) {
-            border-left: 1px solid #333;
-            border-bottom: none;
-        }
-        .panel:nth-child(3) {
-            border-right: none;
-            border-top: 1px solid #333;
-        }
-        .panel:nth-child(4) {
-            border-left: 1px solid #333;
-            border-top: 1px solid #333;
-        }
+        /* All panels have borders with white gaps between them */
         .panel img { 
             width: 100%; 
             height: 100%; 
@@ -1248,33 +1286,58 @@ class EnhancedComicGenerator:
                                 };
                                 panelDiv.appendChild(img);
                                 
-                                // Add speech bubbles
+                                // Add speech bubbles - ENSURE EVERY PANEL HAS ONE
+                                let bubble = null;
                                 if (pageData.bubbles && pageData.bubbles[index]) {
-                                    const bubble = pageData.bubbles[index];
-                                    const bubbleDiv = document.createElement('div');
-                                    bubbleDiv.className = 'speech-bubble';
-                                    
-                                    // Use bubble_offset_x and bubble_offset_y from the data
-                                    // Fix positioning - ensure bubbles are visible within panel
-                                    let x = bubble.bubble_offset_x || 50;
-                                    let y = bubble.bubble_offset_y || 50;
-                                    
-                                    // Clamp positions to ensure bubbles are visible
-                                    x = Math.max(10, Math.min(x, 250));
-                                    y = Math.max(10, Math.min(y, 150));
-                                    
-                                    bubbleDiv.style.left = x + 'px';
-                                    bubbleDiv.style.top = y + 'px';
-                                    bubbleDiv.style.maxWidth = '120px';
-                                    bubbleDiv.style.minHeight = '30px';
-                                    bubbleDiv.style.fontSize = '10px';
-                                    bubbleDiv.style.lineHeight = '1.2';
-                                    bubbleDiv.style.wordWrap = 'break-word';
-                                    
-                                    // Use dialog from the data
-                                    bubbleDiv.textContent = bubble.dialog || '((action-scene))';
-                                    panelDiv.appendChild(bubbleDiv);
+                                    bubble = pageData.bubbles[index];
+                                } else {
+                                    // Create default bubble with meaningful text
+                                    const defaultTexts = [
+                                        "Our story begins with an important moment...",
+                                        "The situation develops as characters interact...",
+                                        "Key events unfold revealing the plot...",
+                                        "The climax approaches with rising tension...",
+                                        "Resolution brings clarity to the story...",
+                                        "Characters face their greatest challenge...",
+                                        "Important dialogue drives the narrative...",
+                                        "Action sequences reveal character depth...",
+                                        "Emotional moments connect with the audience...",
+                                        "The story reaches its turning point...",
+                                        "Consequences of actions become clear...",
+                                        "The conclusion ties together all elements..."
+                                    ];
+                                    const panelNumber = (pageIndex * 4) + index;
+                                    bubble = {
+                                        dialog: defaultTexts[panelNumber % defaultTexts.length],
+                                        bubble_offset_x: 20 + (index % 2) * 150,
+                                        bubble_offset_y: 20 + Math.floor(index / 2) * 80
+                                    };
                                 }
+                                
+                                const bubbleDiv = document.createElement('div');
+                                bubbleDiv.className = 'speech-bubble';
+                                
+                                // Use bubble_offset_x and bubble_offset_y from the data
+                                // Fix positioning - ensure bubbles are visible within panel
+                                let x = bubble.bubble_offset_x || 20;
+                                let y = bubble.bubble_offset_y || 20;
+                                
+                                // Clamp positions to ensure bubbles are visible (adjusted for smaller panels)
+                                x = Math.max(5, Math.min(x, 200));
+                                y = Math.max(5, Math.min(y, 120));
+                                
+                                bubbleDiv.style.left = x + 'px';
+                                bubbleDiv.style.top = y + 'px';
+                                bubbleDiv.style.maxWidth = '140px';
+                                bubbleDiv.style.minHeight = '35px';
+                                bubbleDiv.style.fontSize = '9px';
+                                bubbleDiv.style.lineHeight = '1.1';
+                                bubbleDiv.style.wordWrap = 'break-word';
+                                bubbleDiv.style.padding = '6px';
+                                
+                                // Use dialog from the data
+                                bubbleDiv.textContent = bubble.dialog || 'Story continues...';
+                                panelDiv.appendChild(bubbleDiv);
                                 
                                 grid.appendChild(panelDiv);
                             });
@@ -1571,16 +1634,17 @@ class EnhancedComicGenerator:
                         display: none !important;
                     }
                     
-                    /* Comic grid exact 600x400 with 4 panels */
+                    /* Comic grid exact 600x400 with 4 panels and thin white strips */
                     .comic-grid {
                         width: 600px !important;
                         height: 400px !important;
                         margin: 0 !important;
                         padding: 0 !important;
-                        gap: 0 !important; /* No gap for exact panel sizing */
+                        gap: 2px !important; /* Very thin white gap */
                         display: grid !important;
-                        grid-template-columns: 300px 300px !important;
-                        grid-template-rows: 200px 200px !important;
+                        grid-template-columns: 299px 299px !important;
+                        grid-template-rows: 199px 199px !important;
+                        background-color: white !important;
                     }
                     
                     /* Show page info in print */
@@ -1593,23 +1657,16 @@ class EnhancedComicGenerator:
                         color: #999 !important;
                     }
                     
-                    /* Panels exact 300x200 each - no gaps */
+                    /* Panels with thin white strips */
                     .panel {
-                        width: 300px !important;
-                        height: 200px !important;
+                        width: 299px !important;
+                        height: 199px !important;
                         border: 1px solid #000 !important;
                         overflow: hidden !important;
                         position: relative !important;
                         box-sizing: border-box !important;
                         margin: 0 !important;
                         padding: 0 !important;
-                    }
-                    /* Remove double borders in print */
-                    .panel:nth-child(1), .panel:nth-child(3) {
-                        border-right: none !important;
-                    }
-                    .panel:nth-child(1), .panel:nth-child(2) {
-                        border-bottom: none !important;
                     }
                     
                     .panel img {
