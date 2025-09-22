@@ -159,48 +159,47 @@ class EnhancedComicGenerator:
                     print(f"⚠️ Full story extraction failed: {e}")
                     filtered_subs = None
             
-            # 3. ADVANCED AI-POWERED COMIC GENERATION (based on automated-comic-generation pattern)
-            print("🚀 Advanced AI Comic Generation with Enhancement and Editable Bubbles...")
+            # 3. COMPLETE STORY FITTING - Entire video story in 12 pages with image-text matching
+            print("📚 Fitting ENTIRE video story into 12 pages with perfect image-text matching...")
             
             try:
-                from backend.advanced_comic_generator import create_advanced_ai_comic
+                from backend.complete_story_fitter import create_complete_story_12_pages
                 
-                # Use all available subtitles for advanced AI analysis
+                # Use all available subtitles for complete story fitting
                 subs_to_use = filtered_subs
                 if not subs_to_use and os.path.exists('test1.srt'):
                     with open('test1.srt', 'r', encoding='utf-8') as f:
                         import srt
                         subs_to_use = list(srt.parse(f.read()))
                 
-                print("🎭 Advanced AI Features (Based on automated-comic-generation pattern):")
-                print("   🧠 Complete video story understanding and structure analysis")
-                print("   😊 Advanced facial expression analysis and emotion matching")
-                print("   👁️ Multi-layer eye state detection for quality frames")
-                print("   📍 48 intelligent story checkpoints covering entire video")
-                print("   🎬 AI-enhanced frame selection with quality scoring")
-                print("   💬 Smart bubble positioning based on face detection")
-                print("   ✏️ Fully editable bubbles with contextual text generation")
-                print("   🎨 Dynamic bubble styling based on detected emotions")
+                print("🎯 Complete Story Fitting Features:")
+                print("   📖 ENTIRE video story fitted into exactly 12 pages (not summary)")
+                print("   🎬 48 panels covering every moment of the video timeline")
+                print("   🎭 Images selected to match bubble text content perfectly")
+                print("   ⏱️ Mathematical timeline division ensures complete coverage")
+                print("   💬 Text-image coherence for perfect story understanding")
+                print("   📍 Every panel contributes to complete story comprehension")
+                print("   🎨 Visual-textual harmony for enhanced reading experience")
                 
-                # Create advanced AI-powered comic
-                success = create_advanced_ai_comic(self.video_path, subs_to_use or [], target_panels=48)
+                # Create complete story comic with perfect matching
+                success = create_complete_story_12_pages(self.video_path, subs_to_use or [], target_panels=48)
                 
                 if not success:
-                    print("⚠️ Advanced AI comic generation failed, trying AI story analyzer...")
+                    print("⚠️ Complete story fitting failed, trying advanced AI method...")
                     try:
-                        from backend.ai_story_analyzer import create_ai_story_comic
-                        success = create_ai_story_comic(self.video_path, subs_to_use or [], target_panels=48)
+                        from backend.advanced_comic_generator import create_advanced_ai_comic
+                        success = create_advanced_ai_comic(self.video_path, subs_to_use or [], target_panels=48)
                     except:
-                        print("⚠️ Falling back to complete story builder...")
+                        print("⚠️ Falling back to AI story analyzer...")
                         try:
-                            from backend.complete_story_builder import create_complete_story_comic
-                            success = create_complete_story_comic(self.video_path, subs_to_use or [], target_panels=48)
+                            from backend.ai_story_analyzer import create_ai_story_comic
+                            success = create_ai_story_comic(self.video_path, subs_to_use or [], target_panels=48)
                         except:
                             print("⚠️ Using simple keyframe extraction...")
                             generate_keyframes_simple(self.video_path)
                     
             except Exception as e:
-                print(f"⚠️ Advanced AI comic generation error: {e}")
+                print(f"⚠️ Complete story fitting error: {e}")
                 print("🔄 Falling back to simple keyframe extraction...")
                 generate_keyframes_simple(self.video_path)
             
