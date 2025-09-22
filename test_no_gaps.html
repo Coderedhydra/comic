@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test 600x400 No Gaps</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        
+        /* Test container - exactly 600x400 */
+        .test-page {
+            width: 600px;
+            height: 400px;
+            background: white;
+            margin: 20px auto;
+            position: relative;
+            box-sizing: content-box;
+            border: 2px solid red;
+        }
+        
+        /* Grid filling entire container - NO GAPS */
+        .test-grid {
+            display: grid;
+            grid-template-columns: 300px 300px;
+            grid-template-rows: 200px 200px;
+            gap: 0; /* ZERO GAPS */
+            width: 600px;
+            height: 400px;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        /* Panels exactly 300x200 - NO GAPS */
+        .test-panel {
+            width: 300px;
+            height: 200px;
+            border: 1px solid blue;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            background: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Info display */
+        .info {
+            text-align: center;
+            font-size: 18px;
+            margin: 20px;
+            padding: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+        }
+        
+        .success { background: #4CAF50; color: white; }
+        .error { background: #f44336; color: white; }
+    </style>
+</head>
+<body>
+    <div class="info" id="info">
+        Testing 600x400 with zero gaps...
+    </div>
+    
+    <div class="test-page" id="testPage">
+        <div class="test-grid" id="testGrid">
+            <div class="test-panel">Panel 1<br>300×200</div>
+            <div class="test-panel">Panel 2<br>300×200</div>
+            <div class="test-panel">Panel 3<br>300×200</div>
+            <div class="test-panel">Panel 4<br>300×200</div>
+        </div>
+    </div>
+    
+    <script>
+        // Check dimensions
+        window.onload = function() {
+            const page = document.getElementById('testPage');
+            const grid = document.getElementById('testGrid');
+            const panels = document.querySelectorAll('.test-panel');
+            const info = document.getElementById('info');
+            
+            const pageRect = page.getBoundingClientRect();
+            const gridRect = grid.getBoundingClientRect();
+            
+            // Check if dimensions are exact
+            const pageOK = pageRect.width === 600 && pageRect.height === 400;
+            const gridOK = gridRect.width === 600 && gridRect.height === 400;
+            
+            let panelsOK = true;
+            panels.forEach(panel => {
+                const rect = panel.getBoundingClientRect();
+                if (rect.width !== 300 || rect.height !== 200) {
+                    panelsOK = false;
+                }
+            });
+            
+            // Calculate total grid area covered by panels
+            const totalPanelArea = 4 * (300 * 200); // 4 panels of 300x200
+            const pageArea = 600 * 400;
+            const coverageOK = totalPanelArea === pageArea;
+            
+            info.innerHTML = `
+                <strong>600x400 Zero Gap Test Results:</strong><br>
+                Page: ${pageRect.width} × ${pageRect.height} ${pageOK ? '✅' : '❌'}<br>
+                Grid: ${gridRect.width} × ${gridRect.height} ${gridOK ? '✅' : '❌'}<br>
+                Panels: ${panelsOK ? 'All 300×200 ✅' : 'Size mismatch ❌'}<br>
+                Coverage: ${coverageOK ? 'Perfect fit ✅' : 'Gaps detected ❌'}<br>
+                <br>
+                ${pageOK && gridOK && panelsOK && coverageOK ? 
+                  '<span style="color: #4CAF50; font-weight: bold;">🎉 ZERO GAPS ACHIEVED!</span>' : 
+                  '<span style="color: #f44336; font-weight: bold;">⚠️ Issues detected</span>'}
+            `;
+            
+            if (pageOK && gridOK && panelsOK && coverageOK) {
+                info.className = 'info success';
+            } else {
+                info.className = 'info error';
+            }
+            
+            // Log details for debugging
+            console.log('Page dimensions:', pageRect);
+            console.log('Grid dimensions:', gridRect);
+            console.log('Panel dimensions:', Array.from(panels).map(p => p.getBoundingClientRect()));
+        };
+    </script>
+</body>
+</html>

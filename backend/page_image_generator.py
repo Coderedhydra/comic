@@ -86,9 +86,9 @@ class PageImageGenerator:
             display: grid;
             grid-template-columns: 1fr 1fr;
             grid-template-rows: 1fr 1fr;
-            gap: 10px;
-            padding: 20px;
-            height: calc(100% - 60px);
+            gap: 0;
+            padding: 0;
+            height: 100%;
         }}
         
         .panel {{

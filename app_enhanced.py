@@ -805,7 +805,7 @@ class EnhancedComicGenerator:
         body { margin: 0; padding: 20px; background: #2c3e50; color: white; font-family: Arial, sans-serif; }
         .header { text-align: center; margin-bottom: 30px; }
         .comic-container { max-width: 1200px; margin: 0 auto; }
-        .comic-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; margin-top: 30px; }
+        .comic-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; margin-top: 30px; }
         .comic-panel { background: white; border: 4px solid #333; box-shadow: 0 5px 20px rgba(0,0,0,0.3); position: relative; overflow: hidden; }
         .comic-panel img { width: 100%; height: 200px; object-fit: cover; display: block; }
         .panel-info { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.8); color: white; padding: 15px; }
@@ -953,8 +953,8 @@ class EnhancedComicGenerator:
         .comic-container { max-width: 1200px; margin: 0 auto; }
         .comic-page { 
             background: white; 
-            width: 800px; /* Exact image width */
-            height: 1080px; /* Exact image height */
+            width: 600px; /* Exact image width */
+            height: 400px; /* Exact image height */
             padding: 0; /* No padding */
             margin: 0; /* No margin */
             box-shadow: 0 0 10px rgba(0,0,0,0.1); 
@@ -964,11 +964,11 @@ class EnhancedComicGenerator:
         }
         .comic-grid { 
             display: grid; 
-            grid-template-columns: 400px 400px; 
-            grid-template-rows: 540px 540px; 
+            grid-template-columns: 300px 300px; 
+            grid-template-rows: 200px 200px; 
             gap: 0; /* No gap between panels */
-            width: 800px;
-            height: 1080px;
+            width: 600px;
+            height: 400px;
             margin: 0;
             padding: 0;
             position: absolute;
@@ -977,7 +977,7 @@ class EnhancedComicGenerator:
         }
         .page-wrapper {
             margin: 30px auto;
-            width: 800px;
+            width: 600px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -1019,32 +1019,17 @@ class EnhancedComicGenerator:
         }
         .panel { 
             position: relative; 
-            border: 1px solid #333;
-            overflow: hidden; 
-            width: 400px;
-            height: 540px;
+            border: none; /* Remove individual borders for zero gaps */
+            overflow: hidden;
+            /* No borders for perfect zero-gap layout */ 
+            width: 300px;
+            height: 200px;
             box-sizing: border-box; /* Border included in dimensions */
             margin: 0;
             padding: 0;
             flex-shrink: 0; /* Don't shrink */
         }
-        /* Remove double borders between adjacent panels */
-        .panel:nth-child(1) {
-            border-right: none;
-            border-bottom: none;
-        }
-        .panel:nth-child(2) {
-            border-left: 1px solid #333;
-            border-bottom: none;
-        }
-        .panel:nth-child(3) {
-            border-right: none;
-            border-top: 1px solid #333;
-        }
-        .panel:nth-child(4) {
-            border-left: 1px solid #333;
-            border-top: 1px solid #333;
-        }
+        /* All individual panel borders removed for perfect zero gaps */
         .panel img { 
             width: 100%; 
             height: 100%; 
@@ -1062,8 +1047,8 @@ class EnhancedComicGenerator:
         .exact-size .panel { 
             border: none !important; 
         }
-        .exact-size .comic-grid { 
-            border: 1px solid #333;
+        .comic-grid { 
+            border: 2px solid #333; /* Single outer border only */
             box-sizing: border-box;
         }
         
@@ -1492,8 +1477,8 @@ class EnhancedComicGenerator:
                 const computed = window.getComputedStyle(page);
                 
                 const info = `📏 Page Dimensions Check:\n\n` +
-                    `Page Width: ${pageRect.width}px (should be 800)\n` +
-                    `Page Height: ${pageRect.height}px (should be 1080)\n` +
+                    `Page Width: ${pageRect.width}px (should be 600)\n` +
+                    `Page Height: ${pageRect.height}px (should be 400)\n` +
                     `Grid Width: ${gridRect ? gridRect.width : 'N/A'}px\n` +
                     `Grid Height: ${gridRect ? gridRect.height : 'N/A'}px\n` +
                     `Padding: ${computed.padding}\n` +
@@ -1557,8 +1542,8 @@ class EnhancedComicGenerator:
                         padding: 0 !important;
                         box-shadow: none !important;
                         background: white !important;
-                        width: 800px !important;
-                        height: 1080px !important;
+                        width: 600px !important;
+                        height: 400px !important;
                         box-sizing: border-box !important;
                         position: relative !important;
                     }
@@ -1597,7 +1582,7 @@ class EnhancedComicGenerator:
                     .panel {
                         width: 300px !important;
                         height: 200px !important;
-                        border: 1px solid #000 !important;
+                        border: none !important; /* Remove borders for zero gaps */
                         overflow: hidden !important;
                         position: relative !important;
                         box-sizing: border-box !important;
