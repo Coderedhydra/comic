@@ -159,46 +159,49 @@ class EnhancedComicGenerator:
                     print(f"⚠️ Full story extraction failed: {e}")
                     filtered_subs = None
             
-            # 3. DIRECT FRAME-TEXT SYNCHRONIZATION - Perfect matching between images and text
-            print("🎯 Creating comic with DIRECT frame-text synchronization...")
+            # 3. PRECISION FRAME-TEXT ALIGNMENT - Maximum accuracy with advanced methods
+            print("🔬 Creating comic with PRECISION frame-text alignment...")
+            print("⚡ Using advanced multi-method synchronization for maximum accuracy")
             
             try:
-                from backend.frame_text_synchronizer import create_synchronized_comic
+                from backend.precision_frame_text_aligner import create_precision_aligned_comic
                 
-                # Use all available subtitles for perfect synchronization
+                # Use all available subtitles for precision alignment
                 subs_to_use = filtered_subs
                 if not subs_to_use and os.path.exists('test1.srt'):
                     with open('test1.srt', 'r', encoding='utf-8') as f:
                         import srt
                         subs_to_use = list(srt.parse(f.read()))
                 
-                print("🔗 Direct Frame-Text Synchronization Features:")
-                print("   🎯 PERFECT 1:1 mapping between each frame and its text")
-                print("   ⏱️ Each frame extracted at exact time of its corresponding text")
-                print("   📝 Text bubbles contain exact dialogue/narration for that moment")
-                print("   🎬 No mismatched images - every frame matches its bubble")
-                print("   📚 Complete story told through synchronized image-text pairs")
-                print("   🔗 Direct timeline mapping ensures perfect coherence")
+                print("🔬 PRECISION Alignment Features (Advanced Methods):")
+                print("   🎵 High-quality audio extraction for timing analysis")
+                print("   ⏱️ Multiple alignment methods: direct, audio-based, word-level")
+                print("   🧮 Comprehensive frame scoring: sharpness + brightness + contrast + faces")
+                print("   👁️ Advanced eye state analysis with variance and aspect ratio")
+                print("   🎭 Text-image content matching with mood analysis")
+                print("   🔍 Multi-candidate frame testing within each time segment")
+                print("   📊 Quality validation and optimization of all pairs")
+                print("   🎯 NO shuffling - mathematical precision alignment")
                 
-                # Create synchronized comic
-                success = create_synchronized_comic(self.video_path, subs_to_use or [], target_panels=48)
+                # Create precision-aligned comic
+                success = create_precision_aligned_comic(self.video_path, subs_to_use or [], target_panels=48)
                 
                 if not success:
-                    print("⚠️ Frame-text synchronization failed, trying story fitter...")
+                    print("⚠️ Precision alignment failed, trying direct synchronization...")
                     try:
-                        from backend.complete_story_fitter import create_complete_story_12_pages
-                        success = create_complete_story_12_pages(self.video_path, subs_to_use or [], target_panels=48)
+                        from backend.frame_text_synchronizer import create_synchronized_comic
+                        success = create_synchronized_comic(self.video_path, subs_to_use or [], target_panels=48)
                     except:
-                        print("⚠️ Falling back to advanced AI method...")
+                        print("⚠️ Falling back to story fitter...")
                         try:
-                            from backend.advanced_comic_generator import create_advanced_ai_comic
-                            success = create_advanced_ai_comic(self.video_path, subs_to_use or [], target_panels=48)
+                            from backend.complete_story_fitter import create_complete_story_12_pages
+                            success = create_complete_story_12_pages(self.video_path, subs_to_use or [], target_panels=48)
                         except:
                             print("⚠️ Using simple keyframe extraction...")
                             generate_keyframes_simple(self.video_path)
                     
             except Exception as e:
-                print(f"⚠️ Frame-text synchronization error: {e}")
+                print(f"⚠️ Precision alignment error: {e}")
                 print("🔄 Falling back to simple keyframe extraction...")
                 generate_keyframes_simple(self.video_path)
             
