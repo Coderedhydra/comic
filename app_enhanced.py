@@ -159,13 +159,13 @@ class EnhancedComicGenerator:
                     print(f"⚠️ Full story extraction failed: {e}")
                     filtered_subs = None
             
-            # 3. Generate STORY SUMMARY with 48 panels (12 pages x 4 panels)
-            print("📖 Creating intelligent story summarization for 12-page comic...")
+            # 3. Build COMPLETE COHERENT STORY covering entire video
+            print("📖 Building complete, coherent story from entire video...")
             
             try:
-                from backend.comic_story_summarizer import create_comic_story_summary
+                from backend.complete_story_builder import create_complete_story_comic
                 
-                # Use all available subtitles for comprehensive story analysis
+                # Use all available subtitles for complete story building
                 subs_to_use = filtered_subs
                 if not subs_to_use and os.path.exists('test1.srt'):
                     with open('test1.srt', 'r', encoding='utf-8') as f:
@@ -173,28 +173,26 @@ class EnhancedComicGenerator:
                         subs_to_use = list(srt.parse(f.read()))
                 
                 if subs_to_use:
-                    print("🎭 Analyzing entire video for main story points...")
-                    print("👁️ Filtering out closed/half-closed eyes...")
-                    print("📚 Creating 48-panel story summary...")
+                    print("📚 Building complete story structure:")
+                    print("   📍 Opening & Setup (Panels 1-12)")
+                    print("   📍 Rising Action (Panels 13-24)")
+                    print("   📍 Climax (Panels 25-36)")
+                    print("   📍 Resolution (Panels 37-48)")
+                    print("🎬 Selecting best frames for story flow (no dropping)")
                     
-                    # Create 48-panel story summary
-                    success = create_comic_story_summary(self.video_path, subs_to_use, target_panels=48)
+                    # Create complete story comic
+                    success = create_complete_story_comic(self.video_path, subs_to_use, target_panels=48)
                     
                     if not success:
-                        print("⚠️ Story summarization failed, trying emotion-based method...")
-                        try:
-                            from backend.emotion_keyframe_selector import generate_emotion_keyframes
-                            success = generate_emotion_keyframes(self.video_path, subs_to_use, max_frames=48)
-                        except:
-                            print("⚠️ Falling back to simple keyframe extraction...")
-                            generate_keyframes_simple(self.video_path)
+                        print("⚠️ Complete story building failed, using fallback...")
+                        generate_keyframes_simple(self.video_path)
                 else:
-                    print("⚠️ No subtitles available for story analysis")
+                    print("⚠️ No subtitles available for story building")
                     print("🔄 Using simple keyframe extraction...")
                     generate_keyframes_simple(self.video_path)
                     
             except Exception as e:
-                print(f"⚠️ Story summarization error: {e}")
+                print(f"⚠️ Story building error: {e}")
                 print("🔄 Falling back to simple keyframe extraction...")
                 generate_keyframes_simple(self.video_path)
             
@@ -1940,7 +1938,7 @@ class EnhancedComicGenerator:
             printComic();
         }
         
-        // Panel replacement functionality
+        // Enhanced Panel replacement with perfect fitting
         function replacePanel() {
             const panelNumber = prompt('Enter panel number to replace (1-48):');
             if (!panelNumber || isNaN(panelNumber)) {
@@ -1975,24 +1973,69 @@ class EnhancedComicGenerator:
                 reader.onload = (e) => {
                     const imageUrl = e.target.result;
                     
-                    // Find the panel to replace
-                    const panels = document.querySelectorAll('.panel img');
-                    const targetPanel = panels[panelNum - 1];
+                    // Create an image element to get dimensions
+                    const img = new Image();
+                    img.onload = () => {
+                        // Create canvas to resize image to exact panel dimensions
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Set canvas to exact panel size (299x199)
+                        canvas.width = 299;
+                        canvas.height = 199;
+                        
+                        // Draw image to fit canvas perfectly (cover mode)
+                        const imgAspect = img.width / img.height;
+                        const canvasAspect = canvas.width / canvas.height;
+                        
+                        let drawWidth, drawHeight, offsetX, offsetY;
+                        
+                        if (imgAspect > canvasAspect) {
+                            // Image is wider - fit to height, crop width
+                            drawHeight = canvas.height;
+                            drawWidth = drawHeight * imgAspect;
+                            offsetX = (canvas.width - drawWidth) / 2;
+                            offsetY = 0;
+                        } else {
+                            // Image is taller - fit to width, crop height
+                            drawWidth = canvas.width;
+                            drawHeight = drawWidth / imgAspect;
+                            offsetX = 0;
+                            offsetY = (canvas.height - drawHeight) / 2;
+                        }
+                        
+                        // Clear canvas and draw fitted image
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+                        
+                        // Convert canvas to data URL
+                        const fittedImageUrl = canvas.toDataURL('image/jpeg', 0.9);
+                        
+                        // Find the panel to replace
+                        const panels = document.querySelectorAll('.panel img');
+                        const targetPanel = panels[panelNum - 1];
+                        
+                        if (targetPanel) {
+                            // Replace with perfectly fitted image
+                            targetPanel.src = fittedImageUrl;
+                            targetPanel.alt = `Custom Panel ${panelNum}`;
+                            targetPanel.style.objectFit = 'fill'; // Use the pre-fitted image as-is
+                            targetPanel.style.width = '100%';
+                            targetPanel.style.height = '100%';
+                            
+                            // Store the replacement in localStorage
+                            const replacements = JSON.parse(localStorage.getItem('panelReplacements') || '{}');
+                            replacements[panelNum] = fittedImageUrl;
+                            localStorage.setItem('panelReplacements', JSON.stringify(replacements));
+                            
+                            showSaveMessage(`✅ Panel ${panelNum} replaced and perfectly fitted!`);
+                        } else {
+                            alert(`Panel ${panelNum} not found`);
+                        }
+                    };
                     
-                    if (targetPanel) {
-                        // Replace the image
-                        targetPanel.src = imageUrl;
-                        targetPanel.alt = `Custom Panel ${panelNum}`;
-                        
-                        // Store the replacement in localStorage for persistence
-                        const replacements = JSON.parse(localStorage.getItem('panelReplacements') || '{}');
-                        replacements[panelNum] = imageUrl;
-                        localStorage.setItem('panelReplacements', JSON.stringify(replacements));
-                        
-                        showSaveMessage(`✅ Panel ${panelNum} replaced successfully!`);
-                    } else {
-                        alert(`Panel ${panelNum} not found`);
-                    }
+                    img.src = imageUrl;
                 };
                 
                 reader.readAsDataURL(file);
