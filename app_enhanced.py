@@ -159,47 +159,46 @@ class EnhancedComicGenerator:
                     print(f"⚠️ Full story extraction failed: {e}")
                     filtered_subs = None
             
-            # 3. COMPLETE STORY FITTING - Entire video story in 12 pages with image-text matching
-            print("📚 Fitting ENTIRE video story into 12 pages with perfect image-text matching...")
+            # 3. DIRECT FRAME-TEXT SYNCHRONIZATION - Perfect matching between images and text
+            print("🎯 Creating comic with DIRECT frame-text synchronization...")
             
             try:
-                from backend.complete_story_fitter import create_complete_story_12_pages
+                from backend.frame_text_synchronizer import create_synchronized_comic
                 
-                # Use all available subtitles for complete story fitting
+                # Use all available subtitles for perfect synchronization
                 subs_to_use = filtered_subs
                 if not subs_to_use and os.path.exists('test1.srt'):
                     with open('test1.srt', 'r', encoding='utf-8') as f:
                         import srt
                         subs_to_use = list(srt.parse(f.read()))
                 
-                print("🎯 Complete Story Fitting Features:")
-                print("   📖 ENTIRE video story fitted into exactly 12 pages (not summary)")
-                print("   🎬 48 panels covering every moment of the video timeline")
-                print("   🎭 Images selected to match bubble text content perfectly")
-                print("   ⏱️ Mathematical timeline division ensures complete coverage")
-                print("   💬 Text-image coherence for perfect story understanding")
-                print("   📍 Every panel contributes to complete story comprehension")
-                print("   🎨 Visual-textual harmony for enhanced reading experience")
+                print("🔗 Direct Frame-Text Synchronization Features:")
+                print("   🎯 PERFECT 1:1 mapping between each frame and its text")
+                print("   ⏱️ Each frame extracted at exact time of its corresponding text")
+                print("   📝 Text bubbles contain exact dialogue/narration for that moment")
+                print("   🎬 No mismatched images - every frame matches its bubble")
+                print("   📚 Complete story told through synchronized image-text pairs")
+                print("   🔗 Direct timeline mapping ensures perfect coherence")
                 
-                # Create complete story comic with perfect matching
-                success = create_complete_story_12_pages(self.video_path, subs_to_use or [], target_panels=48)
+                # Create synchronized comic
+                success = create_synchronized_comic(self.video_path, subs_to_use or [], target_panels=48)
                 
                 if not success:
-                    print("⚠️ Complete story fitting failed, trying advanced AI method...")
+                    print("⚠️ Frame-text synchronization failed, trying story fitter...")
                     try:
-                        from backend.advanced_comic_generator import create_advanced_ai_comic
-                        success = create_advanced_ai_comic(self.video_path, subs_to_use or [], target_panels=48)
+                        from backend.complete_story_fitter import create_complete_story_12_pages
+                        success = create_complete_story_12_pages(self.video_path, subs_to_use or [], target_panels=48)
                     except:
-                        print("⚠️ Falling back to AI story analyzer...")
+                        print("⚠️ Falling back to advanced AI method...")
                         try:
-                            from backend.ai_story_analyzer import create_ai_story_comic
-                            success = create_ai_story_comic(self.video_path, subs_to_use or [], target_panels=48)
+                            from backend.advanced_comic_generator import create_advanced_ai_comic
+                            success = create_advanced_ai_comic(self.video_path, subs_to_use or [], target_panels=48)
                         except:
                             print("⚠️ Using simple keyframe extraction...")
                             generate_keyframes_simple(self.video_path)
                     
             except Exception as e:
-                print(f"⚠️ Complete story fitting error: {e}")
+                print(f"⚠️ Frame-text synchronization error: {e}")
                 print("🔄 Falling back to simple keyframe extraction...")
                 generate_keyframes_simple(self.video_path)
             
@@ -449,15 +448,36 @@ class EnhancedComicGenerator:
             return None
     
     def _create_ai_bubbles(self, black_x, black_y):
-        """Create AI-powered speech bubbles"""
+        """Create perfectly synchronized speech bubbles"""
         bubbles = []
         
         try:
-            # Read and filter subtitles
-            srt_path = 'test1.srt'
+            # Check if we have synchronization data
+            sync_data_path = os.path.join(self.frames_dir, 'frame_text_sync.json')
+            if os.path.exists(sync_data_path):
+                print("✅ Using synchronized frame-text data for bubble generation")
+                with open(sync_data_path, 'r') as f:
+                    sync_data = json.load(f)
+                
+                # Create bubbles directly from synchronized data
+                for pair in sync_data:
+                    if pair.get('frame_extracted', False):
+                        bubble_obj = bubble(
+                            bubble_offset_x=30 + ((pair['panel_number'] - 1) % 2) * 120,
+                            bubble_offset_y=30 + (((pair['panel_number'] - 1) // 2) % 3) * 60,
+                            lip_x=-1,
+                            lip_y=-1,
+                            dialog=pair['text'],  # EXACT synchronized text
+                            emotion='normal'
+                        )
+                        bubbles.append(bubble_obj)
+                        print(f"🔗 Bubble {len(bubbles)}: '{pair['text'][:40]}...'")
+                
+                print(f"✅ Created {len(bubbles)} perfectly synchronized bubbles")
+                return bubbles
             
-            # DISABLED: Don't filter in bubble generation - use all selected frames
-            # filtered_subs = self._filter_meaningful_subtitles(srt_path)
+            # Fallback: Use subtitle-based generation
+            srt_path = 'test1.srt'
             
             # Use all subtitles that were selected for frames
             with open(srt_path, 'r', encoding='utf-8') as f:
