@@ -159,40 +159,40 @@ class EnhancedComicGenerator:
                     print(f"⚠️ Full story extraction failed: {e}")
                     filtered_subs = None
             
-            # 3. Build COMPLETE COHERENT STORY covering entire video
-            print("📖 Building complete, coherent story from entire video...")
+            # 3. AI-POWERED COMPLETE STORY ANALYSIS covering entire video
+            print("🧠 AI analyzing complete video story with expression matching...")
             
             try:
-                from backend.complete_story_builder import create_complete_story_comic
+                from backend.ai_story_analyzer import create_ai_story_comic
                 
-                # Use all available subtitles for complete story building
+                # Use all available subtitles for AI story analysis
                 subs_to_use = filtered_subs
                 if not subs_to_use and os.path.exists('test1.srt'):
                     with open('test1.srt', 'r', encoding='utf-8') as f:
                         import srt
                         subs_to_use = list(srt.parse(f.read()))
                 
-                if subs_to_use:
-                    print("📚 Building complete story structure:")
-                    print("   📍 Opening & Setup (Panels 1-12)")
-                    print("   📍 Rising Action (Panels 13-24)")
-                    print("   📍 Climax (Panels 25-36)")
-                    print("   📍 Resolution (Panels 37-48)")
-                    print("🎬 Selecting best frames for story flow (no dropping)")
-                    
-                    # Create complete story comic
-                    success = create_complete_story_comic(self.video_path, subs_to_use, target_panels=48)
-                    
-                    if not success:
-                        print("⚠️ Complete story building failed, using fallback...")
+                print("🎭 AI Story Analysis Features:")
+                print("   🧠 Complete video understanding and story structure")
+                print("   😊 Facial expression analysis and emotion matching")
+                print("   👁️ Eye state detection for quality frames")
+                print("   📍 48 story checkpoints covering entire video")
+                print("   🎬 Smart frame selection based on story phases")
+                
+                # Create AI-powered story comic
+                success = create_ai_story_comic(self.video_path, subs_to_use or [], target_panels=48)
+                
+                if not success:
+                    print("⚠️ AI story analysis failed, trying complete story builder...")
+                    try:
+                        from backend.complete_story_builder import create_complete_story_comic
+                        success = create_complete_story_comic(self.video_path, subs_to_use or [], target_panels=48)
+                    except:
+                        print("⚠️ Falling back to simple keyframe extraction...")
                         generate_keyframes_simple(self.video_path)
-                else:
-                    print("⚠️ No subtitles available for story building")
-                    print("🔄 Using simple keyframe extraction...")
-                    generate_keyframes_simple(self.video_path)
                     
             except Exception as e:
-                print(f"⚠️ Story building error: {e}")
+                print(f"⚠️ AI story analysis error: {e}")
                 print("🔄 Falling back to simple keyframe extraction...")
                 generate_keyframes_simple(self.video_path)
             
@@ -580,13 +580,42 @@ class EnhancedComicGenerator:
         except Exception as e:
             print(f"Bubble creation failed: {e}")
         
-        # Ensure we have at least as many bubbles as frames with COMPLETE story progression
+        # Load AI analysis data if available for better bubble generation
+        ai_analysis_path = os.path.join(self.frames_dir, 'ai_analysis.json')
+        ai_data = None
+        if os.path.exists(ai_analysis_path):
+            try:
+                with open(ai_analysis_path, 'r') as f:
+                    ai_data = json.load(f)
+                print("✅ Using AI story analysis for intelligent bubble generation")
+            except:
+                print("⚠️ Could not load AI analysis, using default bubbles")
+        
+        # Ensure we have at least as many bubbles as frames with INTELLIGENT story progression
         frame_files = sorted([f for f in os.listdir(self.frames_dir) if f.endswith('.png')])
         while len(bubbles) < len(frame_files):
             i = len(bubbles)
             
-            # Create comprehensive 48-panel story progression
-            complete_story_progression = [
+            # Use AI analysis data if available
+            if ai_data and i < len(ai_data.get('story_checkpoints', [])):
+                checkpoint = ai_data['story_checkpoints'][i]
+                story_text = checkpoint.get('story_text', 'Story continues...')
+                phase = checkpoint.get('phase', 'Unknown')
+                
+                print(f"📖 Panel {i+1}: {phase} - {story_text[:50]}...")
+                
+                bubble_obj = bubble(
+                    bubble_offset_x=25 + (i % 2) * 140,
+                    bubble_offset_y=25 + ((i // 2) % 3) * 60,
+                    lip_x=-1,
+                    lip_y=-1,
+                    dialog=story_text,
+                    emotion='normal'
+                )
+                bubbles.append(bubble_obj)
+            else:
+                # Fallback to comprehensive story progression
+                complete_story_progression = [
                 # Beginning (Panels 1-12)
                 "Our story opens as we meet the main characters in their world.",
                 "The setting is established and we learn about the characters' lives.",
