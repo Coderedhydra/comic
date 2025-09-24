@@ -1057,7 +1057,10 @@ class EnhancedComicGenerator:
             overflow: hidden;
         }
         .comic-grid { 
-            display: block !important; /* Use block instead of grid */
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            grid-template-rows: 1fr 1fr !important;
+            gap: 10px !important; /* Simple 10px gap */
             width: 600px !important;
             height: 400px !important;
             margin: 0 !important;
@@ -1065,47 +1068,20 @@ class EnhancedComicGenerator:
             position: absolute !important;
             top: 0 !important;
             left: 0 !important;
-            background: white !important; /* White background for strips */
+            background: white !important; /* White background for gaps */
             box-sizing: border-box !important;
         }
         
-        /* ABSOLUTE POSITIONING FOR PERFECT 0% GAPS + 10PX STRIPS */
         .panel {
-            position: absolute !important;
-            width: 295px !important;
-            height: 195px !important;
+            position: relative !important;
+            width: 100% !important;
+            height: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
             box-sizing: border-box !important;
             overflow: hidden !important;
-        }
-        
-        .panel:nth-child(1) {
-            /* Top-left: 0,0 */
-            top: 0px !important;
-            left: 0px !important;
-            background: #ffe0e0 !important; /* Light red for visibility */
-        }
-        
-        .panel:nth-child(2) {
-            /* Top-right: 305,0 (295 + 10px strip) */
-            top: 0px !important;
-            left: 305px !important;
-            background: #e0ffe0 !important; /* Light green for visibility */
-        }
-        
-        .panel:nth-child(3) {
-            /* Bottom-left: 0,205 (195 + 10px strip) */
-            top: 205px !important;
-            left: 0px !important;
-            background: #e0e0ff !important; /* Light blue for visibility */
-        }
-        
-        .panel:nth-child(4) {
-            /* Bottom-right: 305,205 */
-            top: 205px !important;
-            left: 305px !important;
-            background: #ffe0ff !important; /* Light purple for visibility */
+            background: #f8f9fa !important;
+            border: 1px solid #dee2e6 !important;
         }
         .page-wrapper {
             margin: 30px auto;
@@ -1381,6 +1357,9 @@ class EnhancedComicGenerator:
         <p>• Changes auto-save locally</p>
         <button onclick="changeBubbleInteractive()" style="margin-top: 8px; padding: 6px 12px; background: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 11px;">
             🎨 Change Bubble
+        </button>
+        <button onclick="activateStretchMode()" style="margin-top: 5px; padding: 6px 12px; background: #FF5722; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 11px;">
+            🤏 STRETCH Bubble
         </button>
         <div style="display: flex; gap: 5px; margin-top: 10px;">
             <button onclick="saveEditableHTML()" style="padding: 6px 10px; background: #FF9800; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; flex: 1; font-size: 11px;">
@@ -2032,21 +2011,21 @@ class EnhancedComicGenerator:
             
             console.log('🚀 Starting new bubble change approach...');
             
-            // Step 1: Show bubble type selection (5 beautiful types only)
-            const bubbleTypes = ['normal', 'thought', 'boom', 'idea', 'electric', 'empty'];
-            const bubbleEmojis = ['💬', '💭', '💥', '💡', '⚡', '❌'];
-            const bubbleNames = ['Normal', 'Thought', 'Boom', 'Idea', 'Electric', 'Empty'];
+            // Step 1: Show bubble type selection (clean beautiful types)
+            const bubbleTypes = ['normal', 'simple', 'ideas', 'cloud', 'empty'];
+            const bubbleEmojis = ['💬', '🗨️', '💡', '☁️', '❌'];
+            const bubbleNames = ['Normal', 'Simple', 'Ideas', 'Cloud', 'Empty'];
             
             let menu = '🎨 SELECT BUBBLE TYPE:\\n\\n';
             for (let i = 0; i < bubbleTypes.length; i++) {
                 menu += `${i + 1}. ${bubbleEmojis[i]} ${bubbleNames[i]}\\n`;
             }
             
-            const choice = prompt(menu + '\\nEnter 1-6:');
+            const choice = prompt(menu + '\\nEnter 1-5:');
             const choiceNum = parseInt(choice);
             
-            if (isNaN(choiceNum) || choiceNum < 1 || choiceNum > 6) {
-                alert('❌ Invalid choice! Please enter 1-6.');
+            if (isNaN(choiceNum) || choiceNum < 1 || choiceNum > 5) {
+                alert('❌ Invalid choice! Please enter 1-5.');
                 return;
             }
             
@@ -2195,40 +2174,32 @@ class EnhancedComicGenerator:
                         console.log(`✅ Added class: ${bubbleType}`);
                         console.log(`📋 New classes:`, targetBubble.className);
                         
-                        // FORCE VISUAL STYLES DIRECTLY
+                        // FORCE CLEAN BUBBLE STYLES DIRECTLY
                         switch(bubbleType) {
-                            case 'thought':
-                                targetBubble.style.background = '#e0f7ff';
-                                targetBubble.style.border = '4px solid #0066cc';
-                                targetBubble.style.borderRadius = '50%';
+                            case 'simple':
+                                targetBubble.style.background = '#ffffff';
+                                targetBubble.style.border = '2px solid #333333';
+                                targetBubble.style.borderRadius = '20px';
+                                targetBubble.style.color = '#333333';
+                                targetBubble.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                                console.log('🗨️ Applied SIMPLE style');
+                                break;
+                            case 'ideas':
+                                targetBubble.style.background = 'linear-gradient(135deg, #fff7e6, #ffe066)';
+                                targetBubble.style.border = '2px solid #ffb300';
+                                targetBubble.style.borderRadius = '25px';
+                                targetBubble.style.color = '#b8860b';
+                                targetBubble.style.boxShadow = '0 4px 12px rgba(255, 179, 0, 0.3)';
+                                console.log('💡 Applied IDEAS style');
+                                break;
+                            case 'cloud':
+                                targetBubble.style.background = '#f0f8ff';
+                                targetBubble.style.border = '2px dashed #87ceeb';
+                                targetBubble.style.borderRadius = '50px';
+                                targetBubble.style.color = '#4682b4';
                                 targetBubble.style.fontStyle = 'italic';
-                                targetBubble.style.color = '#003366';
-                                console.log('🔵 Applied THOUGHT style');
-                                break;
-                            case 'boom':
-                                targetBubble.style.background = '#ff3300';
-                                targetBubble.style.border = '5px solid #cc0000';
-                                targetBubble.style.borderRadius = '0px';
-                                targetBubble.style.color = 'white';
-                                targetBubble.style.textShadow = '2px 2px 4px black';
-                                targetBubble.style.transform = 'rotate(-2deg)';
-                                console.log('🔴 Applied BOOM style');
-                                break;
-                            case 'idea':
-                                targetBubble.style.background = '#ffff99';
-                                targetBubble.style.border = '4px solid #ffcc00';
-                                targetBubble.style.borderRadius = '15px';
-                                targetBubble.style.color = '#663300';
-                                targetBubble.style.boxShadow = '0 0 25px yellow';
-                                console.log('🟡 Applied IDEA style');
-                                break;
-                            case 'electric':
-                                targetBubble.style.background = '#ccffff';
-                                targetBubble.style.border = '4px solid #0099ff';
-                                targetBubble.style.borderRadius = '10px';
-                                targetBubble.style.color = '#0066cc';
-                                targetBubble.style.boxShadow = '0 0 20px cyan';
-                                console.log('🔵 Applied ELECTRIC style');
+                                targetBubble.style.boxShadow = '0 3px 10px rgba(135, 206, 235, 0.2)';
+                                console.log('☁️ Applied CLOUD style');
                                 break;
                             default: // normal
                                 targetBubble.style.background = 'linear-gradient(145deg, #ffffff, #f0f0f0)';
@@ -2236,7 +2207,9 @@ class EnhancedComicGenerator:
                                 targetBubble.style.borderRadius = '25px';
                                 targetBubble.style.color = '#000';
                                 targetBubble.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)';
-                                console.log('⚪ Applied NORMAL style');
+                                targetBubble.style.fontStyle = 'normal';
+                                targetBubble.style.transform = 'none';
+                                console.log('💬 Applied NORMAL style');
                         }
                         
                         // Force resize capability
@@ -2295,35 +2268,53 @@ class EnhancedComicGenerator:
             }
         }
         
-        function applyBubbleStyle(targetBubble, bubbleType, panelNumber, elementType) {
-            console.log(`Applying ${bubbleType} to ${elementType} #${panelNumber}`);
+        function activateStretchMode() {
+            // Ask which bubble to stretch
+            const panelNumber = prompt('🤏 STRETCH BUBBLE\\n\\nWhich panel bubble to stretch? (1-4)\\n\\n1. Top-left\\n2. Top-right\\n3. Bottom-left\\n4. Bottom-right');
             
-            // Remove all shape classes
-            const allShapes = ['normal', 'thought', 'boom', 'idea', 'electric'];
-            allShapes.forEach(shape => targetBubble.classList.remove(shape));
-            
-            if (bubbleType === 'empty') {
-                targetBubble.style.display = 'none';
-            } else {
-                targetBubble.style.display = 'flex';
-                targetBubble.classList.add(bubbleType);
-                
-                // Enable manual resizing
-                targetBubble.style.resize = 'both';
-                targetBubble.style.overflow = 'auto';
-                targetBubble.style.cursor = 'grab';
-                
-                // Visual feedback
-                targetBubble.style.border = '3px solid #4CAF50';
-                targetBubble.style.boxShadow = '0 0 10px rgba(76, 175, 80, 0.3)';
-                
-                setTimeout(() => {
-                    targetBubble.style.border = '';
-                    targetBubble.style.boxShadow = '';
-                }, 2000);
+            if (!panelNumber || panelNumber < 1 || panelNumber > 4) {
+                alert('❌ Invalid panel! Please enter 1-4.');
+                return;
             }
             
-            return { success: true, location: `${elementType} #${panelNumber}` };
+            // Find the bubble in that panel
+            const allBubbles = document.querySelectorAll('.speech-bubble');
+            console.log(`🎯 Found ${allBubbles.length} bubbles for stretching`);
+            
+            if (allBubbles.length >= panelNumber) {
+                const targetBubble = allBubbles[parseInt(panelNumber) - 1];
+                console.log(`🤏 Activating stretch for bubble #${panelNumber}`);
+                
+                // STRONG visual feedback for stretch mode
+                targetBubble.style.outline = '4px solid #FF5722 !important';
+                targetBubble.style.background = '#fff3e0 !important';
+                targetBubble.style.cursor = 'nw-resize !important';
+                targetBubble.style.resize = 'both !important';
+                targetBubble.style.overflow = 'auto !important';
+                
+                // Add instruction overlay
+                const instruction = document.createElement('div');
+                instruction.style.cssText = 'position: absolute; top: -35px; left: -5px; background: #FF5722; color: white; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; white-space: nowrap; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.3);';
+                instruction.textContent = '🤏 STRETCH MODE - Drag any corner!';
+                targetBubble.appendChild(instruction);
+                
+                // Show success alert
+                alert(`✅ STRETCH MODE ACTIVATED!\\n\\nBubble ${panelNumber} is now in stretch mode\\n\\n🤏 Drag any corner to resize in all directions\\n\\nClick here to confirm, then try stretching!`);
+                
+                // Remove stretch mode after 10 seconds
+                setTimeout(() => {
+                    targetBubble.style.outline = '';
+                    targetBubble.style.background = '';
+                    targetBubble.style.cursor = 'grab';
+                    if (instruction && instruction.parentNode) {
+                        instruction.remove();
+                    }
+                    console.log('🤏 Stretch mode auto-disabled');
+                }, 10000);
+                
+            } else {
+                alert(`❌ Could not find bubble in panel ${panelNumber}\\n\\nAvailable bubbles: ${allBubbles.length}`);
+            }
         }
     </script>
 </body>
