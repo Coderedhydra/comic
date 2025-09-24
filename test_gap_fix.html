@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gap Fix Test - 10px Exact</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f0f0f0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .info {
+            text-align: center;
+            margin: 20px;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 10px;
+            max-width: 800px;
+        }
+        
+        /* EXACT REPLICA OF FIXED CSS */
+        .wrapper {
+            display: flex;
+            height: 400px;
+            width: 600px;
+            background-color: rgb(255, 255, 255);
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            border: 2px solid #333;
+        }
+        
+        .grid-container {
+            width: 100% !important;
+            height: 100% !important;
+            display: grid !important;
+            grid-template-columns: 295px 295px !important;
+            grid-template-rows: 195px 195px !important;
+            border: 0 !important;
+            gap: 10px !important;
+            background: white !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            box-sizing: border-box !important;
+        }
+        
+        .grid-item {
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-size: cover;
+            border: 1px solid #ddd;
+            position: relative;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            width: 295px;
+            height: 195px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            background-color: #f8f9fa;
+        }
+        
+        /* Include bubble CSS */
+        .bubble {
+            width: 120px;
+            height: 60px;
+            background: white;
+            border: 2px solid #333;
+            border-radius: 15px;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            resize: both;
+            overflow: auto;
+            min-width: 60px;
+            min-height: 30px;
+            max-width: 200px;
+            max-height: 100px;
+            cursor: nw-resize;
+        }
+        
+        .bubble.normal {
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            border: 3px solid #333;
+            border-radius: 25px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .bubble.electric {
+            background: radial-gradient(circle, #e3f2fd, #bbdefb);
+            border: 3px solid #2196f3;
+            border-radius: 20px;
+            animation: electricSpark 1s ease-in-out infinite;
+            color: #0d47a1;
+            text-shadow: 0 0 5px rgba(33, 150, 243, 0.5);
+        }
+        
+        @keyframes electricSpark {
+            0%, 100% { 
+                box-shadow: 0 0 10px rgba(33, 150, 243, 0.3);
+                border-color: #2196f3;
+            }
+            50% { 
+                box-shadow: 0 0 20px rgba(33, 150, 243, 0.6);
+                border-color: #03a9f4;
+            }
+        }
+        
+        .bubble.fire {
+            background: radial-gradient(circle, #fff3e0, #ffcc02);
+            border: 3px solid #ff5722;
+            color: #bf360c;
+            font-weight: bold;
+            animation: fireFlicker 0.5s ease-in-out infinite alternate;
+        }
+        
+        @keyframes fireFlicker {
+            from { filter: hue-rotate(0deg) brightness(1); }
+            to { filter: hue-rotate(10deg) brightness(1.1); }
+        }
+        
+        .controls {
+            margin: 20px;
+            text-align: center;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        .measurement {
+            font-family: monospace;
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h2>🔧 Gap Fix Test - 600×400 with 10px Gaps</h2>
+        <p><strong>Test:</strong> Verify gaps between panels are exactly 10px</p>
+        <p><strong>Layout:</strong> 2×2 grid with 295×195px panels</p>
+        <p><strong>Bubbles:</strong> Resizable and with new visual effects</p>
+    </div>
+    
+    <div class="wrapper">
+        <div class="grid-container">
+            <div class="grid-item">
+                Panel 1<br>295×195
+                <div class="bubble normal">Normal!</div>
+            </div>
+            <div class="grid-item">
+                Panel 2<br>295×195
+                <div class="bubble electric">Electric!</div>
+            </div>
+            <div class="grid-item">
+                Panel 3<br>295×195
+                <div class="bubble fire">Fire!</div>
+            </div>
+            <div class="grid-item">
+                Panel 4<br>295×195
+                <div class="bubble normal">Resize me!</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button onclick="measureGaps()">📏 Measure Gaps</button>
+        <button onclick="testResize()">🔧 Test Resize</button>
+        <button onclick="showDimensions()">📊 Show Dimensions</button>
+    </div>
+    
+    <div id="results"></div>
+    
+    <script>
+        function measureGaps() {
+            const items = document.querySelectorAll('.grid-item');
+            const container = document.querySelector('.grid-container');
+            
+            if (items.length >= 2) {
+                const item1 = items[0].getBoundingClientRect();
+                const item2 = items[1].getBoundingClientRect();
+                const horizontalGap = item2.left - item1.right;
+                
+                const item3 = items[2].getBoundingClientRect();
+                const verticalGap = item3.top - item1.bottom;
+                
+                const containerRect = container.getBoundingClientRect();
+                
+                const results = document.getElementById('results');
+                results.innerHTML = `
+                    <div class="measurement">
+                        <strong>📏 Gap Measurements:</strong><br>
+                        Container: ${containerRect.width}×${containerRect.height}px<br>
+                        Horizontal gap: ${horizontalGap}px (should be 10px)<br>
+                        Vertical gap: ${verticalGap}px (should be 10px)<br>
+                        Panel 1: ${item1.width}×${item1.height}px<br>
+                        ${horizontalGap === 10 && verticalGap === 10 ? '✅ PERFECT GAPS!' : '❌ Gap issue detected'}
+                    </div>
+                `;
+                
+                alert(`Gap Test Results:\nHorizontal: ${horizontalGap}px\nVertical: ${verticalGap}px\nStatus: ${horizontalGap === 10 && verticalGap === 10 ? 'PERFECT ✅' : 'NEEDS FIX ❌'}`);
+            }
+        }
+        
+        function testResize() {
+            alert('💡 Bubble Resize Test:\n\n1. Hover over any bubble - cursor changes to resize\n2. Drag the resize handle (bottom-right corner)\n3. Bubbles can be resized from 60×30 to 200×100\n4. Try resizing the bubbles now!');
+        }
+        
+        function showDimensions() {
+            const wrapper = document.querySelector('.wrapper');
+            const container = document.querySelector('.grid-container');
+            const wrapperRect = wrapper.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            
+            const results = document.getElementById('results');
+            results.innerHTML = `
+                <div class="measurement">
+                    <strong>📊 Dimension Report:</strong><br>
+                    Wrapper: ${wrapperRect.width}×${wrapperRect.height}px<br>
+                    Grid Container: ${containerRect.width}×${containerRect.height}px<br>
+                    Expected: 600×400px<br>
+                    Status: ${wrapperRect.width === 600 && wrapperRect.height === 400 ? '✅ PERFECT!' : '❌ MISMATCH!'}
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

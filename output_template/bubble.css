@@ -8,12 +8,12 @@
 }
 
 .bubble{
-    width: 180px;  /* Reduced size for better fit */
-    height: 80px;  /* Reduced size for better fit */
+    width: 140px;  /* Optimized size for 295px panels */
+    height: 70px;  /* Optimized size for 195px panels */
     background-color: white;
     border: 2px solid black;
     font-family: 'adam_warren_proregular';
-    font-size: 0.9em;
+    font-size: 0.8em;
     display: flex;
     position: absolute; /* Ensure bubble does not affect grid item size */ 
     text-align: center;
@@ -21,11 +21,18 @@
     align-items: center;
     z-index: 2;
     box-sizing: border-box; /* Ensure padding is included in the bubble's total size */
-    padding: 8px;
+    padding: 6px;
     cursor: pointer;
-    transition: all 0.2s ease;
-    /* Default normal bubble shape */
+    transition: all 0.3s ease;
     border-radius: 20px;
+    /* Make bubbles resizable */
+    resize: both;
+    overflow: auto;
+    min-width: 80px;
+    max-width: 250px;
+    min-height: 40px;
+    max-height: 120px;
+    word-wrap: break-word;
 }
 
 /* 1. Normal speech bubble - Classic oval */
@@ -289,17 +296,129 @@
     justify-content: center;
 }
 
-/* Enhanced hover effects */
-.bubble:hover {
-    transform: scale(1.03);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-    transition: all 0.3s ease;
+/* 11. Electric bubble - Sparking energy */
+.bubble.electric {
+    background: radial-gradient(circle, #e3f2fd, #bbdefb);
+    border: 3px solid #2196f3;
+    border-radius: 20px;
+    position: relative;
+    animation: electricSpark 1s ease-in-out infinite;
+    color: #0d47a1;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(33, 150, 243, 0.5);
 }
 
-/* Hover effects */
+@keyframes electricSpark {
+    0%, 100% { 
+        box-shadow: 0 0 10px rgba(33, 150, 243, 0.3);
+        border-color: #2196f3;
+    }
+    50% { 
+        box-shadow: 0 0 20px rgba(33, 150, 243, 0.6);
+        border-color: #03a9f4;
+    }
+}
+
+/* 12. Love bubble - Heart shaped */
+.bubble.love {
+    background: radial-gradient(circle, #fce4ec, #f8bbd9);
+    border: 3px solid #e91e63;
+    position: relative;
+    color: #880e4f;
+    font-weight: bold;
+    clip-path: polygon(
+        50% 15%, 60% 5%, 70% 15%, 80% 5%, 90% 15%, 
+        95% 25%, 90% 35%, 80% 45%, 70% 55%, 60% 65%, 
+        50% 75%, 40% 65%, 30% 55%, 20% 45%, 10% 35%, 
+        5% 25%, 10% 15%, 20% 5%, 30% 15%, 40% 5%
+    );
+}
+
+/* 13. Crystal bubble - Geometric prismatic */
+.bubble.crystal {
+    background: linear-gradient(135deg, #e8eaf6, #c5cae9);
+    border: 2px solid #3f51b5;
+    position: relative;
+    clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+    color: #1a237e;
+    font-weight: bold;
+    animation: crystalShine 2s ease-in-out infinite;
+}
+
+@keyframes crystalShine {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.2); }
+}
+
+/* 14. Fire bubble - Flame effect */
+.bubble.fire {
+    background: radial-gradient(circle, #fff3e0, #ffcc02);
+    border: 3px solid #ff5722;
+    position: relative;
+    color: #bf360c;
+    font-weight: bold;
+    animation: fireFlicker 0.5s ease-in-out infinite alternate;
+    clip-path: polygon(
+        30% 0%, 40% 20%, 50% 0%, 60% 20%, 70% 0%, 
+        80% 30%, 90% 50%, 80% 70%, 90% 100%, 70% 90%, 
+        60% 100%, 50% 80%, 40% 100%, 30% 90%, 10% 100%, 
+        20% 70%, 10% 50%, 20% 30%
+    );
+}
+
+@keyframes fireFlicker {
+    from { filter: hue-rotate(0deg) brightness(1); }
+    to { filter: hue-rotate(10deg) brightness(1.1); }
+}
+
+/* Enhanced hover effects with resize capability */
 .bubble:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transform: scale(1.02);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    transition: all 0.3s ease;
+    cursor: nw-resize; /* Show resize cursor */
+}
+
+/* Resize handle styling */
+.bubble::-webkit-resizer {
+    background: #333;
+    border-radius: 3px;
+    opacity: 0.7;
+}
+
+.bubble:hover::-webkit-resizer {
+    opacity: 1;
+}
+
+/* Active bubble styling */
+.bubble:focus {
+    outline: 3px solid #4CAF50;
+    outline-offset: 2px;
+}
+
+/* Size adjustment classes for quick sizing */
+.bubble.small {
+    width: 100px !important;
+    height: 50px !important;
+    font-size: 0.7em !important;
+}
+
+.bubble.medium {
+    width: 140px !important;
+    height: 70px !important;
+    font-size: 0.8em !important;
+}
+
+.bubble.large {
+    width: 200px !important;
+    height: 100px !important;
+    font-size: 1em !important;
+}
+
+.bubble.xlarge {
+    width: 250px !important;
+    height: 120px !important;
+    font-size: 1.1em !important;
 }
 
 .tail{
