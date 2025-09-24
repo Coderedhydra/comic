@@ -1057,10 +1057,7 @@ class EnhancedComicGenerator:
             overflow: hidden;
         }
         .comic-grid { 
-            display: grid !important; 
-            grid-template-columns: 295px 295px !important; 
-            grid-template-rows: 195px 195px !important; 
-            gap: 0px !important; /* 0% gaps as requested */
+            display: block !important; /* Use block instead of grid */
             width: 600px !important;
             height: 400px !important;
             margin: 0 !important;
@@ -1068,14 +1065,48 @@ class EnhancedComicGenerator:
             position: absolute !important;
             top: 0 !important;
             left: 0 !important;
-            background: white !important; /* White strip background */
+            background: white !important; /* White background for strips */
             box-sizing: border-box !important;
         }
         
-        /* Create 10px white strips with margins */
-        .panel:nth-child(2) { margin-left: 10px !important; }
-        .panel:nth-child(3) { margin-top: 10px !important; }
-        .panel:nth-child(4) { margin-left: 10px !important; margin-top: 10px !important; }
+        /* ABSOLUTE POSITIONING FOR PERFECT 0% GAPS + 10PX STRIPS */
+        .panel {
+            position: absolute !important;
+            width: 295px !important;
+            height: 195px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
+        }
+        
+        .panel:nth-child(1) {
+            /* Top-left: 0,0 */
+            top: 0px !important;
+            left: 0px !important;
+            background: #ffe0e0 !important; /* Light red for visibility */
+        }
+        
+        .panel:nth-child(2) {
+            /* Top-right: 305,0 (295 + 10px strip) */
+            top: 0px !important;
+            left: 305px !important;
+            background: #e0ffe0 !important; /* Light green for visibility */
+        }
+        
+        .panel:nth-child(3) {
+            /* Bottom-left: 0,205 (195 + 10px strip) */
+            top: 205px !important;
+            left: 0px !important;
+            background: #e0e0ff !important; /* Light blue for visibility */
+        }
+        
+        .panel:nth-child(4) {
+            /* Bottom-right: 305,205 */
+            top: 205px !important;
+            left: 305px !important;
+            background: #ffe0ff !important; /* Light purple for visibility */
+        }
         .page-wrapper {
             margin: 30px auto;
             width: 600px;
@@ -1211,42 +1242,46 @@ class EnhancedComicGenerator:
             box-shadow: 0 6px 16px rgba(0,0,0,0.1);
         }
         
-        /* Beautiful bubble styles embedded */
-        .speech-bubble.thought {
-            background-color: #f8f9fa !important;
-            border: 2px solid #6c757d !important;
-            border-radius: 30px !important;
+        /* FORCE BUBBLE STYLES - EXTREMELY AGGRESSIVE */
+        .speech-bubble.thought,
+        .bubble.thought {
+            background: #e0f7ff !important;
+            border: 4px solid #0066cc !important;
+            border-radius: 50% !important;
             font-style: italic !important;
-            color: #495057 !important;
+            color: #003366 !important;
+            font-size: 11px !important;
         }
         
-        .speech-bubble.boom {
-            background: radial-gradient(circle, #ff6600, #cc4400) !important;
-            border: 4px solid #992200 !important;
-            border-radius: 50% !important;
+        .speech-bubble.boom,
+        .bubble.boom {
+            background: #ff3300 !important;
+            border: 5px solid #cc0000 !important;
+            border-radius: 0px !important;
             color: white !important;
             font-weight: bold !important;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.7) !important;
-            animation: boomPulse 0.8s ease-in-out infinite alternate !important;
+            text-shadow: 2px 2px 4px black !important;
+            transform: rotate(-2deg) !important;
         }
         
-        .speech-bubble.idea {
-            background: radial-gradient(circle, #fff9c4, #fff3cd) !important;
-            border: 3px solid #ffc107 !important;
-            border-radius: 20px !important;
-            color: #856404 !important;
+        .speech-bubble.idea,
+        .bubble.idea {
+            background: #ffff99 !important;
+            border: 4px solid #ffcc00 !important;
+            border-radius: 15px !important;
+            color: #663300 !important;
             font-weight: bold !important;
-            box-shadow: 0 0 20px rgba(255, 193, 7, 0.4) !important;
+            box-shadow: 0 0 25px yellow !important;
         }
         
-        .speech-bubble.electric {
-            background: radial-gradient(circle, #e3f2fd, #bbdefb) !important;
-            border: 3px solid #2196f3 !important;
-            border-radius: 20px !important;
-            color: #0d47a1 !important;
+        .speech-bubble.electric,
+        .bubble.electric {
+            background: #ccffff !important;
+            border: 4px solid #0099ff !important;
+            border-radius: 10px !important;
+            color: #0066cc !important;
             font-weight: bold !important;
-            text-shadow: 0 0 8px rgba(33, 150, 243, 0.8) !important;
-            box-shadow: 0 0 15px rgba(33, 150, 243, 0.4) !important;
+            box-shadow: 0 0 20px cyan !important;
         }
         
         @keyframes boomPulse {
@@ -1260,12 +1295,32 @@ class EnhancedComicGenerator:
             box-shadow: 0 0 15px rgba(76, 175, 80, 0.6) !important;
         }
         
+        /* Enhanced resizing for all directions */
+        .speech-bubble {
+            resize: both !important;
+            overflow: auto !important;
+        }
+        
         .speech-bubble::-webkit-resizer {
-            background: #4CAF50 !important;
+            background: linear-gradient(135deg, #4CAF50, #45a049) !important;
+            border: 2px solid white !important;
             border-radius: 50% !important;
-            width: 15px !important;
-            height: 15px !important;
+            width: 18px !important;
+            height: 18px !important;
             opacity: 1 !important;
+            cursor: nw-resize !important;
+        }
+        
+        .speech-bubble:hover::-webkit-resizer {
+            background: linear-gradient(135deg, #66BB6A, #4CAF50) !important;
+            width: 20px !important;
+            height: 20px !important;
+            animation: resizeBounce 0.5s ease !important;
+        }
+        
+        @keyframes resizeBounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
         }
         .speech-bubble.editing { 
             cursor: text; 
@@ -2121,28 +2176,80 @@ class EnhancedComicGenerator:
                 
                 if (allBubbles.length >= globalPanelNumber) {
                     const targetBubble = allBubbles[globalPanelNumber - 1];
-                    console.log(`Targeting bubble #${globalPanelNumber}:`, targetBubble);
+                    console.log(`🎯 Targeting bubble #${globalPanelNumber}:`, targetBubble);
+                    console.log(`📋 Current classes:`, targetBubble.className);
                     
-                    // Remove all shape classes (5 types only)
-                    const allShapes = ['normal', 'thought', 'boom', 'idea', 'electric'];
-                    allShapes.forEach(shape => targetBubble.classList.remove(shape));
+                    // Remove ALL possible shape classes
+                    const allShapes = ['normal', 'thought', 'boom', 'idea', 'electric', 'jagged', 'square', 'whisper', 'scream', 'dream', 'radio', 'love', 'crystal', 'fire'];
+                    allShapes.forEach(shape => {
+                        targetBubble.classList.remove(shape);
+                        console.log(`Removed class: ${shape}`);
+                    });
                     
                     if (bubbleType === 'empty') {
                         targetBubble.style.display = 'none';
+                        console.log('❌ Hidden bubble');
                     } else {
                         targetBubble.style.display = 'flex';
                         targetBubble.classList.add(bubbleType);
+                        console.log(`✅ Added class: ${bubbleType}`);
+                        console.log(`📋 New classes:`, targetBubble.className);
                         
-                        // Force visual change
+                        // FORCE VISUAL STYLES DIRECTLY
+                        switch(bubbleType) {
+                            case 'thought':
+                                targetBubble.style.background = '#e0f7ff';
+                                targetBubble.style.border = '4px solid #0066cc';
+                                targetBubble.style.borderRadius = '50%';
+                                targetBubble.style.fontStyle = 'italic';
+                                targetBubble.style.color = '#003366';
+                                console.log('🔵 Applied THOUGHT style');
+                                break;
+                            case 'boom':
+                                targetBubble.style.background = '#ff3300';
+                                targetBubble.style.border = '5px solid #cc0000';
+                                targetBubble.style.borderRadius = '0px';
+                                targetBubble.style.color = 'white';
+                                targetBubble.style.textShadow = '2px 2px 4px black';
+                                targetBubble.style.transform = 'rotate(-2deg)';
+                                console.log('🔴 Applied BOOM style');
+                                break;
+                            case 'idea':
+                                targetBubble.style.background = '#ffff99';
+                                targetBubble.style.border = '4px solid #ffcc00';
+                                targetBubble.style.borderRadius = '15px';
+                                targetBubble.style.color = '#663300';
+                                targetBubble.style.boxShadow = '0 0 25px yellow';
+                                console.log('🟡 Applied IDEA style');
+                                break;
+                            case 'electric':
+                                targetBubble.style.background = '#ccffff';
+                                targetBubble.style.border = '4px solid #0099ff';
+                                targetBubble.style.borderRadius = '10px';
+                                targetBubble.style.color = '#0066cc';
+                                targetBubble.style.boxShadow = '0 0 20px cyan';
+                                console.log('🔵 Applied ELECTRIC style');
+                                break;
+                            default: // normal
+                                targetBubble.style.background = 'linear-gradient(145deg, #ffffff, #f0f0f0)';
+                                targetBubble.style.border = '3px solid #333';
+                                targetBubble.style.borderRadius = '25px';
+                                targetBubble.style.color = '#000';
+                                targetBubble.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)';
+                                console.log('⚪ Applied NORMAL style');
+                        }
+                        
+                        // Force resize capability
                         targetBubble.style.resize = 'both';
                         targetBubble.style.overflow = 'auto';
                         targetBubble.style.cursor = 'grab';
                         
-                        // Visual feedback
-                        targetBubble.style.border = '3px solid #4CAF50';
+                        // Temporary visual feedback
+                        const originalOutline = targetBubble.style.outline;
+                        targetBubble.style.outline = '3px solid #00ff00';
                         setTimeout(() => {
-                            targetBubble.style.border = '';
-                        }, 2000);
+                            targetBubble.style.outline = originalOutline;
+                        }, 3000);
                     }
                     
                     return { success: true, location: `Bubble #${globalPanelNumber}` };
