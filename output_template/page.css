@@ -32,11 +32,12 @@ body {
     width: 100%;
     height: 100%;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    grid-auto-rows: calc(1100px / 3); /* ensure three exact rows */
+    grid-template-columns: repeat(2, 1fr); /* 2x2 grid for 600x400 */
+    grid-template-rows: repeat(2, 1fr);
     border: 0; /* default no outer border; modes override */
-    row-gap: 0;
-    column-gap: 0;
+    gap: 2px; /* Very thin comic-style gap */
+    background: white; /* White divider between panels */
+    padding: 1px; /* Tiny padding for outer edge */
 }
 
 .grid-item {

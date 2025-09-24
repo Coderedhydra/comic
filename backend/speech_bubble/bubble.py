@@ -89,16 +89,32 @@ def bubble_create(video, crop_coords, black_x, black_y):
         data=f.read()
     subs=list(srt.parse(data))
 
-    # Load frame map to locate actual frame path for each subtitle
-    frame_map_path = os.path.join("frames", "final", "frame_map.json")
-    frame_sub_indices = []
-    if os.path.exists(frame_map_path):
+    # Load enhanced frame-dialogue mapping for better synchronization
+    dialogue_map_path = os.path.join("frames", "final", "frame_dialogue_map.json")
+    frame_dialogue_map = {}
+    if os.path.exists(dialogue_map_path):
         try:
-            with open(frame_map_path, "r") as mf:
-                frame_map = json.load(mf)
-                frame_sub_indices = frame_map.get("frame_sub_indices", [])
-        except Exception:
-            frame_sub_indices = []
+            with open(dialogue_map_path, "r") as mf:
+                mapping_data = json.load(mf)
+                # Create lookup dict: subtitle_index -> best_frame_info
+                for mapping in mapping_data.get("mappings", []):
+                    sub_idx = mapping["subtitle_index"]
+                    frame_dialogue_map[sub_idx] = mapping
+                print(f"📍 Loaded enhanced frame-dialogue mapping for {len(frame_dialogue_map)} subtitles")
+        except Exception as e:
+            print(f"⚠️  Could not load frame-dialogue mapping: {e}")
+    
+    # Fallback to old frame map if enhanced mapping not available
+    frame_sub_indices = []
+    if not frame_dialogue_map:
+        frame_map_path = os.path.join("frames", "final", "frame_map.json")
+        if os.path.exists(frame_map_path):
+            try:
+                with open(frame_map_path, "r") as mf:
+                    frame_map = json.load(mf)
+                    frame_sub_indices = frame_map.get("frame_sub_indices", [])
+            except Exception:
+                frame_sub_indices = []
 
 
     # Reading CAM data from dump (only for legacy mode)
@@ -137,27 +153,42 @@ def bubble_create(video, crop_coords, black_x, black_y):
             # Use smart image analysis for bubble placement
             try:
                 from backend.speech_bubble.smart_bubble_placement import get_smart_bubble_position
-                # Find actual frame file path via mapping if available
-                candidate_indices = []
-                if frame_sub_indices:
-                    candidate_indices = [i+1 for i, si in enumerate(frame_sub_indices) if si == sub.index]
-                if not candidate_indices:
-                    candidate_indices = [sub.index]
+                
+                # Use enhanced frame-dialogue mapping for better accuracy
                 frame_path = None
-                for idx in candidate_indices:
-                    p = f"frames/final/frame{idx:03}.png"
-                    if os.path.exists(p):
-                        frame_path = p
-                        break
-                if frame_path is None:
+                if frame_dialogue_map and sub.index in frame_dialogue_map:
+                    mapping_info = frame_dialogue_map[sub.index]
+                    frame_file = mapping_info["best_frame_file"]
+                    frame_path = f"frames/final/{frame_file}"
+                    if not os.path.exists(frame_path):
+                        # Try frame index from mapping
+                        frame_idx = mapping_info["best_frame_index"]
+                        frame_path = f"frames/final/frame{frame_idx:03}.png"
+                    print(f"📍 Using enhanced mapping for sub {sub.index}: {frame_file}")
+                
+                # Fallback to old frame mapping method
+                if not frame_path or not os.path.exists(frame_path):
+                    candidate_indices = []
+                    if frame_sub_indices:
+                        candidate_indices = [i+1 for i, si in enumerate(frame_sub_indices) if si == sub.index]
+                    if not candidate_indices:
+                        candidate_indices = [sub.index]
+                    
+                    for idx in candidate_indices:
+                        p = f"frames/final/frame{idx:03}.png"
+                        if os.path.exists(p):
+                            frame_path = p
+                            break
+                
+                if frame_path is None or not os.path.exists(frame_path):
                     # As a last resort, skip bubble by placing offscreen-safe default inside panel
                     left, right, top, bottom = crop_coords[sub.index-1]
                     bubble_x = max(0, (right - left) - 200)
                     bubble_y = max(0, top)
-                    print(f"Skipping smart placement for sub {sub.index}: no frame found")
+                    print(f"⚠️  No frame found for sub {sub.index}, using default position")
                 else:
                     bubble_x, bubble_y = get_smart_bubble_position(frame_path, crop_coords[sub.index-1], (lip_x, lip_y))
-                print(f"Smart placement: ({bubble_x:.0f}, {bubble_y:.0f})")
+                    print(f"✅ Smart placement for sub {sub.index}: ({bubble_x:.0f}, {bubble_y:.0f})")
             except Exception as e:
                 print(f"Smart placement failed: {e}, using fallback")
                 # Fallback to simple upper positioning

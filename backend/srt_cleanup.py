@@ -44,14 +44,28 @@ def delete_srt_files(directory="."):
                 print(f"❌ {error_msg}")
                 errors.append(error_msg)
     
-    # Also check for specific common SRT file names
+    # Also check for specific common SRT file names and cache files
     common_srt_files = [
         "test1.srt",
         "subtitles.srt", 
         "output.srt",
         "transcription.srt",
-        "video_subs.srt"
+        "video_subs.srt",
+        "test.srt",
+        "captions.srt",
+        "subs.srt"
     ]
+    
+    # Clean cache directories too
+    cache_dirs = ["__pycache__", ".cache", "tmp"]
+    for cache_dir in cache_dirs:
+        if os.path.exists(cache_dir):
+            try:
+                import shutil
+                shutil.rmtree(cache_dir)
+                print(f"🗑️  Cleaned cache directory: {cache_dir}")
+            except Exception as e:
+                print(f"⚠️  Could not clean {cache_dir}: {e}")
     
     for srt_name in common_srt_files:
         srt_path = os.path.join(directory, srt_name)

@@ -152,6 +152,83 @@
             font-weight: bold;
             text-align: center;
         }
+        
+        /* Panel Controls Styles */
+        .panel-controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.95);
+            color: black;
+            padding: 12px;
+            border-radius: 10px;
+            border: 2px solid #2196F3;
+            z-index: 1002;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            max-width: 320px;
+        }
+        
+        .panel-controls h4 {
+            margin: 0 0 8px 0;
+            color: #2196F3;
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        .panel-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .panel-control {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 6px;
+            text-align: center;
+        }
+        
+        .panel-control span {
+            display: block;
+            font-size: 10px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: #333;
+        }
+        
+        .bubble-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+        }
+        
+        .bubble-btn {
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            padding: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+            width: 25px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .bubble-btn:hover {
+            background: #e3f2fd;
+            border-color: #2196F3;
+            transform: scale(1.1);
+        }
+        
+        .bubble-btn.active {
+            background: #2196F3;
+            color: white;
+            border-color: #1976D2;
+        }
     </style>
 
     <script src="page.js"></script>
@@ -190,8 +267,59 @@
         <p>• <strong>Click</strong> bubble to select</p>
         <p>• <strong>Double-click</strong> to edit text</p>
         <p>• <strong>Drag</strong> to reposition</p>
-        <button class="save-btn" onclick="saveComic()">💾 Save Changes</button>
+        <button class="save-btn" onclick="saveComic()">💾 Save</button>
         <button class="reset-btn" onclick="resetComic()">↩️ Reset</button>
+    </div>
+
+    <!-- Panel Bubble Controls -->
+    <div class="panel-controls">
+        <h4>🎯 Panel Bubbles</h4>
+        <div class="panel-grid">
+            <div class="panel-control" data-panel="1">
+                <span>Panel 1</span>
+                <div class="bubble-buttons">
+                    <button class="bubble-btn" data-shape="normal" onclick="changePanelBubble(1, 'normal')">💬</button>
+                    <button class="bubble-btn" data-shape="jagged" onclick="changePanelBubble(1, 'jagged')">⚡</button>
+                    <button class="bubble-btn" data-shape="thought" onclick="changePanelBubble(1, 'thought')">💭</button>
+                    <button class="bubble-btn" data-shape="idea" onclick="changePanelBubble(1, 'idea')">💡</button>
+                    <button class="bubble-btn" data-shape="boom" onclick="changePanelBubble(1, 'boom')">💥</button>
+                    <button class="bubble-btn" data-shape="square" onclick="changePanelBubble(1, 'square')">📝</button>
+                </div>
+            </div>
+            <div class="panel-control" data-panel="2">
+                <span>Panel 2</span>
+                <div class="bubble-buttons">
+                    <button class="bubble-btn" data-shape="normal" onclick="changePanelBubble(2, 'normal')">💬</button>
+                    <button class="bubble-btn" data-shape="jagged" onclick="changePanelBubble(2, 'jagged')">⚡</button>
+                    <button class="bubble-btn" data-shape="thought" onclick="changePanelBubble(2, 'thought')">💭</button>
+                    <button class="bubble-btn" data-shape="idea" onclick="changePanelBubble(2, 'idea')">💡</button>
+                    <button class="bubble-btn" data-shape="boom" onclick="changePanelBubble(2, 'boom')">💥</button>
+                    <button class="bubble-btn" data-shape="square" onclick="changePanelBubble(2, 'square')">📝</button>
+                </div>
+            </div>
+            <div class="panel-control" data-panel="3">
+                <span>Panel 3</span>
+                <div class="bubble-buttons">
+                    <button class="bubble-btn" data-shape="normal" onclick="changePanelBubble(3, 'normal')">💬</button>
+                    <button class="bubble-btn" data-shape="jagged" onclick="changePanelBubble(3, 'jagged')">⚡</button>
+                    <button class="bubble-btn" data-shape="thought" onclick="changePanelBubble(3, 'thought')">💭</button>
+                    <button class="bubble-btn" data-shape="idea" onclick="changePanelBubble(3, 'idea')">💡</button>
+                    <button class="bubble-btn" data-shape="boom" onclick="changePanelBubble(3, 'boom')">💥</button>
+                    <button class="bubble-btn" data-shape="square" onclick="changePanelBubble(3, 'square')">📝</button>
+                </div>
+            </div>
+            <div class="panel-control" data-panel="4">
+                <span>Panel 4</span>
+                <div class="bubble-buttons">
+                    <button class="bubble-btn" data-shape="normal" onclick="changePanelBubble(4, 'normal')">💬</button>
+                    <button class="bubble-btn" data-shape="jagged" onclick="changePanelBubble(4, 'jagged')">⚡</button>
+                    <button class="bubble-btn" data-shape="thought" onclick="changePanelBubble(4, 'thought')">💭</button>
+                    <button class="bubble-btn" data-shape="idea" onclick="changePanelBubble(4, 'idea')">💡</button>
+                    <button class="bubble-btn" data-shape="boom" onclick="changePanelBubble(4, 'boom')">💥</button>
+                    <button class="bubble-btn" data-shape="square" onclick="changePanelBubble(4, 'square')">📝</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Bubble Shape Selector -->
@@ -280,6 +408,11 @@
             
             // Load saved state if exists
             loadSavedState();
+            
+            // Initialize panel button states
+            setTimeout(() => {
+                initializePanelButtonStates();
+            }, 100);
         }
         
         function selectBubble(bubble) {
@@ -521,6 +654,68 @@
                 localStorage.removeItem('comicBubbles');
                 location.reload();
             }
+        }
+        
+        function changePanelBubble(panelNum, shape) {
+            // Find bubble in the specified panel (grid item)
+            const gridItems = document.querySelectorAll('.grid-item');
+            const targetPanel = gridItems[panelNum - 1]; // Convert to 0-based index
+            
+            if (targetPanel) {
+                const bubble = targetPanel.querySelector('.bubble');
+                if (bubble) {
+                    // Remove all shape classes
+                    const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+                    shapes.forEach(s => bubble.classList.remove(s));
+                    
+                    // Add new shape
+                    bubble.classList.add(shape);
+                    
+                    // Update button states
+                    updatePanelButtonStates(panelNum, shape);
+                    
+                    // Save state
+                    saveState();
+                    
+                    console.log(`Changed Panel ${panelNum} bubble to: ${shape}`);
+                } else {
+                    console.log(`No bubble found in Panel ${panelNum}`);
+                }
+            }
+        }
+        
+        function updatePanelButtonStates(panelNum, activeShape) {
+            // Clear all active states for this panel
+            const panelControl = document.querySelector(`[data-panel="${panelNum}"]`);
+            if (panelControl) {
+                const buttons = panelControl.querySelectorAll('.bubble-btn');
+                buttons.forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.shape === activeShape) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
+        }
+        
+        function initializePanelButtonStates() {
+            // Set initial button states based on current bubbles
+            const gridItems = document.querySelectorAll('.grid-item');
+            gridItems.forEach((panel, index) => {
+                const bubble = panel.querySelector('.bubble');
+                if (bubble) {
+                    // Find current shape
+                    const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+                    let currentShape = 'normal';
+                    for (let shape of shapes) {
+                        if (bubble.classList.contains(shape)) {
+                            currentShape = shape;
+                            break;
+                        }
+                    }
+                    updatePanelButtonStates(index + 1, currentShape);
+                }
+            });
         }
     </script>
 </body>

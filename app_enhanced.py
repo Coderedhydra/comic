@@ -101,6 +101,42 @@ class EnhancedComicGenerator:
         except Exception as e:
             print(f"   ⚠️  Cleanup warning: {e}")
             # Don't fail the entire process for cleanup issues
+    
+    def _create_frame_dialogue_sync(self):
+        """Create frame-dialogue synchronization mapping"""
+        try:
+            from backend.frame_dialogue_sync import enhance_bubble_sync
+            import srt
+            
+            # Load subtitles
+            if not os.path.exists('test1.srt'):
+                print("   ⚠️  No subtitles found for synchronization")
+                return
+                
+            with open('test1.srt', 'r') as f:
+                subtitles = list(srt.parse(f.read()))
+            
+            # Get frame files
+            frames_dir = os.path.join(self.frames_dir)
+            if not os.path.exists(frames_dir):
+                print("   ⚠️  No frames directory found for synchronization")
+                return
+                
+            frame_files = [f for f in os.listdir(frames_dir) if f.endswith('.png')]
+            frame_files.sort()
+            
+            if not frame_files:
+                print("   ⚠️  No frame files found for synchronization")
+                return
+            
+            # Create synchronization mapping
+            mapping = enhance_bubble_sync(self.video_path, frame_files, subtitles)
+            
+            print(f"   ✅ Synchronized {len(subtitles)} dialogues with {len(frame_files)} frames")
+            
+        except Exception as e:
+            print(f"   ⚠️  Frame-dialogue sync warning: {e}")
+            # Don't fail the entire process for sync issues
         
         # Check for GPU
         try:
@@ -134,6 +170,10 @@ class EnhancedComicGenerator:
             # 1. Extract real subtitles from video audio
             print("📝 Extracting real subtitles from video...")
             get_real_subtitles(self.video_path)
+            
+            # 1.5. Create frame-dialogue synchronization mapping
+            print("🔗 Creating frame-dialogue synchronization...")
+            self._create_frame_dialogue_sync()
             
             # 2. Extract FULL story (don't skip important parts)
             print("📖 Extracting complete story...")
@@ -988,9 +1028,9 @@ class EnhancedComicGenerator:
         }
         .comic-grid { 
             display: grid; 
-            grid-template-columns: 300px 300px; 
-            grid-template-rows: 200px 200px; 
-            gap: 0; /* No gap between panels */
+            grid-template-columns: 299px 299px; 
+            grid-template-rows: 199px 199px; 
+            gap: 2px; /* Very thin white comic-style divider */
             width: 600px;
             height: 400px;
             margin: 0;
@@ -998,6 +1038,7 @@ class EnhancedComicGenerator:
             position: absolute;
             top: 0;
             left: 0;
+            background: white; /* White divider color */
         }
         .page-wrapper {
             margin: 30px auto;
@@ -1183,24 +1224,28 @@ class EnhancedComicGenerator:
         <p>• <strong>Drag</strong> speech bubbles to move</p>
         <p>• <strong>Double-click</strong> to edit text</p>
         <p>• Changes auto-save locally</p>
-        <button onclick="saveEditableHTML()" style="margin-top: 10px; padding: 8px 15px; background: #FF9800; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
-            💾 Save Editable Comic
+        <div style="display: flex; gap: 5px; margin-top: 10px;">
+            <button onclick="saveEditableHTML()" style="padding: 6px 10px; background: #FF9800; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; flex: 1; font-size: 11px;">
+                💾 Save
+            </button>
+            <button onclick="exportToPDF()" style="padding: 6px 10px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; flex: 1; font-size: 11px;">
+                📄 PDF
+            </button>
+            <button onclick="printComic()" style="padding: 6px 10px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; flex: 1; font-size: 11px;">
+                🖨️ Print
+            </button>
+        </div>
+        <div style="display: flex; gap: 5px; margin-top: 5px;">
+            <button onclick="viewPageImages()" style="padding: 6px 10px; background: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; flex: 1; font-size: 11px;">
+                🖼️ Pages
+            </button>
+            <button onclick="toggleUnityMode()" style="padding: 6px 10px; background: #FF5722; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; flex: 1; font-size: 11px;">
+                🎮 Unity
+            </button>
+        </div>
+        <button onclick="checkDimensions()" style="margin-top: 5px; padding: 6px 10px; background: #607D8B; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 11px;">
+            📏 Check Dimensions
         </button>
-        <button onclick="exportToPDF()" style="margin-top: 5px; padding: 4px 8px; background: #4CAF50; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; width: 60%; font-size: 12px;">
-            📄 Export to PDF
-        </button>
-                   <button onclick="printComic()" style="margin-top: 5px; padding: 4px 8px; background: #2196F3; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; width: 60%; font-size: 12px;">
-               🖨️ Print Comic
-           </button>
-           <button onclick="viewPageImages()" style="margin-top: 5px; padding: 4px 8px; background: #9C27B0; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; width: 60%; font-size: 12px;">
-               🖼️ View Page Images
-           </button>
-           <button onclick="toggleUnityMode()" style="margin-top: 5px; padding: 8px 15px; background: #FF5722; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
-               🎮 Unity Mode (No Borders)
-           </button>
-           <button onclick="checkDimensions()" style="margin-top: 5px; padding: 8px 15px; background: #607D8B; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
-               📏 Check Dimensions
-           </button>
     </div>
     <script>
         // Load comic data
@@ -1586,10 +1631,11 @@ class EnhancedComicGenerator:
                         height: 400px !important;
                         margin: 0 !important;
                         padding: 0 !important;
-                        gap: 0 !important; /* No gap for exact panel sizing */
+                        gap: 2px !important; /* Thin white divider */
                         display: grid !important;
-                        grid-template-columns: 300px 300px !important;
-                        grid-template-rows: 200px 200px !important;
+                        grid-template-columns: 299px 299px !important;
+                        grid-template-rows: 199px 199px !important;
+                        background: white !important; /* White divider color */
                     }
                     
                     /* Show page info in print */
