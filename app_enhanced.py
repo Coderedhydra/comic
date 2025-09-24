@@ -1060,7 +1060,7 @@ class EnhancedComicGenerator:
             display: grid !important; 
             grid-template-columns: 295px 295px !important; 
             grid-template-rows: 195px 195px !important; 
-            gap: 10px !important; /* 10px gap everywhere */
+            gap: 0px !important; /* 0% gaps as requested */
             width: 600px !important;
             height: 400px !important;
             margin: 0 !important;
@@ -1068,9 +1068,14 @@ class EnhancedComicGenerator:
             position: absolute !important;
             top: 0 !important;
             left: 0 !important;
-            background: white !important; /* White divider color */
+            background: white !important; /* White strip background */
             box-sizing: border-box !important;
         }
+        
+        /* Create 10px white strips with margins */
+        .panel:nth-child(2) { margin-left: 10px !important; }
+        .panel:nth-child(3) { margin-top: 10px !important; }
+        .panel:nth-child(4) { margin-left: 10px !important; margin-top: 10px !important; }
         .page-wrapper {
             margin: 30px auto;
             width: 600px;
@@ -1180,23 +1185,87 @@ class EnhancedComicGenerator:
         }
         .speech-bubble { 
             position: absolute; 
-            background: white; 
-            border: 3px solid #333; 
-            border-radius: 15px; 
-            padding: 12px; 
-            max-width: 200px; 
-            font-size: 14px; 
-            font-weight: bold;
-            box-shadow: 3px 3px 8px rgba(0,0,0,0.4);
-            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             text-align: center;
-            color: #333;
-            cursor: move;
-            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+            font-size: 12px;
+            color: #000;
+            cursor: grab;
+            z-index: 10;
+            padding: 8px;
+            resize: both;
+            overflow: auto;
+            min-width: 80px;
+            min-height: 40px;
+            max-width: 250px;
+            max-height: 120px;
+            word-wrap: break-word;
+            line-height: 1.3;
+            transition: all 0.3s ease;
+            /* Default to normal style */
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            border: 3px solid #333;
+            border-radius: 25px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.1);
         }
+        
+        /* Beautiful bubble styles embedded */
+        .speech-bubble.thought {
+            background-color: #f8f9fa !important;
+            border: 2px solid #6c757d !important;
+            border-radius: 30px !important;
+            font-style: italic !important;
+            color: #495057 !important;
+        }
+        
+        .speech-bubble.boom {
+            background: radial-gradient(circle, #ff6600, #cc4400) !important;
+            border: 4px solid #992200 !important;
+            border-radius: 50% !important;
+            color: white !important;
+            font-weight: bold !important;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7) !important;
+            animation: boomPulse 0.8s ease-in-out infinite alternate !important;
+        }
+        
+        .speech-bubble.idea {
+            background: radial-gradient(circle, #fff9c4, #fff3cd) !important;
+            border: 3px solid #ffc107 !important;
+            border-radius: 20px !important;
+            color: #856404 !important;
+            font-weight: bold !important;
+            box-shadow: 0 0 20px rgba(255, 193, 7, 0.4) !important;
+        }
+        
+        .speech-bubble.electric {
+            background: radial-gradient(circle, #e3f2fd, #bbdefb) !important;
+            border: 3px solid #2196f3 !important;
+            border-radius: 20px !important;
+            color: #0d47a1 !important;
+            font-weight: bold !important;
+            text-shadow: 0 0 8px rgba(33, 150, 243, 0.8) !important;
+            box-shadow: 0 0 15px rgba(33, 150, 243, 0.4) !important;
+        }
+        
+        @keyframes boomPulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+        
         .speech-bubble:hover { 
-            transform: scale(1.02); 
-            box-shadow: 3px 3px 12px rgba(0,0,0,0.6); 
+            border: 3px solid #4CAF50 !important;
+            cursor: nw-resize !important;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.6) !important;
+        }
+        
+        .speech-bubble::-webkit-resizer {
+            background: #4CAF50 !important;
+            border-radius: 50% !important;
+            width: 15px !important;
+            height: 15px !important;
+            opacity: 1 !important;
         }
         .speech-bubble.editing { 
             cursor: text; 
@@ -1393,10 +1462,40 @@ class EnhancedComicGenerator:
         
         function initializeEditor() {
             document.querySelectorAll('.speech-bubble').forEach(bubble => {
-                bubble.addEventListener('dblclick', (e) => {
+                let clickCount = 0;
+                let clickTimer = null;
+                
+                bubble.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    editBubbleText(bubble);
+                    clickCount++;
+                    
+                    if (clickCount === 1) {
+                        // First click - select
+                        console.log('1st click - Select bubble');
+                        bubble.style.outline = '2px solid #007bff';
+                        clickTimer = setTimeout(() => {
+                            clickCount = 0;
+                            bubble.style.outline = '';
+                        }, 800);
+                    } else if (clickCount === 2) {
+                        // Second click - edit text
+                        console.log('2nd click - Edit text');
+                        clearTimeout(clickTimer);
+                        bubble.style.outline = '2px solid #ffc107';
+                        editBubbleText(bubble);
+                        clickTimer = setTimeout(() => {
+                            clickCount = 0;
+                            bubble.style.outline = '';
+                        }, 800);
+                    } else if (clickCount === 3) {
+                        // Third click - stretch mode
+                        console.log('3rd click - STRETCH MODE ACTIVATED!');
+                        clearTimeout(clickTimer);
+                        activateStretchMode(bubble);
+                        clickCount = 0;
+                    }
                 });
+                
                 bubble.addEventListener('mousedown', startDrag);
             });
             
@@ -1518,6 +1617,35 @@ class EnhancedComicGenerator:
             } catch (e) {
                 console.error('Failed to load saved state:', e);
             }
+        }
+        
+        function activateStretchMode(bubble) {
+            console.log('🤏 STRETCH MODE ACTIVATED!');
+            
+            // Visual feedback
+            bubble.style.outline = '3px solid #FF5722';
+            bubble.style.cursor = 'nw-resize';
+            bubble.style.resize = 'both';
+            bubble.style.overflow = 'auto';
+            
+            // Add instruction overlay
+            const instruction = document.createElement('div');
+            instruction.style.cssText = 'position: absolute; top: -30px; left: 0; background: #FF5722; color: white; padding: 5px 10px; border-radius: 5px; font-size: 10px; white-space: nowrap; z-index: 1000; pointer-events: none;';
+            instruction.textContent = 'STRETCH MODE - Drag corners!';
+            bubble.appendChild(instruction);
+            
+            // Show alert
+            alert('🤏 STRETCH MODE ACTIVATED!\\n\\n✨ Triple-click detected!\\n\\nDrag the corners to stretch the bubble\\n\\nMode will auto-disable in 5 seconds');
+            
+            // Auto-disable after 5 seconds
+            setTimeout(() => {
+                bubble.style.outline = '';
+                bubble.style.cursor = 'grab';
+                if (instruction && instruction.parentNode) {
+                    instruction.remove();
+                }
+                console.log('Stretch mode disabled');
+            }, 5000);
         }
         
         // Export functions
