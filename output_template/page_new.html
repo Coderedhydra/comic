@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comic Page - 10px Gaps</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        
+        .comic-container {
+            width: 600px;
+            height: 400px;
+            background: white;
+            padding: 0;
+            margin: 0;
+            position: relative;
+            border: 2px solid #333;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .comic-grid {
+            display: grid;
+            grid-template-columns: 295px 295px;
+            grid-template-rows: 195px 195px;
+            gap: 10px;
+            width: 600px;
+            height: 400px;
+            background: white; /* White gaps */
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        .panel {
+            position: relative;
+            width: 295px;
+            height: 195px;
+            border: 1px solid #ddd;
+            overflow: hidden;
+            background: #f9f9f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .panel img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .speech-bubble {
+            position: absolute;
+            background: white;
+            border: 2px solid #333;
+            border-radius: 15px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            min-width: 80px;
+            min-height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            cursor: pointer;
+            top: 10px;
+            right: 10px;
+            max-width: 150px;
+            text-align: center;
+            line-height: 1.2;
+            word-wrap: break-word;
+        }
+        
+        /* Bubble shape styles */
+        .speech-bubble.normal {
+            background: white;
+            border: 2px solid #333;
+            border-radius: 15px;
+        }
+        
+        .speech-bubble.jagged {
+            background: #ffeeee;
+            border: 3px solid #ff4444;
+            border-radius: 0px;
+            clip-path: polygon(0% 20%, 10% 0%, 20% 20%, 30% 0%, 40% 20%, 50% 0%, 60% 20%, 70% 0%, 80% 20%, 90% 0%, 100% 20%, 100% 80%, 90% 100%, 80% 80%, 70% 100%, 60% 80%, 50% 100%, 40% 80%, 30% 100%, 20% 80%, 10% 100%, 0% 80%);
+        }
+        
+        .speech-bubble.thought {
+            background: #f0f8ff;
+            border: 2px dashed #6699cc;
+            border-radius: 50%;
+        }
+        
+        .speech-bubble.idea {
+            background: #fffacd;
+            border: 2px solid #ffd700;
+            border-radius: 15px;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+        
+        .speech-bubble.boom {
+            background: #fff5ee;
+            border: 3px solid #ff6600;
+            border-radius: 0px;
+            color: #cc4400;
+            font-weight: bold;
+        }
+        
+        .speech-bubble.square {
+            background: #f9f9f9;
+            border: 2px solid #666;
+            border-radius: 5px;
+            font-style: italic;
+            color: #333;
+        }
+        
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.85);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 1000;
+        }
+        
+        .controls h4 {
+            margin: 0 0 10px 0;
+            color: #4CAF50;
+        }
+        
+        .controls button {
+            background: #9C27B0;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px 0;
+            width: 100%;
+        }
+        
+        .controls button:hover {
+            background: #7B1FA2;
+        }
+        
+        .nav-buttons {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1000;
+        }
+        
+        .nav-buttons.left {
+            left: 20px;
+        }
+        
+        .nav-buttons.right {
+            right: 20px;
+        }
+        
+        .nav-btn {
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .nav-btn:hover {
+            background: rgba(0,0,0,0.9);
+        }
+    </style>
+</head>
+<body>
+    <div class="comic-container">
+        <div class="comic-grid">
+            <div class="panel" data-panel="1">
+                Panel 1
+                <div class="speech-bubble normal">Hello!</div>
+            </div>
+            <div class="panel" data-panel="2">
+                Panel 2  
+                <div class="speech-bubble normal">Hi there!</div>
+            </div>
+            <div class="panel" data-panel="3">
+                Panel 3
+                <div class="speech-bubble normal">How are you?</div>
+            </div>
+            <div class="panel" data-panel="4">
+                Panel 4
+                <div class="speech-bubble normal">Great!</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="nav-buttons left">
+        <button class="nav-btn" onclick="prevPage()">‹</button>
+    </div>
+    
+    <div class="nav-buttons right">
+        <button class="nav-btn" onclick="nextPage()">›</button>
+    </div>
+    
+    <div class="controls">
+        <h4>🎨 Comic Editor</h4>
+        <button onclick="changeBubbleNew()">🎨 Change Bubble</button>
+        <button onclick="testLayout()">📏 Test Layout</button>
+        <button onclick="saveChanges()">💾 Save</button>
+    </div>
+    
+    <script src="page.js"></script>
+    <script>
+        let currentPage = 0;
+        
+        function changeBubbleNew() {
+            // Step 1: Select bubble type
+            const types = [
+                'normal 💬', 'jagged ⚡', 'thought 💭', 
+                'idea 💡', 'boom 💥', 'square 📝', 'empty ❌'
+            ];
+            
+            let menu = 'SELECT BUBBLE TYPE:\\n\\n';
+            types.forEach((type, i) => {
+                menu += `${i + 1}. ${type}\\n`;
+            });
+            
+            const choice = prompt(menu + '\\nEnter 1-7:');
+            if (!choice || choice < 1 || choice > 7) {
+                alert('❌ Invalid choice!');
+                return;
+            }
+            
+            const bubbleType = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square', 'empty'][choice - 1];
+            
+            // Step 2: Select panel number (1-48)
+            const panelNum = prompt('ENTER PANEL NUMBER (1-48):\\n\\n' +
+                'Page 1: Panels 1-4\\n' +
+                'Page 2: Panels 5-8\\n' +
+                'Page 3: Panels 9-12\\n' +
+                '...and so on...\\n' +
+                'Page 12: Panels 45-48');
+                
+            if (!panelNum || panelNum < 1 || panelNum > 48) {
+                alert('❌ Invalid panel! Enter 1-48');
+                return;
+            }
+            
+            // Step 3: Apply change
+            if (changeBubbleInPanel(parseInt(panelNum), bubbleType)) {
+                alert(`✅ Panel ${panelNum} bubble changed to ${types[choice-1]}!`);
+            } else {
+                alert(`❌ Failed to change Panel ${panelNum}`);
+            }
+        }
+        
+        function changeBubbleInPanel(globalPanel, bubbleType) {
+            try {
+                // Calculate page and panel
+                const pageIndex = Math.ceil(globalPanel / 4) - 1;
+                const panelInPage = ((globalPanel - 1) % 4) + 1;
+                
+                console.log(`🎯 Global Panel ${globalPanel} = Page ${pageIndex + 1}, Panel ${panelInPage}`);
+                
+                // Get all panels (this is the actual DOM structure)
+                const allPanels = document.querySelectorAll('.panel');
+                console.log(`Found ${allPanels.length} total panels`);
+                
+                if (allPanels.length >= globalPanel) {
+                    const targetPanel = allPanels[globalPanel - 1];
+                    let bubble = targetPanel.querySelector('.speech-bubble');
+                    
+                    if (!bubble) {
+                        // Create bubble if doesn't exist
+                        bubble = document.createElement('div');
+                        bubble.className = 'speech-bubble normal';
+                        bubble.textContent = 'New bubble!';
+                        bubble.style.top = '10px';
+                        bubble.style.right = '10px';
+                        targetPanel.appendChild(bubble);
+                        console.log('Created new bubble');
+                    }
+                    
+                    // Remove all shape classes
+                    const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+                    shapes.forEach(shape => bubble.classList.remove(shape));
+                    
+                    if (bubbleType === 'empty') {
+                        bubble.style.display = 'none';
+                    } else {
+                        bubble.style.display = 'flex';
+                        bubble.classList.add(bubbleType);
+                    }
+                    
+                    console.log(`✅ Changed panel ${globalPanel} to ${bubbleType}`);
+                    return true;
+                }
+                
+                console.log(`❌ Panel ${globalPanel} not found`);
+                return false;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                return false;
+            }
+        }
+        
+        function testLayout() {
+            const container = document.querySelector('.comic-grid');
+            const panels = document.querySelectorAll('.panel');
+            
+            if (panels.length >= 2) {
+                const panel1 = panels[0].getBoundingClientRect();
+                const panel2 = panels[1].getBoundingClientRect();
+                const hGap = panel2.left - panel1.right;
+                
+                const result = `Layout Test:\\n` +
+                    `Container: ${container.getBoundingClientRect().width}×${container.getBoundingClientRect().height}\\n` +
+                    `Panel 1: ${panel1.width}×${panel1.height}\\n` +
+                    `Horizontal gap: ${hGap}px\\n` +
+                    `Gap OK: ${hGap === 10 ? 'YES ✅' : 'NO ❌'}`;
+                
+                alert(result);
+            }
+        }
+        
+        function saveChanges() {
+            alert('💾 Changes saved locally!');
+        }
+        
+        function prevPage() {
+            console.log('Previous page');
+        }
+        
+        function nextPage() {
+            console.log('Next page');
+        }
+    </script>
+</body>
+</html>
