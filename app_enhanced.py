@@ -1158,6 +1158,11 @@ class EnhancedComicGenerator:
         }
         .edit-controls h4 { margin: 0 0 10px 0; color: #4CAF50; }
         .edit-controls p { margin: 5px 0; opacity: 0.9; }
+        .speech-bubble.resizable {
+            resize: both;
+            overflow: auto;
+            cursor: se-resize;
+        }
     </style>
 </head>
 <body>
@@ -1192,6 +1197,12 @@ class EnhancedComicGenerator:
            <button onclick="checkDimensions()" style="margin-top: 5px; padding: 8px 15px; background: #607D8B; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
                📏 Check Dimensions
            </button>
+        <button onclick="toggleResizeMode()" style="margin-top: 5px; padding: 8px 15px; background: #03A9F4; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
+            ↔️ Resize Bubbles
+        </button>
+        <button onclick="managePanels()" style="margin-top: 5px; padding: 8px 15px; background: #795548; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
+            ➕ Manage Panels
+        </button>
     </div>
     <script>
         // Load comic data
@@ -1752,6 +1763,55 @@ class EnhancedComicGenerator:
                 msgDiv.style.opacity = '0';
                 setTimeout(() => msgDiv.remove(), 500);
             }, 3000);
+        }
+        
+        // Resize mode
+        let resizeMode = false;
+        function toggleResizeMode() {
+            resizeMode = !resizeMode;
+            document.querySelectorAll('.speech-bubble').forEach(b => {
+                if (resizeMode) {
+                    b.classList.add('resizable');
+                } else {
+                    b.classList.remove('resizable');
+                }
+            });
+            const msg = resizeMode ? '↔️ Resize mode ON - drag corners to resize bubbles' : '↔️ Resize mode OFF';
+            showSaveMessage(msg);
+        }
+        
+        // Manage panels (add/remove)
+        function managePanels() {
+            const currentPages = document.querySelectorAll('.comic-page');
+            const maxPanelsPerPage = 4; // fixed 2x2 grid
+            const totalPanels = currentPages.length * maxPanelsPerPage;
+
+            const input = prompt(`Current pages: ${currentPages.length}\nCurrent panels: ${totalPanels}\n\nEnter desired number of panels (multiple of 4):`, totalPanels);
+            if (!input) return;
+            const desiredPanels = parseInt(input, 10);
+            if (isNaN(desiredPanels) || desiredPanels % maxPanelsPerPage !== 0) {
+                alert('❌ Invalid number. It must be a multiple of 4.');
+                return;
+            }
+
+            const desiredPages = desiredPanels / maxPanelsPerPage;
+            if (desiredPages > currentPages.length) {
+                // Need to duplicate last page to meet desired
+                const container = document.getElementById('comic-pages');
+                const lastWrapper = container.lastElementChild;
+                while (container.children.length < desiredPages) {
+                    const clone = lastWrapper.cloneNode(true);
+                    container.appendChild(clone);
+                }
+            } else if (desiredPages < currentPages.length) {
+                // Remove extra pages
+                const container = document.getElementById('comic-pages');
+                while (container.children.length > desiredPages) {
+                    container.removeChild(container.lastElementChild);
+                }
+            }
+
+            showSaveMessage('➕ Panels updated. Remember to upload replacement images manually if needed.');
         }
     </script>
 </body>
