@@ -8,12 +8,12 @@
 }
 
 .bubble{
-    width: 200px;
-    height: 94px;
+    width: 180px;  /* Reduced size for better fit */
+    height: 80px;  /* Reduced size for better fit */
     background-color: white;
-    border-radius: 50%;
+    border: 2px solid black;
     font-family: 'adam_warren_proregular';
-    font-size: 1em;
+    font-size: 0.9em;
     display: flex;
     position: absolute; /* Ensure bubble does not affect grid item size */ 
     text-align: center;
@@ -21,7 +21,109 @@
     align-items: center;
     z-index: 2;
     box-sizing: border-box; /* Ensure padding is included in the bubble's total size */
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    /* Default normal bubble shape */
+    border-radius: 20px;
+}
 
+/* Normal speech bubble */
+.bubble.normal {
+    border-radius: 20px;
+    background-color: white;
+}
+
+/* Jagged/angry bubble */
+.bubble.jagged {
+    border-radius: 0px;
+    background-color: #ffeeee;
+    border: 3px solid #ff4444;
+    clip-path: polygon(0% 20%, 5% 5%, 15% 20%, 25% 5%, 35% 20%, 45% 5%, 55% 20%, 65% 5%, 75% 20%, 85% 5%, 95% 20%, 100% 35%, 95% 50%, 100% 65%, 95% 80%, 85% 95%, 75% 80%, 65% 95%, 55% 80%, 45% 95%, 35% 80%, 25% 95%, 15% 80%, 5% 95%, 0% 80%, 0% 65%, 5% 50%, 0% 35%);
+}
+
+/* Thought cloud */
+.bubble.thought {
+    border-radius: 50%;
+    background-color: #f0f8ff;
+    border: 2px dashed #6699cc;
+    position: relative;
+}
+
+.bubble.thought::before {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 20px;
+    width: 12px;
+    height: 12px;
+    background-color: #f0f8ff;
+    border: 2px dashed #6699cc;
+    border-radius: 50%;
+}
+
+.bubble.thought::after {
+    content: '';
+    position: absolute;
+    bottom: -25px;
+    left: 15px;
+    width: 8px;
+    height: 8px;
+    background-color: #f0f8ff;
+    border: 2px dashed #6699cc;
+    border-radius: 50%;
+}
+
+/* Idea/lightbulb bubble */
+.bubble.idea {
+    background-color: #fffacd;
+    border: 2px solid #ffd700;
+    border-radius: 15px;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    position: relative;
+}
+
+.bubble.idea::before {
+    content: '💡';
+    position: absolute;
+    top: -15px;
+    right: -5px;
+    font-size: 18px;
+    background: white;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #ffd700;
+}
+
+/* Boom/explosion bubble */
+.bubble.boom {
+    background-color: #fff5ee;
+    border: 3px solid #ff6600;
+    border-radius: 0;
+    position: relative;
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    font-weight: bold;
+    color: #cc4400;
+}
+
+/* Square narration bubble */
+.bubble.square {
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    border: 2px solid #666;
+    font-style: italic;
+    color: #333;
+    font-size: 0.85em;
+}
+
+/* Hover effects */
+.bubble:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .tail{

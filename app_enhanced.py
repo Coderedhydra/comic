@@ -81,6 +81,26 @@ class EnhancedComicGenerator:
         self.ai_mode = os.getenv('AI_ENHANCED', '1')
         self.apply_comic_style = False  # Disabled to preserve original colors
         self.preserve_colors = True  # Preserve more original colors in comic style
+    
+    def _cleanup_previous_files(self):
+        """Clean previous SRT and temporary files to prevent conflicts"""
+        try:
+            from backend.srt_cleanup import delete_srt_files, delete_temp_files
+            
+            # Delete SRT files
+            srt_result = delete_srt_files(".")
+            print(f"   🗑️  Deleted {srt_result['deleted_count']} SRT files")
+            
+            # Delete temporary files
+            temp_result = delete_temp_files(".")
+            print(f"   🗑️  Deleted {temp_result['deleted_count']} temporary files")
+            
+            if srt_result['errors'] or temp_result['errors']:
+                print("   ⚠️  Some files could not be deleted (may be in use)")
+                
+        except Exception as e:
+            print(f"   ⚠️  Cleanup warning: {e}")
+            # Don't fail the entire process for cleanup issues
         
         # Check for GPU
         try:
@@ -105,6 +125,10 @@ class EnhancedComicGenerator:
         print("🎬 Starting Enhanced Comic Generation...")
         if smart_mode:
             print("🎭 Smart mode enabled: Will create 10-15 panel summary with emotion matching")
+        
+        # Clean previous SRT files to prevent conflicts
+        print("\n🧹 Cleaning previous SRT files...")
+        self._cleanup_previous_files()
         
         try:
             # 1. Extract real subtitles from video audio

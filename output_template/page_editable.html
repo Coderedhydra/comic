@@ -89,6 +89,69 @@
         .reset-btn:hover {
             background: #da190b;
         }
+        
+        /* Shape Selector Styles */
+        .shape-selector {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.95);
+            color: black;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #4CAF50;
+            z-index: 1001;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            max-width: 300px;
+        }
+        
+        .shape-selector h4 {
+            margin: 0 0 10px 0;
+            color: #4CAF50;
+            text-align: center;
+        }
+        
+        .shape-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        
+        .shape-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+        
+        .shape-option:hover {
+            border-color: #4CAF50;
+            background: #f0f8f0;
+        }
+        
+        .shape-option.selected {
+            border-color: #4CAF50;
+            background: #e8f5e8;
+        }
+        
+        .shape-preview {
+            width: 60px !important;
+            height: 30px !important;
+            font-size: 0.7em !important;
+            margin-bottom: 5px;
+            pointer-events: none;
+        }
+        
+        .shape-option span {
+            font-size: 10px;
+            font-weight: bold;
+            text-align: center;
+        }
     </style>
 
     <script src="page.js"></script>
@@ -124,16 +187,48 @@
     <!-- Edit Controls -->
     <div class="edit-controls">
         <h4>✏️ Comic Editor</h4>
-        <p>• <strong>Drag</strong> speech bubbles to reposition</p>
+        <p>• <strong>Click</strong> bubble to select</p>
         <p>• <strong>Double-click</strong> to edit text</p>
-        <p>• <strong>Enter</strong> to save text</p>
+        <p>• <strong>Drag</strong> to reposition</p>
         <button class="save-btn" onclick="saveComic()">💾 Save Changes</button>
         <button class="reset-btn" onclick="resetComic()">↩️ Reset</button>
+    </div>
+
+    <!-- Bubble Shape Selector -->
+    <div class="shape-selector" id="shapeSelector" style="display: none;">
+        <h4>🎨 Bubble Shapes</h4>
+        <div class="shape-options">
+            <div class="shape-option" data-shape="normal">
+                <div class="shape-preview bubble normal">Normal</div>
+                <span>Normal</span>
+            </div>
+            <div class="shape-option" data-shape="jagged">
+                <div class="shape-preview bubble jagged">Angry</div>
+                <span>Angry</span>
+            </div>
+            <div class="shape-option" data-shape="thought">
+                <div class="shape-preview bubble thought">Think</div>
+                <span>Thought</span>
+            </div>
+            <div class="shape-option" data-shape="idea">
+                <div class="shape-preview bubble idea">Idea!</div>
+                <span>Idea</span>
+            </div>
+            <div class="shape-option" data-shape="boom">
+                <div class="shape-preview bubble boom">Boom!</div>
+                <span>Action</span>
+            </div>
+            <div class="shape-option" data-shape="square">
+                <div class="shape-preview bubble square">Narrate</div>
+                <span>Narration</span>
+            </div>
+        </div>
     </div>
 
     <script>
         // Interactive editing functionality
         let currentEditBubble = null;
+        let selectedBubble = null;
         let draggedBubble = null;
         let offset = {x: 0, y: 0};
 
@@ -145,7 +240,22 @@
         function initializeEditor() {
             // Find all speech bubbles
             document.querySelectorAll('.bubble').forEach(bubble => {
+                // Ensure bubble has a default shape class if none exists
+                if (!bubble.classList.contains('normal') && 
+                    !bubble.classList.contains('jagged') && 
+                    !bubble.classList.contains('thought') && 
+                    !bubble.classList.contains('idea') && 
+                    !bubble.classList.contains('boom') && 
+                    !bubble.classList.contains('square')) {
+                    bubble.classList.add('normal');
+                }
+                
                 // Make bubbles interactive
+                bubble.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectBubble(bubble);
+                });
+                
                 bubble.addEventListener('dblclick', (e) => {
                     e.stopPropagation();
                     editBubbleText(bubble);
@@ -158,8 +268,109 @@
             document.addEventListener('mousemove', drag);
             document.addEventListener('mouseup', stopDrag);
             
+            // Global click to deselect
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.bubble') && !e.target.closest('.shape-selector')) {
+                    deselectBubble();
+                }
+            });
+            
+            // Initialize shape selector
+            initializeShapeSelector();
+            
             // Load saved state if exists
             loadSavedState();
+        }
+        
+        function selectBubble(bubble) {
+            // Deselect previous
+            if (selectedBubble) {
+                selectedBubble.classList.remove('selected');
+            }
+            
+            // Select new
+            selectedBubble = bubble;
+            bubble.classList.add('selected');
+            bubble.style.boxShadow = '0 0 10px #4CAF50';
+            
+            // Show shape selector
+            showShapeSelector();
+            
+            // Highlight current shape in selector
+            updateShapeSelector();
+        }
+        
+        function deselectBubble() {
+            if (selectedBubble) {
+                selectedBubble.classList.remove('selected');
+                selectedBubble.style.boxShadow = '';
+                selectedBubble = null;
+                hideShapeSelector();
+            }
+        }
+        
+        function initializeShapeSelector() {
+            document.querySelectorAll('.shape-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    if (selectedBubble) {
+                        changeBubbleShape(option.dataset.shape);
+                    }
+                });
+            });
+        }
+        
+        function showShapeSelector() {
+            document.getElementById('shapeSelector').style.display = 'block';
+        }
+        
+        function hideShapeSelector() {
+            document.getElementById('shapeSelector').style.display = 'none';
+        }
+        
+        function updateShapeSelector() {
+            if (!selectedBubble) return;
+            
+            // Remove previous selection
+            document.querySelectorAll('.shape-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            // Find current shape
+            let currentShape = 'normal';
+            const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+            for (let shape of shapes) {
+                if (selectedBubble.classList.contains(shape)) {
+                    currentShape = shape;
+                    break;
+                }
+            }
+            
+            // Highlight current shape
+            const currentOption = document.querySelector(`[data-shape="${currentShape}"]`);
+            if (currentOption) {
+                currentOption.classList.add('selected');
+            }
+        }
+        
+        function changeBubbleShape(newShape) {
+            if (!selectedBubble) return;
+            
+            // Remove all shape classes
+            const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+            shapes.forEach(shape => {
+                selectedBubble.classList.remove(shape);
+            });
+            
+            // Add new shape class
+            selectedBubble.classList.add(newShape);
+            
+            // Update selector
+            updateShapeSelector();
+            
+            // Save state
+            saveState();
+            
+            console.log(`Changed bubble shape to: ${newShape}`);
         }
 
         function editBubbleText(bubble) {
@@ -248,11 +459,22 @@
         function saveState() {
             const bubbles = [];
             document.querySelectorAll('.bubble').forEach((bubble, index) => {
+                // Find current shape
+                let shape = 'normal';
+                const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+                for (let s of shapes) {
+                    if (bubble.classList.contains(s)) {
+                        shape = s;
+                        break;
+                    }
+                }
+                
                 bubbles.push({
                     index: index,
                     text: bubble.innerText,
                     left: bubble.style.left,
-                    top: bubble.style.top
+                    top: bubble.style.top,
+                    shape: shape
                 });
             });
             localStorage.setItem('comicBubbles', JSON.stringify(bubbles));
@@ -271,6 +493,17 @@
                         elements[index].innerText = data.text;
                         if (data.left) elements[index].style.left = data.left;
                         if (data.top) elements[index].style.top = data.top;
+                        
+                        // Restore shape
+                        if (data.shape) {
+                            // Remove all shape classes
+                            const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+                            shapes.forEach(shape => {
+                                elements[index].classList.remove(shape);
+                            });
+                            // Add saved shape
+                            elements[index].classList.add(data.shape);
+                        }
                     }
                 });
             } catch (e) {

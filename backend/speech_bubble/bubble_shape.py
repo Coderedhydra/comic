@@ -22,43 +22,41 @@ def analyze_sentiment(text):
 
 def get_bubble_shape(sentiment):
   # Define the mapping of sentiments to bubble shapes
-  # Normal - 0, Jagged - 1
+  # 0=normal, 1=jagged, 2=thought, 3=idea, 4=boom, 5=square
   bubble_shape_mapping = {
     "disappointment": 0,
     "sadness": 0,
     "annoyance": 1,
     "neutral": 0,
     "disapproval": 0,
-    "realization": 0,
+    "realization": 3,  # idea bubble for realizations
     "nervousness": 1,
     "approval": 0,
     "joy": 0,
-    "anger": 1,
+    "anger": 4,  # boom bubble for anger
     "embarrassment": 0,
     "caring": 0,
     "remorse": 0,
     "disgust": 1,
     "grief": 0,
-    "confusion": 0,
+    "confusion": 2,  # thought cloud for confusion
     "relief": 0,
-    "desire": 0,
+    "desire": 2,  # thought cloud for desires
     "admiration": 0,
-    "optimism": 0,
-    "fear": 1,
+    "optimism": 3,  # idea bubble for optimism
+    "fear": 4,  # boom bubble for fear
     "love": 0,
-    "excitement": 1,
-    "curiosity": 1,
+    "excitement": 4,  # boom bubble for excitement
+    "curiosity": 2,  # thought cloud for curiosity
     "amusement": 1,
-    "surprise": 1,
+    "surprise": 4,  # boom bubble for surprise
     "gratitude": 0,
     "pride": 0
   }
 
-
-  if bubble_shape_mapping.get(sentiment, "") == 0:
-    return "normal"
-  else:
-    return "jagged"
+  shape_names = ["normal", "jagged", "thought", "idea", "boom", "square"]
+  shape_index = bubble_shape_mapping.get(sentiment, 0)
+  return shape_names[shape_index]
 
 
 def display_sentiment_results(sentiment_results, option):
