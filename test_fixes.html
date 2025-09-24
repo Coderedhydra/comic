@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Fixes - 10px Gaps & Bubble Changer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        
+        .wrapper {
+            display: flex;
+            height: 400px;
+            width: 600px;
+            background-color: rgb(255, 255, 255);
+            margin: 20px auto;
+            border: 2px solid #333;
+        }
+        
+        .grid-container {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: 295px 295px;
+            grid-template-rows: 195px 195px;
+            gap: 10px;
+            background: white;
+            padding: 0;
+        }
+        
+        .grid-item {
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-size: cover;
+            border: 1px solid #ccc;
+            position: relative;
+            background-color: #e8e8e8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .bubble {
+            width: 120px;
+            height: 60px;
+            background-color: white;
+            border: 2px solid black;
+            border-radius: 20px;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .bubble.normal { border-radius: 20px; background-color: white; }
+        .bubble.jagged { border-radius: 0px; background-color: #ffeeee; border: 3px solid #ff4444; }
+        .bubble.thought { border-radius: 50%; background-color: #f0f8ff; border: 2px dashed #6699cc; }
+        .bubble.idea { background-color: #fffacd; border: 2px solid #ffd700; }
+        .bubble.boom { background-color: #fff5ee; border: 3px solid #ff6600; border-radius: 0; }
+        .bubble.square { border-radius: 5px; background-color: #f9f9f9; border: 2px solid #666; }
+        
+        .controls {
+            text-align: center;
+            margin: 20px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background: #9C27B0;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+        }
+        
+        .info {
+            text-align: center;
+            margin: 20px;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h2>🔧 Test Page - 10px Gaps & Bubble Changer</h2>
+        <p><strong>Layout Test:</strong> Check that panels have exactly 10px gaps between them</p>
+        <p><strong>Bubble Test:</strong> Click "Change Bubble" to test the bubble changing function</p>
+    </div>
+    
+    <div class="wrapper">
+        <div class="grid-container">
+            <div class="grid-item" id="_1">
+                Panel 1
+                <div class="bubble normal">Hello!</div>
+            </div>
+            <div class="grid-item" id="_2">
+                Panel 2
+                <div class="bubble normal">Hi there!</div>
+            </div>
+            <div class="grid-item" id="_3">
+                Panel 3
+                <div class="bubble normal">How are you?</div>
+            </div>
+            <div class="grid-item" id="_4">
+                Panel 4
+                <div class="bubble normal">Great!</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button onclick="changeBubbleInteractive()">🎨 Change Bubble</button>
+        <button onclick="testGaps()">📏 Test Gaps</button>
+    </div>
+    
+    <div id="results" style="text-align: center; margin: 20px; padding: 10px; background: #f5f5f5; border-radius: 5px;"></div>
+    
+    <script>
+        function changeBubbleInteractive() {
+            const bubbleTypes = [
+                {name: 'Normal', value: 'normal', emoji: '💬'},
+                {name: 'Jagged', value: 'jagged', emoji: '⚡'},
+                {name: 'Thought', value: 'thought', emoji: '💭'},
+                {name: 'Idea', value: 'idea', emoji: '💡'},
+                {name: 'Boom', value: 'boom', emoji: '💥'},
+                {name: 'Square', value: 'square', emoji: '📝'},
+                {name: 'Empty', value: 'empty', emoji: '❌'}
+            ];
+            
+            let bubbleOptions = 'Select bubble type:\\n\\n';
+            bubbleTypes.forEach((type, index) => {
+                bubbleOptions += `${index + 1}. ${type.emoji} ${type.name}\\n`;
+            });
+            
+            const bubbleChoice = prompt(bubbleOptions + '\\nEnter number (1-7):');
+            
+            if (!bubbleChoice || bubbleChoice < 1 || bubbleChoice > 7) {
+                alert('❌ Invalid bubble type selection!');
+                return;
+            }
+            
+            const selectedBubbleType = bubbleTypes[parseInt(bubbleChoice) - 1];
+            
+            const panelNumber = prompt('🎯 Enter panel number to change (1-4):\\n\\n' +
+                'Panel Layout: 4 panels per page (2×2 grid)\\n' +
+                'Panel 1: Top-left\\n' +
+                'Panel 2: Top-right\\n' +
+                'Panel 3: Bottom-left\\n' +
+                'Panel 4: Bottom-right');
+            
+            if (!panelNumber || panelNumber < 1 || panelNumber > 4) {
+                alert('❌ Invalid panel number! Please enter a number between 1 and 4.');
+                return;
+            }
+            
+            const success = applyBubbleChangeGlobal(parseInt(panelNumber), selectedBubbleType.value);
+            
+            if (success) {
+                alert(`✅ Changed Panel ${panelNumber} bubble to ${selectedBubbleType.emoji} ${selectedBubbleType.name}!`);
+            } else {
+                alert(`❌ Could not change bubble in Panel ${panelNumber}.`);
+            }
+        }
+        
+        function applyBubbleChangeGlobal(globalPanelNumber, bubbleType) {
+            try {
+                const allGridItems = document.querySelectorAll('.grid-item');
+                
+                if (allGridItems.length >= globalPanelNumber) {
+                    const targetGridItem = allGridItems[globalPanelNumber - 1];
+                    const bubble = targetGridItem.querySelector('.bubble');
+                    
+                    if (bubble) {
+                        const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+                        shapes.forEach(shape => bubble.classList.remove(shape));
+                        
+                        if (bubbleType === 'empty') {
+                            bubble.style.display = 'none';
+                        } else {
+                            bubble.style.display = 'flex';
+                            bubble.classList.add(bubbleType);
+                        }
+                        
+                        console.log(`✅ Changed panel ${globalPanelNumber} bubble to ${bubbleType}`);
+                        return true;
+                    }
+                }
+                
+                return false;
+            } catch (error) {
+                console.error('Error changing bubble:', error);
+                return false;
+            }
+        }
+        
+        function testGaps() {
+            const container = document.querySelector('.grid-container');
+            const items = document.querySelectorAll('.grid-item');
+            
+            const containerRect = container.getBoundingClientRect();
+            
+            let results = `📏 Gap Test Results:\\n\\n`;
+            results += `Container: ${containerRect.width} × ${containerRect.height}\\n`;
+            results += `Expected: 600 × 400\\n\\n`;
+            
+            if (items.length >= 2) {
+                const item1 = items[0].getBoundingClientRect();
+                const item2 = items[1].getBoundingClientRect();
+                const horizontalGap = item2.left - item1.right;
+                
+                results += `Horizontal gap: ${horizontalGap}px (should be 10px)\\n`;
+                results += horizontalGap === 10 ? '✅ Horizontal gap correct\\n' : '❌ Horizontal gap wrong\\n';
+            }
+            
+            if (items.length >= 3) {
+                const item1 = items[0].getBoundingClientRect();
+                const item3 = items[2].getBoundingClientRect();
+                const verticalGap = item3.top - item1.bottom;
+                
+                results += `Vertical gap: ${verticalGap}px (should be 10px)\\n`;
+                results += verticalGap === 10 ? '✅ Vertical gap correct\\n' : '❌ Vertical gap wrong\\n';
+            }
+            
+            document.getElementById('results').innerText = results;
+            alert(results);
+        }
+    </script>
+</body>
+</html>

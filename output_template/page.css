@@ -23,8 +23,8 @@ body {
 
 .wrapper {
     display: flex;
-    height: 1100px;
-    width: 1035px;
+    height: 400px;
+    width: 600px;
     background-color: rgb(255, 255, 255);
 }
 

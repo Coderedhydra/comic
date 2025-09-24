@@ -1840,17 +1840,16 @@ class EnhancedComicGenerator:
             
             const selectedBubbleType = bubbleTypes[parseInt(bubbleChoice) - 1];
             
-            // Step 2: Ask for panel number (1-48 across all pages)
-            const panelNumber = prompt('🎯 Enter panel number to change (1-48):\\n\\n' +
-                'Panel Layout: 12 pages × 4 panels each = 48 total panels\\n' +
-                'Page 1: Panels 1-4\\n' +
-                'Page 2: Panels 5-8\\n' +
-                'Page 3: Panels 9-12\\n' +
-                '... and so on ...\\n' +
-                'Page 12: Panels 45-48');
+            // Step 2: Ask for panel number (1-4 for current page)
+            const panelNumber = prompt('🎯 Enter panel number to change (1-4):\\n\\n' +
+                'Panel Layout: 4 panels per page (2×2 grid)\\n' +
+                'Panel 1: Top-left\\n' +
+                'Panel 2: Top-right\\n' +
+                'Panel 3: Bottom-left\\n' +
+                'Panel 4: Bottom-right');
             
-            if (!panelNumber || panelNumber < 1 || panelNumber > 48) {
-                alert('❌ Invalid panel number! Please enter a number between 1 and 48.');
+            if (!panelNumber || panelNumber < 1 || panelNumber > 4) {
+                alert('❌ Invalid panel number! Please enter a number between 1 and 4.');
                 return;
             }
             
@@ -1858,9 +1857,7 @@ class EnhancedComicGenerator:
             const success = applyBubbleChangeGlobal(parseInt(panelNumber), selectedBubbleType.value);
             
             if (success) {
-                const pageNum = Math.ceil(panelNumber / 4);
-                const panelInPage = ((panelNumber - 1) % 4) + 1;
-                alert(`✅ Changed Panel ${panelNumber} (Page ${pageNum}, Panel ${panelInPage}) bubble to ${selectedBubbleType.emoji} ${selectedBubbleType.name}!`);
+                alert(`✅ Changed Panel ${panelNumber} bubble to ${selectedBubbleType.emoji} ${selectedBubbleType.name}!`);
             } else {
                 alert(`❌ Could not change bubble in Panel ${panelNumber}. Make sure the panel exists and has a bubble.`);
             }
@@ -1948,48 +1945,18 @@ class EnhancedComicGenerator:
         
         function applyBubbleChangeGlobal(globalPanelNumber, bubbleType) {
             try {
-                // Calculate which page and panel within that page
-                const pageIndex = Math.ceil(globalPanelNumber / 4) - 1; // 0-based page index
-                const panelInPage = ((globalPanelNumber - 1) % 4) + 1; // 1-based panel in page
+                console.log(`🎯 Looking for: Global Panel ${globalPanelNumber}`);
                 
-                console.log(`🎯 Looking for: Global Panel ${globalPanelNumber} = Page ${pageIndex + 1}, Panel ${panelInPage}`);
-                
-                // Find all comic pages
-                const pages = document.querySelectorAll('.comic-page');
-                
-                // Try to find the specific page
-                if (pages.length > pageIndex) {
-                    const targetPage = pages[pageIndex];
-                    const panels = targetPage.querySelectorAll('.panel');
-                    
-                    if (panels.length >= panelInPage) {
-                        const targetPanel = panels[panelInPage - 1];
-                        const bubble = targetPanel.querySelector('.speech-bubble') || targetPanel.querySelector('.bubble');
-                        
-                        if (bubble) {
-                            // Remove all existing shape classes
-                            const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
-                            shapes.forEach(shape => bubble.classList.remove(shape));
-                            
-                            // Handle empty bubble type
-                            if (bubbleType === 'empty') {
-                                bubble.style.display = 'none';
-                            } else {
-                                bubble.style.display = 'flex';
-                                bubble.classList.add(bubbleType);
-                            }
-                            
-                            console.log(`✅ Changed global panel ${globalPanelNumber} bubble to ${bubbleType} (pages method)`);
-                            return true;
-                        }
-                    }
-                }
-                
-                // Fallback: Try grid items approach (for single page layouts)
+                // Method 1: Direct grid item approach (this is the main structure)
                 const allGridItems = document.querySelectorAll('.grid-item');
+                console.log(`Found ${allGridItems.length} grid items`);
+                
                 if (allGridItems.length >= globalPanelNumber) {
                     const targetGridItem = allGridItems[globalPanelNumber - 1];
-                    const bubble = targetGridItem.querySelector('.bubble') || targetGridItem.querySelector('.speech-bubble');
+                    console.log(`Targeting grid item #${globalPanelNumber}:`, targetGridItem);
+                    
+                    const bubble = targetGridItem.querySelector('.bubble');
+                    console.log(`Bubble found in grid item:`, bubble);
                     
                     if (bubble) {
                         // Remove all existing shape classes
@@ -2006,46 +1973,54 @@ class EnhancedComicGenerator:
                         
                         console.log(`✅ Changed global panel ${globalPanelNumber} bubble to ${bubbleType} (grid method)`);
                         return true;
+                    } else {
+                        console.log(`❌ No bubble found in grid item ${globalPanelNumber}`);
                     }
                 }
                 
-                // Alternative approach: Look for all panels across all pages
-                const allPanels = [];
-                pages.forEach(page => {
-                    const pagePanels = page.querySelectorAll('.panel');
-                    allPanels.push(...pagePanels);
-                });
-                
-                if (allPanels.length >= globalPanelNumber) {
-                    const targetPanel = allPanels[globalPanelNumber - 1];
-                    const bubble = targetPanel.querySelector('.speech-bubble') || targetPanel.querySelector('.bubble');
+                // Method 2: Try comic pages approach (fallback)
+                const pages = document.querySelectorAll('.comic-page');
+                if (pages.length > 0) {
+                    const pageIndex = Math.ceil(globalPanelNumber / 4) - 1;
+                    const panelInPage = ((globalPanelNumber - 1) % 4) + 1;
                     
-                    if (bubble) {
-                        // Remove all existing shape classes
-                        const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
-                        shapes.forEach(shape => bubble.classList.remove(shape));
+                    if (pages.length > pageIndex) {
+                        const targetPage = pages[pageIndex];
+                        const panels = targetPage.querySelectorAll('.panel');
                         
-                        // Handle empty bubble type
-                        if (bubbleType === 'empty') {
-                            bubble.style.display = 'none';
-                        } else {
-                            bubble.style.display = 'flex';
-                            bubble.classList.add(bubbleType);
+                        if (panels.length >= panelInPage) {
+                            const targetPanel = panels[panelInPage - 1];
+                            const bubble = targetPanel.querySelector('.speech-bubble') || targetPanel.querySelector('.bubble');
+                            
+                            if (bubble) {
+                                const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+                                shapes.forEach(shape => bubble.classList.remove(shape));
+                                
+                                if (bubbleType === 'empty') {
+                                    bubble.style.display = 'none';
+                                } else {
+                                    bubble.style.display = 'flex';
+                                    bubble.classList.add(bubbleType);
+                                }
+                                
+                                console.log(`✅ Changed global panel ${globalPanelNumber} bubble to ${bubbleType} (pages method)`);
+                                return true;
+                            }
                         }
-                        
-                        console.log(`✅ Changed global panel ${globalPanelNumber} bubble to ${bubbleType} (all panels method)`);
-                        return true;
                     }
                 }
                 
                 // Debug information
-                console.log('🔍 Debug info for global panel change:');
-                console.log('Total pages found:', pages.length);
-                console.log('Total grid items found:', allGridItems.length);
-                console.log('Total panels found:', allPanels.length);
+                console.log('🔍 Debug info:');
+                console.log('Total grid items:', allGridItems.length);
+                console.log('Total pages:', pages.length);
                 console.log('Looking for global panel:', globalPanelNumber);
-                console.log('Calculated page index:', pageIndex);
-                console.log('Calculated panel in page:', panelInPage);
+                
+                if (allGridItems.length >= globalPanelNumber) {
+                    const targetItem = allGridItems[globalPanelNumber - 1];
+                    console.log('Target grid item content:', targetItem.innerHTML);
+                    console.log('All bubbles in target:', targetItem.querySelectorAll('.bubble, .speech-bubble'));
+                }
                 
                 return false;
                 
