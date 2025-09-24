@@ -221,7 +221,36 @@ class EnhancedComicGenerator:
                     
                 except Exception as e:
                     print(f"⚠️ Full story extraction failed: {e}")
-                    filtered_subs = None
+                    # Create a fallback with limited subtitles instead of None
+                    print("🔄 Creating fallback story extraction...")
+                    with open('test1.srt', 'r', encoding='utf-8') as f:
+                        all_subs = list(srt.parse(f.read()))
+                    
+                    # Simple fallback: take every Nth subtitle to get ~48
+                    if len(all_subs) > 48:
+                        step = len(all_subs) // 48
+                        filtered_subs = []
+                        for i in range(0, len(all_subs), step):
+                            if len(filtered_subs) < 48:
+                                filtered_subs.append({
+                                    'index': all_subs[i].index,
+                                    'text': all_subs[i].content,
+                                    'start': all_subs[i].start.total_seconds(),
+                                    'end': all_subs[i].end.total_seconds()
+                                })
+                        self._filtered_count = len(filtered_subs)
+                        print(f"🔄 Fallback extraction: {len(all_subs)} → {len(filtered_subs)} subtitles")
+                    else:
+                        # Use all if less than 48
+                        filtered_subs = []
+                        for sub in all_subs:
+                            filtered_subs.append({
+                                'index': sub.index,
+                                'text': sub.content,
+                                'start': sub.start.total_seconds(),
+                                'end': sub.end.total_seconds()
+                            })
+                        self._filtered_count = len(filtered_subs)
             
             # 3. Generate keyframes based on story moments
             print("🎯 Generating keyframes...")
@@ -246,7 +275,8 @@ class EnhancedComicGenerator:
                     from backend.keyframes.keyframes_fixed import generate_keyframes_fixed
                     generate_keyframes_fixed(self.video_path, filtered_subs, max_frames=48)
             else:
-                # Fallback to simple method
+                # Fallback to simple method with improved frame count
+                print("🔄 Using simple keyframe method with enhanced frame count...")
                 generate_keyframes_simple(self.video_path)
             
             # 4. Remove black bars

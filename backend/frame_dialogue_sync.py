@@ -116,12 +116,12 @@ class FrameDialogueSync:
         
         return mapping
     
-    def get_optimized_frame_selection(self, target_panels: int = 12) -> List[str]:
+    def get_optimized_frame_selection(self, target_panels: int = 48) -> List[str]:
         """
         Get optimized frame selection ensuring dialogue coverage
         
         Args:
-            target_panels: Number of panels to select
+            target_panels: Number of panels to select (default 48 for better coverage)
             
         Returns:
             List of selected frame files with guaranteed dialogue coverage
