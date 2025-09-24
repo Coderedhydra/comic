@@ -1028,10 +1028,10 @@ class EnhancedComicGenerator:
         }
         .comic-grid { 
             display: grid; 
-            grid-template-columns: 299.5px 299.5px; 
-            grid-template-rows: 199.5px 199.5px; 
-            column-gap: 1px; /* Ultra-thin horizontal divider */
-            row-gap: 1px; /* Ultra-thin vertical divider */
+            grid-template-columns: 297.5px 297.5px; 
+            grid-template-rows: 197.5px 197.5px; 
+            column-gap: 5px; /* 5px thick horizontal divider */
+            row-gap: 5px; /* 5px thick vertical divider */
             width: 600px;
             height: 400px;
             margin: 0;
@@ -1635,11 +1635,11 @@ class EnhancedComicGenerator:
                         height: 400px !important;
                         margin: 0 !important;
                         padding: 0 !important;
-                        column-gap: 1px !important; /* Ultra-thin horizontal divider */
-                        row-gap: 1px !important; /* Ultra-thin vertical divider */
+                        column-gap: 5px !important; /* 5px thick horizontal divider */
+                        row-gap: 5px !important; /* 5px thick vertical divider */
                         display: grid !important;
-                        grid-template-columns: 299.5px 299.5px !important;
-                        grid-template-rows: 199.5px 199.5px !important;
+                        grid-template-columns: 297.5px 297.5px !important;
+                        grid-template-rows: 197.5px 197.5px !important;
                         background: white !important; /* White divider color */
                     }
                     
@@ -1863,13 +1863,17 @@ class EnhancedComicGenerator:
                 // Find all comic pages
                 const pages = document.querySelectorAll('.comic-page');
                 
-                // For each page, try to change the specified panel
+                // Also check for grid items if comic pages not found
+                const gridItems = document.querySelectorAll('.grid-item');
+                
                 let changed = false;
+                
+                // Method 1: Try comic pages approach
                 pages.forEach(page => {
                     const panels = page.querySelectorAll('.panel');
                     if (panels[panelNumber - 1]) {
                         const targetPanel = panels[panelNumber - 1];
-                        const bubble = targetPanel.querySelector('.speech-bubble');
+                        const bubble = targetPanel.querySelector('.speech-bubble') || targetPanel.querySelector('.bubble');
                         
                         if (bubble) {
                             // Remove all existing shape classes
@@ -1885,10 +1889,47 @@ class EnhancedComicGenerator:
                             }
                             
                             changed = true;
-                            console.log(`✅ Changed panel ${panelNumber} bubble to ${bubbleType}`);
+                            console.log(`✅ Changed panel ${panelNumber} bubble to ${bubbleType} (pages method)`);
                         }
                     }
                 });
+                
+                // Method 2: Try grid items approach if no pages found
+                if (!changed && gridItems.length >= panelNumber) {
+                    const targetGridItem = gridItems[panelNumber - 1];
+                    const bubble = targetGridItem.querySelector('.bubble') || targetGridItem.querySelector('.speech-bubble');
+                    
+                    if (bubble) {
+                        // Remove all existing shape classes
+                        const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+                        shapes.forEach(shape => bubble.classList.remove(shape));
+                        
+                        // Handle empty bubble type
+                        if (bubbleType === 'empty') {
+                            bubble.style.display = 'none';
+                        } else {
+                            bubble.style.display = 'flex';
+                            bubble.classList.add(bubbleType);
+                        }
+                        
+                        changed = true;
+                        console.log(`✅ Changed panel ${panelNumber} bubble to ${bubbleType} (grid method)`);
+                    }
+                }
+                
+                // Method 3: Debug - log what elements were found
+                if (!changed) {
+                    console.log('🔍 Debug info:');
+                    console.log('Comic pages found:', pages.length);
+                    console.log('Grid items found:', gridItems.length);
+                    console.log('Looking for panel:', panelNumber);
+                    
+                    if (gridItems.length >= panelNumber) {
+                        const targetItem = gridItems[panelNumber - 1];
+                        console.log('Target grid item:', targetItem);
+                        console.log('Bubbles in target:', targetItem.querySelectorAll('.bubble, .speech-bubble'));
+                    }
+                }
                 
                 return changed;
             } catch (error) {

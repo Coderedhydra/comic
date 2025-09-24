@@ -35,9 +35,9 @@ body {
     grid-template-columns: repeat(2, 1fr); /* 2x2 grid for 600x400 */
     grid-template-rows: repeat(2, 1fr);
     border: 0; /* default no outer border; modes override */
-    gap: 2px; /* Very thin comic-style gap */
+    gap: 5px; /* 5px thick comic-style gap */
     background: white; /* White divider between panels */
-    padding: 1px; /* Tiny padding for outer edge */
+    padding: 0; /* No padding for tight fit */
 }
 
 .grid-item {
