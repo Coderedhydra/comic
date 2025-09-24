@@ -9,6 +9,17 @@ load_dotenv()
 
 WHISPER_MODEL = os.getenv("WHISPER_MODEL")
 
+# --- Utility to remove previous .srt files ---
+
+def clear_old_srt(directory: str = ".", pattern: str = ".srt"):
+    """Delete existing subtitle files to prevent conflicts."""
+    for fname in os.listdir(directory):
+        if fname.lower().endswith(pattern):
+            try:
+                os.remove(os.path.join(directory, fname))
+            except Exception as e:
+                print(f"⚠️ Could not delete {fname}: {e}")
+
 def process_srt(file_path, threshold_seconds):
     with open(file_path, 'r', encoding='utf-8') as file:
         srt_content = file.read()
@@ -69,6 +80,8 @@ def extract_audio(file):
     return extracted_audio
 
 def get_subtitles(file):
+    # Remove pre-existing subtitle files that might clash
+    clear_old_srt()
     extracted_audio = extract_audio(file)
     model = stable_whisper.load_model(WHISPER_MODEL)
     result = model.transcribe_minimal(extracted_audio)

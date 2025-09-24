@@ -73,6 +73,23 @@ class ComicEditor {
                 transition: transform 0.1s;
                 z-index: 10;
             }
+
+            /* Bubble shape variations */
+            .speech-bubble.idea {
+                border-radius: 15px;
+            }
+            .speech-bubble.thought {
+                border-radius: 50px;
+                padding: 20px 25px;
+            }
+            .speech-bubble.boom {
+                background: #ffeb3b;
+                clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+            }
+            .speech-bubble.narration {
+                border-radius: 0;
+                font-style: italic;
+            }
             
             .speech-bubble:hover {
                 transform: scale(1.02);
@@ -577,6 +594,21 @@ class ComicEditor {
         resetBtn.textContent = '🔄 Reset';
         resetBtn.onclick = () => this.resetComic();
         toolbar.appendChild(resetBtn);
+
+        // Shape buttons
+        const shapes = [
+            {label: '💡 Idea', cls: 'idea'},
+            {label: '💭 Thought', cls: 'thought'},
+            {label: '💥 Boom', cls: 'boom'},
+            {label: '📜 Narration', cls: 'narration'}
+        ];
+        shapes.forEach(s => {
+            const btn = document.createElement('button');
+            btn.className = 'toolbar-btn';
+            btn.textContent = s.label;
+            btn.onclick = () => this.changeBubbleShape(s.cls);
+            toolbar.appendChild(btn);
+        });
         
         document.body.appendChild(toolbar);
     }
@@ -751,6 +783,17 @@ class ComicEditor {
         
         document.addEventListener('mousemove', handleResize);
         document.addEventListener('mouseup', stopResize);
+    }
+
+    changeBubbleShape(shapeCls) {
+        if (!this.selectedBubble) {
+            this.showHint('Select a bubble first');
+            return;
+        }
+        const shapes = ['idea', 'thought', 'boom', 'narration'];
+        this.selectedBubble.classList.remove(...shapes);
+        this.selectedBubble.classList.add(shapeCls);
+        this.saveComicData();
     }
 }
 
