@@ -10,12 +10,24 @@
 
 body {
     margin: 0 !important;
-    padding: 20px !important;
+    padding: 0 !important;
     background: #f0f0f0 !important;
     display: flex !important;
+    flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
     min-height: 100vh !important;
+}
+
+/* Force center the main content */
+body > * {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Navigation buttons spacing fix */
+.button {
+    margin: 10px 0 !important;
 }
 
 /* Force exact wrapper dimensions */

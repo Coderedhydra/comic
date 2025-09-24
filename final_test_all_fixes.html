@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final Test - All Fixes</title>
+    <link rel="stylesheet" href="output_template/nuclear_gap_fix.css">
+    <link rel="stylesheet" href="output_template/bubble.css">
+    <style>
+        .test-info {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            z-index: 5000;
+            text-align: center;
+        }
+        
+        .bubble {
+            font-family: Arial, sans-serif !important;
+        }
+        
+        .test-controls {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #333;
+            z-index: 5000;
+        }
+        
+        .test-controls button {
+            padding: 8px 15px;
+            margin: 5px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="exact">
+    <div class="test-info">
+        <strong>🧪 FINAL TEST - ALL FIXES</strong><br>
+        Gap Fix ✅ | Creative Bubbles ✅ | Manual Resize ✅<br>
+        <span id="measurements">Measuring...</span>
+    </div>
+    
+    <div class="wrapper">
+        <div class="grid-container">
+            <div class="grid-item" style="background: #ffe0e0;">
+                Panel 1 (295×195)
+                <div class="bubble normal">Normal Bubble - Drag corners!</div>
+            </div>
+            <div class="grid-item" style="background: #e0ffe0;">
+                Panel 2 (295×195)  
+                <div class="bubble thought">Thought Cloud</div>
+            </div>
+            <div class="grid-item" style="background: #e0e0ff;">
+                Panel 3 (295×195)
+                <div class="bubble boom">BOOM!</div>
+            </div>
+            <div class="grid-item" style="background: #ffe0ff;">
+                Panel 4 (295×195)
+                <div class="bubble love">Love ❤️</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-controls">
+        <button onclick="measureGaps()">📏 Measure Gaps</button>
+        <button onclick="testBubbles()">🎨 Test Bubbles</button>
+        <button onclick="toggleDebug()">🔧 Debug Mode</button>
+    </div>
+    
+    <script>
+        function measureGaps() {
+            const items = document.querySelectorAll('.grid-item');
+            const container = document.querySelector('.grid-container');
+            const wrapper = document.querySelector('.wrapper');
+            
+            const containerRect = container.getBoundingClientRect();
+            const wrapperRect = wrapper.getBoundingClientRect();
+            
+            if (items.length >= 2) {
+                const item1 = items[0].getBoundingClientRect();
+                const item2 = items[1].getBoundingClientRect();
+                const item3 = items[2].getBoundingClientRect();
+                
+                const hGap = Math.round(item2.left - item1.right);
+                const vGap = Math.round(item3.top - item1.bottom);
+                
+                const measurements = document.getElementById('measurements');
+                const status = (hGap === 10 && vGap === 10) ? '✅ PERFECT!' : '❌ NEEDS FIX';
+                
+                measurements.innerHTML = `
+                    Wrapper: ${wrapperRect.width}×${wrapperRect.height} | 
+                    H-Gap: ${hGap}px | V-Gap: ${vGap}px | 
+                    ${status}
+                `;
+                
+                alert(`📏 GAP MEASUREMENT RESULTS:\\n\\n` +
+                      `Wrapper: ${wrapperRect.width}×${wrapperRect.height}px\\n` +
+                      `Container: ${containerRect.width}×${containerRect.height}px\\n` +
+                      `Panel 1: ${item1.width}×${item1.height}px\\n` +
+                      `Horizontal Gap: ${hGap}px (should be 10px)\\n` +
+                      `Vertical Gap: ${vGap}px (should be 10px)\\n\\n` +
+                      `Status: ${status}`);
+            }
+        }
+        
+        function testBubbles() {
+            alert('🎨 BUBBLE TEST INSTRUCTIONS:\\n\\n' +
+                  '1. Hover over any bubble - see green border\\n' +
+                  '2. Hold and drag corners to resize\\n' +
+                  '3. Notice creative box-shadow effects\\n' +
+                  '4. Different bubble types have unique designs\\n\\n' +
+                  '✨ Try resizing the bubbles now!');
+        }
+        
+        function toggleDebug() {
+            document.body.classList.toggle('debug-gaps');
+            const isDebug = document.body.classList.contains('debug-gaps');
+            alert(isDebug ? 
+                '🔧 DEBUG MODE ON - Red/blue lines show exact measurements' : 
+                '🔧 DEBUG MODE OFF - Normal view restored');
+        }
+        
+        // Auto-measure on load
+        window.addEventListener('load', () => {
+            setTimeout(measureGaps, 1000);
+        });
+    </script>
+</body>
+</html>

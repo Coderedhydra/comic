@@ -1888,17 +1888,16 @@ class EnhancedComicGenerator:
                 return;
             }
             
-            // Step 3: Ask for size
-            const sizeChoice = prompt('📏 SELECT BUBBLE SIZE:\\n\\n1. Small (100×50)\\n2. Medium (140×70)\\n3. Large (200×100)\\n4. X-Large (250×120)\\n\\nEnter 1-4:');
-            const sizeNum = parseInt(sizeChoice);
-            const sizes = ['small', 'medium', 'large', 'xlarge'];
-            const selectedSize = (sizeNum >= 1 && sizeNum <= 4) ? sizes[sizeNum - 1] : 'medium';
-            
-            // Step 4: Apply using completely new method
-            const result = directBubbleChange(panelNum, selectedType, selectedSize);
+            // Step 3: Apply using completely new method (no size selection needed)
+            const result = directBubbleChange(panelNum, selectedType);
             
             if (result.success) {
-                alert(`✅ SUCCESS!\\n\\nPanel ${panelNum} bubble changed to ${selectedEmoji} ${selectedName}\\nSize: ${selectedSize}\\nLocation: ${result.location}\\n\\n💡 Tip: Hover and drag bottom-right corner to resize manually!`);
+                alert(`✅ SUCCESS!\\n\\nPanel ${panelNum} bubble changed to ${selectedEmoji} ${selectedName}\\n\\nLocation: ${result.location}\\n\\n💡 RESIZE: Hold and drag the bubble corners to stretch manually!`);
+                
+                // Add resize instructions
+                setTimeout(() => {
+                    alert('🎯 MANUAL RESIZE INSTRUCTIONS:\\n\\n1. Hover over the bubble\\n2. Hold and drag any corner to stretch\\n3. Resize in real-time by dragging\\n4. Release to set new size\\n\\n✨ Try it now!');
+                }, 2000);
             } else {
                 alert(`❌ FAILED!\\n\\nCould not change Panel ${panelNum}\\n\\nReason: ${result.reason}`);
             }
@@ -1984,7 +1983,7 @@ class EnhancedComicGenerator:
             }
         }
         
-        function directBubbleChange(globalPanelNumber, bubbleType, bubbleSize = 'medium') {
+        function directBubbleChange(globalPanelNumber, bubbleType) {
             // ULTRA-SIMPLE DIRECT APPROACH
             console.log(`🚀 DIRECT: Changing panel ${globalPanelNumber} to ${bubbleType}`);
             
@@ -2005,38 +2004,35 @@ class EnhancedComicGenerator:
                         targetBubble.style.display = 'none';
                     } else {
                         targetBubble.style.display = 'flex';
+                        
+                        // Remove all shape classes first
+                        const allShapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square', 'whisper', 'scream', 'dream', 'radio', 'electric', 'love', 'crystal', 'fire'];
+                        allShapes.forEach(shape => targetBubble.classList.remove(shape));
+                        
+                        // Add new bubble type class
                         targetBubble.classList.add(bubbleType);
-                        targetBubble.classList.add(bubbleSize);
                         
-                        // Force visual change with direct styles for all bubble types
-                        const styles = {
-                            normal: { bg: 'linear-gradient(145deg, #ffffff, #f0f0f0)', border: '3px solid #333', radius: '25px' },
-                            jagged: { bg: 'linear-gradient(145deg, #ffeeee, #ffdddd)', border: '3px solid #ff4444', radius: '0px' },
-                            thought: { bg: 'radial-gradient(circle, #f8f9fa, #e9ecef)', border: '2px dashed #6c757d', radius: '50%' },
-                            idea: { bg: 'radial-gradient(circle, #fff9c4, #fff3cd)', border: '3px solid #ffc107', radius: '20px' },
-                            boom: { bg: 'radial-gradient(circle, #fff5ee, #ffebcd)', border: '4px solid #ff6600', radius: '0px' },
-                            square: { bg: 'linear-gradient(145deg, #f8f9fa, #e9ecef)', border: '2px solid #6c757d', radius: '8px' },
-                            whisper: { bg: 'linear-gradient(145deg, #f1f3f4, #e8eaed)', border: '1px dashed #9aa0a6', radius: '30px' },
-                            scream: { bg: 'radial-gradient(circle, #fff2f2, #ffe6e6)', border: '4px solid #dc3545', radius: '15px' },
-                            dream: { bg: 'radial-gradient(ellipse, #e8f4fd, #cce7f0)', border: '2px solid #0dcaf0', radius: '60% 40% 60% 40%' },
-                            radio: { bg: 'linear-gradient(145deg, #f8f9fa, #e9ecef)', border: '2px solid #6c757d', radius: '15px' },
-                            electric: { bg: 'radial-gradient(circle, #e3f2fd, #bbdefb)', border: '3px solid #2196f3', radius: '20px' },
-                            love: { bg: 'radial-gradient(circle, #fce4ec, #f8bbd9)', border: '3px solid #e91e63', radius: '15px' },
-                            crystal: { bg: 'linear-gradient(135deg, #e8eaf6, #c5cae9)', border: '2px solid #3f51b5', radius: '10px' },
-                            fire: { bg: 'radial-gradient(circle, #fff3e0, #ffcc02)', border: '3px solid #ff5722', radius: '15px' }
-                        };
+                        // Enable manual resizing
+                        targetBubble.style.resize = 'both';
+                        targetBubble.style.overflow = 'auto';
+                        targetBubble.style.minWidth = '80px';
+                        targetBubble.style.minHeight = '40px';
+                        targetBubble.style.maxWidth = '280px';
+                        targetBubble.style.maxHeight = '150px';
+                        targetBubble.style.cursor = 'grab';
                         
-                        const style = styles[bubbleType];
-                        if (style) {
-                            targetBubble.style.background = style.bg;
-                            targetBubble.style.border = style.border;
-                            targetBubble.style.borderRadius = style.radius;
-                        }
+                        // Add visual feedback for resizing
+                        targetBubble.style.border = '3px solid #4CAF50';
+                        targetBubble.style.boxShadow = '0 0 10px rgba(76, 175, 80, 0.3)';
                         
-                        // Apply size class
-                        const sizeClasses = ['small', 'medium', 'large', 'xlarge'];
-                        sizeClasses.forEach(s => targetBubble.classList.remove(s));
-                        targetBubble.classList.add(bubbleSize);
+                        // Reset border after 2 seconds
+                        setTimeout(() => {
+                            if (targetBubble.classList.contains(bubbleType)) {
+                                // Let CSS handle the styling
+                                targetBubble.style.border = '';
+                                targetBubble.style.boxShadow = '';
+                            }
+                        }, 2000);
                     }
                     
                     return { success: true, location: `Speech bubble #${globalPanelNumber}` };
