@@ -36,9 +36,9 @@ def generate_12_pages_600x400(frame_files, bubbles):
         for i in range(panels_per_page):
             if frame_idx < num_frames:
                 # Each panel in 600x400 page:
-                # Panel dimensions with padding
-                # 600px width / 2 columns = 300px per panel (minus gap)
-                # 400px height / 2 rows = 200px per panel (minus gap)
+                # Panel dimensions - perfect fit with no gaps
+                # 600px width / 2 columns = 300px per panel (full width)
+                # 400px height / 2 rows = 200px per panel (full height)
                 
                 panel_obj = panel(
                     image=selected_frames[frame_idx],
@@ -48,8 +48,8 @@ def generate_12_pages_600x400(frame_files, bubbles):
                     metadata={
                         'page_width': page_width,
                         'page_height': page_height,
-                        'panel_width': 290,  # 300px - 10px gap
-                        'panel_height': 190  # 200px - 10px gap
+                        'panel_width': 295,  # Adjusted for 10px white divider
+                        'panel_height': 195  # Adjusted for 10px white divider
                     }
                 )
                 page_panels.append(panel_obj)
@@ -69,8 +69,8 @@ def generate_12_pages_600x400(frame_files, bubbles):
                     metadata={
                         'page_width': page_width,
                         'page_height': page_height,
-                        'panel_width': 290,
-                        'panel_height': 190
+                        'panel_width': 295,
+                        'panel_height': 195
                     }
                 )
                 page_panels.append(panel_obj)

@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interactive Comic Editor</title>
-    <link id="pageStyle" rel="stylesheet" href="page.css">
-    <link rel="stylesheet" href="bubble.css">
+    <link rel="stylesheet" href="zero_gap_layout.css">
+    <link rel="stylesheet" href="beautiful_bubbles.css">
+    <!-- Zero gap layout with 10px white strips -->
     
     <style>
         /* Additional styles for editing */
@@ -89,6 +90,146 @@
         .reset-btn:hover {
             background: #da190b;
         }
+        
+        /* Shape Selector Styles */
+        .shape-selector {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.95);
+            color: black;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #4CAF50;
+            z-index: 1001;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            max-width: 300px;
+        }
+        
+        .shape-selector h4 {
+            margin: 0 0 10px 0;
+            color: #4CAF50;
+            text-align: center;
+        }
+        
+        .shape-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        
+        .shape-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+        
+        .shape-option:hover {
+            border-color: #4CAF50;
+            background: #f0f8f0;
+        }
+        
+        .shape-option.selected {
+            border-color: #4CAF50;
+            background: #e8f5e8;
+        }
+        
+        .shape-preview {
+            width: 60px !important;
+            height: 30px !important;
+            font-size: 0.7em !important;
+            margin-bottom: 5px;
+            pointer-events: none;
+        }
+        
+        .shape-option span {
+            font-size: 10px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        /* Panel Controls Styles */
+        .panel-controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.95);
+            color: black;
+            padding: 12px;
+            border-radius: 10px;
+            border: 2px solid #2196F3;
+            z-index: 1002;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            max-width: 320px;
+        }
+        
+        .panel-controls h4 {
+            margin: 0 0 8px 0;
+            color: #2196F3;
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        .panel-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .panel-control {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 6px;
+            text-align: center;
+        }
+        
+        .panel-control span {
+            display: block;
+            font-size: 10px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: #333;
+        }
+        
+        .bubble-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+        }
+        
+        .bubble-btn {
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            padding: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+            width: 25px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .bubble-btn:hover {
+            background: #e3f2fd;
+            border-color: #2196F3;
+            transform: scale(1.1);
+        }
+        
+        .bubble-btn.active {
+            background: #2196F3;
+            color: white;
+            border-color: #1976D2;
+        }
     </style>
 
     <script src="page.js"></script>
@@ -106,14 +247,6 @@
             <div class="grid-item" id="_2"></div>
             <div class="grid-item" id="_3"></div>
             <div class="grid-item" id="_4"></div>
-            <div class="grid-item" id="_5"></div>
-            <div class="grid-item" id="_6"></div>
-            <div class="grid-item" id="_7"></div>
-            <div class="grid-item" id="_8"></div>
-            <div class="grid-item" id="_9"></div>
-            <div class="grid-item" id="_10"></div>
-            <div class="grid-item" id="_11"></div>
-            <div class="grid-item" id="_12"></div>
         </div>
     </div>
 
@@ -124,16 +257,99 @@
     <!-- Edit Controls -->
     <div class="edit-controls">
         <h4>✏️ Comic Editor</h4>
-        <p>• <strong>Drag</strong> speech bubbles to reposition</p>
+        <p>• <strong>Click</strong> bubble to select</p>
         <p>• <strong>Double-click</strong> to edit text</p>
-        <p>• <strong>Enter</strong> to save text</p>
-        <button class="save-btn" onclick="saveComic()">💾 Save Changes</button>
+        <p>• <strong>Drag</strong> to reposition</p>
+        <button class="save-btn" onclick="saveComic()">💾 Save</button>
         <button class="reset-btn" onclick="resetComic()">↩️ Reset</button>
+    </div>
+
+    <!-- Panel Bubble Controls -->
+    <div class="panel-controls">
+        <h4>🎯 Panel Bubbles</h4>
+        <div class="panel-grid">
+            <div class="panel-control" data-panel="1">
+                <span>Panel 1</span>
+                <div class="bubble-buttons">
+                    <button class="bubble-btn" data-shape="normal" onclick="changePanelBubble(1, 'normal')">💬</button>
+                    <button class="bubble-btn" data-shape="jagged" onclick="changePanelBubble(1, 'jagged')">⚡</button>
+                    <button class="bubble-btn" data-shape="thought" onclick="changePanelBubble(1, 'thought')">💭</button>
+                    <button class="bubble-btn" data-shape="idea" onclick="changePanelBubble(1, 'idea')">💡</button>
+                    <button class="bubble-btn" data-shape="boom" onclick="changePanelBubble(1, 'boom')">💥</button>
+                    <button class="bubble-btn" data-shape="square" onclick="changePanelBubble(1, 'square')">📝</button>
+                </div>
+            </div>
+            <div class="panel-control" data-panel="2">
+                <span>Panel 2</span>
+                <div class="bubble-buttons">
+                    <button class="bubble-btn" data-shape="normal" onclick="changePanelBubble(2, 'normal')">💬</button>
+                    <button class="bubble-btn" data-shape="jagged" onclick="changePanelBubble(2, 'jagged')">⚡</button>
+                    <button class="bubble-btn" data-shape="thought" onclick="changePanelBubble(2, 'thought')">💭</button>
+                    <button class="bubble-btn" data-shape="idea" onclick="changePanelBubble(2, 'idea')">💡</button>
+                    <button class="bubble-btn" data-shape="boom" onclick="changePanelBubble(2, 'boom')">💥</button>
+                    <button class="bubble-btn" data-shape="square" onclick="changePanelBubble(2, 'square')">📝</button>
+                </div>
+            </div>
+            <div class="panel-control" data-panel="3">
+                <span>Panel 3</span>
+                <div class="bubble-buttons">
+                    <button class="bubble-btn" data-shape="normal" onclick="changePanelBubble(3, 'normal')">💬</button>
+                    <button class="bubble-btn" data-shape="jagged" onclick="changePanelBubble(3, 'jagged')">⚡</button>
+                    <button class="bubble-btn" data-shape="thought" onclick="changePanelBubble(3, 'thought')">💭</button>
+                    <button class="bubble-btn" data-shape="idea" onclick="changePanelBubble(3, 'idea')">💡</button>
+                    <button class="bubble-btn" data-shape="boom" onclick="changePanelBubble(3, 'boom')">💥</button>
+                    <button class="bubble-btn" data-shape="square" onclick="changePanelBubble(3, 'square')">📝</button>
+                </div>
+            </div>
+            <div class="panel-control" data-panel="4">
+                <span>Panel 4</span>
+                <div class="bubble-buttons">
+                    <button class="bubble-btn" data-shape="normal" onclick="changePanelBubble(4, 'normal')">💬</button>
+                    <button class="bubble-btn" data-shape="jagged" onclick="changePanelBubble(4, 'jagged')">⚡</button>
+                    <button class="bubble-btn" data-shape="thought" onclick="changePanelBubble(4, 'thought')">💭</button>
+                    <button class="bubble-btn" data-shape="idea" onclick="changePanelBubble(4, 'idea')">💡</button>
+                    <button class="bubble-btn" data-shape="boom" onclick="changePanelBubble(4, 'boom')">💥</button>
+                    <button class="bubble-btn" data-shape="square" onclick="changePanelBubble(4, 'square')">📝</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bubble Shape Selector -->
+    <div class="shape-selector" id="shapeSelector" style="display: none;">
+        <h4>🎨 Bubble Shapes</h4>
+        <div class="shape-options">
+            <div class="shape-option" data-shape="normal">
+                <div class="shape-preview bubble normal">Normal</div>
+                <span>Normal</span>
+            </div>
+            <div class="shape-option" data-shape="jagged">
+                <div class="shape-preview bubble jagged">Angry</div>
+                <span>Angry</span>
+            </div>
+            <div class="shape-option" data-shape="thought">
+                <div class="shape-preview bubble thought">Think</div>
+                <span>Thought</span>
+            </div>
+            <div class="shape-option" data-shape="idea">
+                <div class="shape-preview bubble idea">Idea!</div>
+                <span>Idea</span>
+            </div>
+            <div class="shape-option" data-shape="boom">
+                <div class="shape-preview bubble boom">Boom!</div>
+                <span>Action</span>
+            </div>
+            <div class="shape-option" data-shape="square">
+                <div class="shape-preview bubble square">Narrate</div>
+                <span>Narration</span>
+            </div>
+        </div>
     </div>
 
     <script>
         // Interactive editing functionality
         let currentEditBubble = null;
+        let selectedBubble = null;
         let draggedBubble = null;
         let offset = {x: 0, y: 0};
 
@@ -145,10 +361,49 @@
         function initializeEditor() {
             // Find all speech bubbles
             document.querySelectorAll('.bubble').forEach(bubble => {
+                // Ensure bubble has a default shape class if none exists
+                if (!bubble.classList.contains('normal') && 
+                    !bubble.classList.contains('jagged') && 
+                    !bubble.classList.contains('thought') && 
+                    !bubble.classList.contains('idea') && 
+                    !bubble.classList.contains('boom') && 
+                    !bubble.classList.contains('square')) {
+                    bubble.classList.add('normal');
+                }
+                
                 // Make bubbles interactive
-                bubble.addEventListener('dblclick', (e) => {
+                bubble.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    editBubbleText(bubble);
+                    selectBubble(bubble);
+                });
+                
+                // Track clicks for triple-click stretch activation
+                let clickCount = 0;
+                let clickTimer = null;
+                
+                bubble.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    clickCount++;
+                    
+                    if (clickCount === 1) {
+                        // First click - select bubble
+                        selectBubble(bubble);
+                        clickTimer = setTimeout(() => {
+                            clickCount = 0;
+                        }, 800); // Reset after 800ms
+                    } else if (clickCount === 2) {
+                        // Second click - edit text
+                        clearTimeout(clickTimer);
+                        editBubbleText(bubble);
+                        clickTimer = setTimeout(() => {
+                            clickCount = 0;
+                        }, 800);
+                    } else if (clickCount === 3) {
+                        // Third click - activate stretch mode
+                        clearTimeout(clickTimer);
+                        activateStretchMode(bubble);
+                        clickCount = 0;
+                    }
                 });
                 
                 bubble.addEventListener('mousedown', startDrag);
@@ -158,8 +413,114 @@
             document.addEventListener('mousemove', drag);
             document.addEventListener('mouseup', stopDrag);
             
+            // Global click to deselect
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.bubble') && !e.target.closest('.shape-selector')) {
+                    deselectBubble();
+                }
+            });
+            
+            // Initialize shape selector
+            initializeShapeSelector();
+            
             // Load saved state if exists
             loadSavedState();
+            
+            // Initialize panel button states
+            setTimeout(() => {
+                initializePanelButtonStates();
+            }, 100);
+        }
+        
+        function selectBubble(bubble) {
+            // Deselect previous
+            if (selectedBubble) {
+                selectedBubble.classList.remove('selected');
+            }
+            
+            // Select new
+            selectedBubble = bubble;
+            bubble.classList.add('selected');
+            bubble.style.boxShadow = '0 0 10px #4CAF50';
+            
+            // Show shape selector
+            showShapeSelector();
+            
+            // Highlight current shape in selector
+            updateShapeSelector();
+        }
+        
+        function deselectBubble() {
+            if (selectedBubble) {
+                selectedBubble.classList.remove('selected');
+                selectedBubble.style.boxShadow = '';
+                selectedBubble = null;
+                hideShapeSelector();
+            }
+        }
+        
+        function initializeShapeSelector() {
+            document.querySelectorAll('.shape-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    if (selectedBubble) {
+                        changeBubbleShape(option.dataset.shape);
+                    }
+                });
+            });
+        }
+        
+        function showShapeSelector() {
+            document.getElementById('shapeSelector').style.display = 'block';
+        }
+        
+        function hideShapeSelector() {
+            document.getElementById('shapeSelector').style.display = 'none';
+        }
+        
+        function updateShapeSelector() {
+            if (!selectedBubble) return;
+            
+            // Remove previous selection
+            document.querySelectorAll('.shape-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            // Find current shape
+            let currentShape = 'normal';
+            const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+            for (let shape of shapes) {
+                if (selectedBubble.classList.contains(shape)) {
+                    currentShape = shape;
+                    break;
+                }
+            }
+            
+            // Highlight current shape
+            const currentOption = document.querySelector(`[data-shape="${currentShape}"]`);
+            if (currentOption) {
+                currentOption.classList.add('selected');
+            }
+        }
+        
+        function changeBubbleShape(newShape) {
+            if (!selectedBubble) return;
+            
+            // Remove all shape classes
+            const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+            shapes.forEach(shape => {
+                selectedBubble.classList.remove(shape);
+            });
+            
+            // Add new shape class
+            selectedBubble.classList.add(newShape);
+            
+            // Update selector
+            updateShapeSelector();
+            
+            // Save state
+            saveState();
+            
+            console.log(`Changed bubble shape to: ${newShape}`);
         }
 
         function editBubbleText(bubble) {
@@ -248,11 +609,22 @@
         function saveState() {
             const bubbles = [];
             document.querySelectorAll('.bubble').forEach((bubble, index) => {
+                // Find current shape
+                let shape = 'normal';
+                const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+                for (let s of shapes) {
+                    if (bubble.classList.contains(s)) {
+                        shape = s;
+                        break;
+                    }
+                }
+                
                 bubbles.push({
                     index: index,
                     text: bubble.innerText,
                     left: bubble.style.left,
-                    top: bubble.style.top
+                    top: bubble.style.top,
+                    shape: shape
                 });
             });
             localStorage.setItem('comicBubbles', JSON.stringify(bubbles));
@@ -271,6 +643,17 @@
                         elements[index].innerText = data.text;
                         if (data.left) elements[index].style.left = data.left;
                         if (data.top) elements[index].style.top = data.top;
+                        
+                        // Restore shape
+                        if (data.shape) {
+                            // Remove all shape classes
+                            const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+                            shapes.forEach(shape => {
+                                elements[index].classList.remove(shape);
+                            });
+                            // Add saved shape
+                            elements[index].classList.add(data.shape);
+                        }
                     }
                 });
             } catch (e) {
@@ -288,6 +671,100 @@
                 localStorage.removeItem('comicBubbles');
                 location.reload();
             }
+        }
+        
+        function activateStretchMode(bubble) {
+            // 3-click activates stretch mode
+            console.log('🤏 Activating stretch mode for bubble');
+            
+            // Visual feedback for stretch mode
+            bubble.style.border = '3px solid #FF5722';
+            bubble.style.boxShadow = '0 0 20px rgba(255, 87, 34, 0.6)';
+            bubble.style.cursor = 'nw-resize';
+            
+            // Enable resize
+            bubble.style.resize = 'both';
+            bubble.style.overflow = 'auto';
+            
+            // Add stretch instructions
+            const instruction = document.createElement('div');
+            instruction.style.cssText = 'position: absolute; top: -30px; left: 0; background: #FF5722; color: white; padding: 5px 10px; border-radius: 5px; font-size: 10px; white-space: nowrap; z-index: 100;';
+            instruction.textContent = 'STRETCH MODE: Drag corners to resize';
+            bubble.appendChild(instruction);
+            
+            // Remove stretch mode after 5 seconds
+            setTimeout(() => {
+                bubble.style.border = '';
+                bubble.style.boxShadow = '';
+                bubble.style.cursor = 'move';
+                if (instruction.parentNode) {
+                    instruction.remove();
+                }
+            }, 5000);
+            
+            alert('🤏 STRETCH MODE ACTIVATED!\\n\\n✨ 3-click detected!\\n\\n📏 Now drag the corners to resize the bubble\\n\\nMode will auto-disable in 5 seconds');
+        }
+        
+        function changePanelBubble(panelNum, shape) {
+            // Find bubble in the specified panel (grid item)
+            const gridItems = document.querySelectorAll('.grid-item');
+            const targetPanel = gridItems[panelNum - 1]; // Convert to 0-based index
+            
+            if (targetPanel) {
+                const bubble = targetPanel.querySelector('.bubble');
+                if (bubble) {
+                    // Remove all shape classes
+                    const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+                    shapes.forEach(s => bubble.classList.remove(s));
+                    
+                    // Add new shape
+                    bubble.classList.add(shape);
+                    
+                    // Update button states
+                    updatePanelButtonStates(panelNum, shape);
+                    
+                    // Save state
+                    saveState();
+                    
+                    console.log(`Changed Panel ${panelNum} bubble to: ${shape}`);
+                } else {
+                    console.log(`No bubble found in Panel ${panelNum}`);
+                }
+            }
+        }
+        
+        function updatePanelButtonStates(panelNum, activeShape) {
+            // Clear all active states for this panel
+            const panelControl = document.querySelector(`[data-panel="${panelNum}"]`);
+            if (panelControl) {
+                const buttons = panelControl.querySelectorAll('.bubble-btn');
+                buttons.forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.shape === activeShape) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
+        }
+        
+        function initializePanelButtonStates() {
+            // Set initial button states based on current bubbles
+            const gridItems = document.querySelectorAll('.grid-item');
+            gridItems.forEach((panel, index) => {
+                const bubble = panel.querySelector('.bubble');
+                if (bubble) {
+                    // Find current shape
+                    const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+                    let currentShape = 'normal';
+                    for (let shape of shapes) {
+                        if (bubble.classList.contains(shape)) {
+                            currentShape = shape;
+                            break;
+                        }
+                    }
+                    updatePanelButtonStates(index + 1, currentShape);
+                }
+            });
         }
     </script>
 </body>

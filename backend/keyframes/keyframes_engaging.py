@@ -170,9 +170,16 @@ def calculate_engagement_score(frame, face_analyzer, eye_detector,
     
     score = 0.0
     
-    # Save temp for analysis
-    temp_path = "temp_frame_analysis.png"
-    cv2.imwrite(temp_path, frame)
+    # Save temp for analysis with unique name to avoid conflicts
+    import time
+    import threading
+    temp_path = f"temp_frame_analysis_{int(time.time() * 1000)}_{threading.current_thread().ident}.png"
+    
+    # Ensure the write succeeds
+    success = cv2.imwrite(temp_path, frame)
+    if not success:
+        print(f"⚠️ Failed to write temp frame: {temp_path}")
+        return 0.0
     
     try:
         # 1. Eye quality (most important for comics)

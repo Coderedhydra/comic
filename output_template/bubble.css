@@ -8,12 +8,12 @@
 }
 
 .bubble{
-    width: 200px;
-    height: 94px;
+    width: 140px;  /* Optimized size for 295px panels */
+    height: 70px;  /* Optimized size for 195px panels */
     background-color: white;
-    border-radius: 50%;
+    border: 2px solid black;
     font-family: 'adam_warren_proregular';
-    font-size: 1em;
+    font-size: 0.8em;
     display: flex;
     position: absolute; /* Ensure bubble does not affect grid item size */ 
     text-align: center;
@@ -21,7 +21,531 @@
     align-items: center;
     z-index: 2;
     box-sizing: border-box; /* Ensure padding is included in the bubble's total size */
+    padding: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 20px;
+    /* Make bubbles resizable */
+    resize: both;
+    overflow: auto;
+    min-width: 80px;
+    max-width: 250px;
+    min-height: 40px;
+    max-height: 120px;
+    word-wrap: break-word;
+}
 
+/* 1. Normal speech bubble - Creative box-shadow tail */
+.bubble.normal {
+    display: flex;
+    background: #fff;
+    border-radius: 25px;
+    border: 3px solid #333;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.bubble.normal::after {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 40px;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border: 3px solid #333;
+    border-radius: 50%;
+    box-shadow: -15px -15px 0 -5px #fff,
+                -13px -13px 0 -3px #333,
+                -25px -25px 0 -10px #fff,
+                -23px -23px 0 -8px #333;
+}
+
+/* 2. Jagged/angry bubble - Spiky aggressive */
+.bubble.jagged {
+    background: linear-gradient(145deg, #ffeeee, #ffdddd);
+    border: 3px solid #ff4444;
+    border-radius: 0;
+    position: relative;
+    clip-path: polygon(
+        0% 25%, 8% 0%, 16% 25%, 24% 5%, 32% 30%, 40% 10%, 
+        48% 35%, 56% 15%, 64% 40%, 72% 20%, 80% 45%, 88% 25%, 
+        96% 50%, 100% 60%, 92% 75%, 100% 90%, 85% 85%, 90% 100%, 
+        75% 90%, 80% 100%, 65% 85%, 70% 100%, 55% 80%, 60% 100%, 
+        45% 75%, 50% 100%, 35% 70%, 40% 100%, 25% 65%, 30% 100%, 
+        15% 60%, 20% 100%, 5% 55%, 10% 100%, 0% 50%
+    );
+    font-weight: bold;
+    color: #cc0000;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+/* 3. Thought cloud - Creative box-shadow style (inspired by your example) */
+.bubble.thought {
+    display: flex;
+    background-color: #fff;
+    border-radius: 30px;
+    min-width: 40px;
+    max-width: 220px;
+    min-height: 40px;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-style: italic;
+    color: #495057;
+    border: 2px solid #ddd;
+}
+
+.bubble.thought:before,
+.bubble.thought:after {
+    content: "";
+    background-color: #fff;
+    border-radius: 50%;
+    display: block;
+    position: absolute;
+    z-index: -1;
+    border: 2px solid #ddd;
+}
+
+.bubble.thought:before {
+    width: 44px;
+    height: 44px;
+    top: -12px;
+    left: 28px;
+    box-shadow: -50px 30px 0 -12px #fff,
+                -48px 32px 0 -10px #ddd;
+}
+
+.bubble.thought:after {
+    bottom: -10px;
+    right: 26px;
+    width: 30px;
+    height: 30px;
+    box-shadow: 40px -34px 0 0 #fff,
+                42px -32px 0 2px #ddd,
+                -28px -6px 0 -2px #fff,
+                -26px -4px 0 0px #ddd,
+                -24px 17px 0 -6px #fff,
+                -22px 19px 0 -4px #ddd,
+                -5px 25px 0 -10px #fff,
+                -3px 27px 0 -8px #ddd;
+}
+
+/* 4. Idea/eureka bubble - Bright inspiration */
+.bubble.idea {
+    background: radial-gradient(circle, #fff9c4, #fff3cd);
+    border: 3px solid #ffc107;
+    border-radius: 20px;
+    position: relative;
+    box-shadow: 0 0 20px rgba(255, 193, 7, 0.4);
+    animation: ideaGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes ideaGlow {
+    from { box-shadow: 0 0 20px rgba(255, 193, 7, 0.4); }
+    to { box-shadow: 0 0 30px rgba(255, 193, 7, 0.6); }
+}
+
+.bubble.idea::after {
+    content: '💡';
+    position: absolute;
+    top: -20px;
+    right: -10px;
+    font-size: 24px;
+    background: radial-gradient(circle, #fff9c4, #ffc107);
+    border: 3px solid #ffc107;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: bulbFlicker 1.5s ease-in-out infinite;
+}
+
+@keyframes bulbFlicker {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* 5. Boom/explosion bubble - Creative box-shadow burst */
+.bubble.boom {
+    display: flex;
+    background: #ff6600;
+    border-radius: 50%;
+    border: 4px solid #cc4400;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-weight: bold;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+    animation: boomPulse 0.8s ease-in-out infinite alternate;
+}
+
+.bubble.boom::before {
+    content: '';
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    background: #ff6600;
+    border: 3px solid #cc4400;
+    border-radius: 50%;
+    top: -15px;
+    left: -15px;
+    box-shadow: 60px 0 0 -10px #ff6600,
+                62px 2px 0 -8px #cc4400,
+                30px -30px 0 -15px #ff6600,
+                32px -28px 0 -13px #cc4400,
+                0px 60px 0 -10px #ff6600,
+                2px 62px 0 -8px #cc4400,
+                -30px 30px 0 -15px #ff6600,
+                -28px 32px 0 -13px #cc4400;
+}
+
+.bubble.boom::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: #ffcc02;
+    border-radius: 50%;
+    top: 10px;
+    right: 10px;
+    box-shadow: -40px -20px 0 -5px #ffcc02,
+                20px -40px 0 -8px #ffcc02,
+                -20px 40px 0 -10px #ffcc02,
+                40px 20px 0 -7px #ffcc02;
+    animation: sparkle 1s ease-in-out infinite;
+}
+
+@keyframes boomPulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.05); }
+}
+
+@keyframes sparkle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* 6. Square narration bubble - Clean rectangular */
+.bubble.square {
+    background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+    border: 2px solid #6c757d;
+    border-radius: 8px;
+    font-style: italic;
+    color: #495057;
+    position: relative;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.bubble.square::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 40px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 12px solid #6c757d;
+    z-index: 1;
+}
+
+.bubble.square::before {
+    content: '';
+    position: absolute;
+    bottom: -7px;
+    left: 42px;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 9px solid #f8f9fa;
+    z-index: 2;
+}
+
+/* 7. Whisper bubble - Soft small text */
+.bubble.whisper {
+    background: linear-gradient(145deg, #f1f3f4, #e8eaed);
+    border: 1px dashed #9aa0a6;
+    border-radius: 30px;
+    font-size: 0.7em;
+    color: #5f6368;
+    opacity: 0.9;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* 8. Scream bubble - Large dramatic */
+.bubble.scream {
+    background: radial-gradient(circle, #fff2f2, #ffe6e6);
+    border: 4px solid #dc3545;
+    border-radius: 15px;
+    position: relative;
+    transform: scale(1.1);
+    animation: screamShake 0.3s ease-in-out infinite;
+    font-weight: bold;
+    font-size: 1.2em;
+    color: #721c24;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+@keyframes screamShake {
+    0%, 100% { transform: scale(1.1) rotate(0deg); }
+    25% { transform: scale(1.1) rotate(-1deg); }
+    75% { transform: scale(1.1) rotate(1deg); }
+}
+
+/* 9. Dream bubble - Soft flowing */
+.bubble.dream {
+    background: radial-gradient(ellipse, #e8f4fd, #cce7f0);
+    border: 2px solid #0dcaf0;
+    border-radius: 60% 40% 60% 40%;
+    position: relative;
+    font-style: italic;
+    color: #055160;
+    animation: dreamFloat 3s ease-in-out infinite;
+}
+
+@keyframes dreamFloat {
+    0%, 100% { border-radius: 60% 40% 60% 40%; }
+    50% { border-radius: 40% 60% 40% 60%; }
+}
+
+/* 10. Radio/transmission bubble - Tech style */
+.bubble.radio {
+    background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+    border: 2px solid #6c757d;
+    border-radius: 15px;
+    position: relative;
+    font-family: 'Courier New', monospace;
+    color: #212529;
+}
+
+.bubble.radio::before {
+    content: '📡';
+    position: absolute;
+    top: -15px;
+    left: -10px;
+    font-size: 16px;
+    background: #6c757d;
+    color: white;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 11. Electric bubble - Sparking energy */
+.bubble.electric {
+    background: radial-gradient(circle, #e3f2fd, #bbdefb);
+    border: 3px solid #2196f3;
+    border-radius: 20px;
+    position: relative;
+    animation: electricSpark 1s ease-in-out infinite;
+    color: #0d47a1;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(33, 150, 243, 0.5);
+}
+
+@keyframes electricSpark {
+    0%, 100% { 
+        box-shadow: 0 0 10px rgba(33, 150, 243, 0.3);
+        border-color: #2196f3;
+    }
+    50% { 
+        box-shadow: 0 0 20px rgba(33, 150, 243, 0.6);
+        border-color: #03a9f4;
+    }
+}
+
+/* 12. Love bubble - Creative box-shadow hearts */
+.bubble.love {
+    display: flex;
+    background: #fce4ec;
+    border-radius: 20px;
+    border: 3px solid #e91e63;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #880e4f;
+    font-weight: bold;
+    animation: loveFloat 2s ease-in-out infinite;
+}
+
+.bubble.love::before {
+    content: '';
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    background: #e91e63;
+    top: -8px;
+    right: 20px;
+    border-radius: 50%;
+    box-shadow: 10px 0 0 0 #e91e63,
+                5px -8px 0 -2px #e91e63,
+                15px -8px 0 -2px #e91e63,
+                -30px 20px 0 -3px #f8bbd9,
+                -20px 15px 0 -5px #f8bbd9,
+                -40px 25px 0 -7px #f8bbd9;
+    transform: rotate(45deg);
+}
+
+.bubble.love::after {
+    content: '💕';
+    position: absolute;
+    top: -25px;
+    left: -15px;
+    font-size: 18px;
+    animation: heartFloat 1.5s ease-in-out infinite;
+}
+
+@keyframes loveFloat {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-3px); }
+}
+
+@keyframes heartFloat {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.1) rotate(5deg); }
+}
+
+/* 13. Crystal bubble - Geometric prismatic */
+.bubble.crystal {
+    background: linear-gradient(135deg, #e8eaf6, #c5cae9);
+    border: 2px solid #3f51b5;
+    position: relative;
+    clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+    color: #1a237e;
+    font-weight: bold;
+    animation: crystalShine 2s ease-in-out infinite;
+}
+
+@keyframes crystalShine {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.2); }
+}
+
+/* 14. Fire bubble - Flame effect */
+.bubble.fire {
+    background: radial-gradient(circle, #fff3e0, #ffcc02);
+    border: 3px solid #ff5722;
+    position: relative;
+    color: #bf360c;
+    font-weight: bold;
+    animation: fireFlicker 0.5s ease-in-out infinite alternate;
+    clip-path: polygon(
+        30% 0%, 40% 20%, 50% 0%, 60% 20%, 70% 0%, 
+        80% 30%, 90% 50%, 80% 70%, 90% 100%, 70% 90%, 
+        60% 100%, 50% 80%, 40% 100%, 30% 90%, 10% 100%, 
+        20% 70%, 10% 50%, 20% 30%
+    );
+}
+
+@keyframes fireFlicker {
+    from { filter: hue-rotate(0deg) brightness(1); }
+    to { filter: hue-rotate(10deg) brightness(1.1); }
+}
+
+/* Enhanced manual resize functionality */
+.bubble {
+    resize: both !important;
+    overflow: auto !important;
+    cursor: move;
+}
+
+.bubble:hover {
+    transform: scale(1.01);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    transition: all 0.2s ease;
+    cursor: grab;
+    border: 3px solid #4CAF50 !important; /* Green border on hover for resize indication */
+}
+
+.bubble:active {
+    cursor: grabbing;
+}
+
+/* Enhanced resize handle styling */
+.bubble::-webkit-resizer {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    border-radius: 50%;
+    width: 12px !important;
+    height: 12px !important;
+    border: 2px solid white;
+    opacity: 0.8;
+    cursor: nw-resize;
+}
+
+.bubble:hover::-webkit-resizer {
+    opacity: 1;
+    background: linear-gradient(135deg, #4CAF50, #2e7d32);
+    animation: resizePulse 1s ease-in-out infinite;
+}
+
+@keyframes resizePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+/* Resize corner indicators */
+.bubble::before {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 8px;
+    height: 8px;
+    background: #4CAF50;
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.bubble:hover::before {
+    opacity: 0.6;
+}
+
+/* Active bubble styling */
+.bubble:focus {
+    outline: 3px solid #4CAF50;
+    outline-offset: 2px;
+}
+
+/* Size adjustment classes for quick sizing */
+.bubble.small {
+    width: 100px !important;
+    height: 50px !important;
+    font-size: 0.7em !important;
+}
+
+.bubble.medium {
+    width: 140px !important;
+    height: 70px !important;
+    font-size: 0.8em !important;
+}
+
+.bubble.large {
+    width: 200px !important;
+    height: 100px !important;
+    font-size: 1em !important;
+}
+
+.bubble.xlarge {
+    width: 250px !important;
+    height: 120px !important;
+    font-size: 1.1em !important;
 }
 
 .tail{

@@ -1,10 +1,12 @@
 body {
     display: flex;
     justify-content: center;
-    background-image: url('assets/bg.jpg');
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    background-size: 100% 100%;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f0f0;
+    /* Removed background image to eliminate any spacing issues */
 }
 
 .button{
@@ -23,20 +25,26 @@ body {
 
 .wrapper {
     display: flex;
-    height: 1100px;
-    width: 1035px;
+    height: 400px;
+    width: 600px;
     background-color: rgb(255, 255, 255);
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 .grid-container {
-    width: 100%;
-    height: 100%;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    grid-auto-rows: calc(1100px / 3); /* ensure three exact rows */
-    border: 0; /* default no outer border; modes override */
-    row-gap: 0;
-    column-gap: 0;
+    width: 100% !important;
+    height: 100% !important;
+    display: grid !important;
+    grid-template-columns: 295px 295px !important; /* 2x2 grid for 600x400 with 10px gap */
+    grid-template-rows: 195px 195px !important;
+    border: 0 !important; /* default no outer border; modes override */
+    gap: 10px !important; /* 10px thick comic-style gap */
+    background: white !important; /* White divider between panels */
+    padding: 0 !important; /* No padding for tight fit */
+    margin: 0 !important;
+    box-sizing: border-box !important;
 }
 
 .grid-item {
@@ -45,6 +53,11 @@ body {
     background-size: cover;
     border: 0;
     position: relative;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    width: 295px;
+    height: 195px;
 }
 
 /* Exact Mode: single outer border, panels edge-to-edge */

@@ -34,11 +34,15 @@ def generate_keyframes_simple(video):
     
     print(f"🎯 Processing {total_subs} subtitle segments...")
     
-    # Process segments with simplified logic
-    segments_to_process = min(16, total_subs)  # Max 16 segments
+    # Process ALL segments to get more frames for better sync
+    target_frames = min(max(48, total_subs // 4), 100)  # At least 48 frames, up to 100
+    segments_to_process = min(target_frames, total_subs)
+    
+    print(f"🎯 Target: {target_frames} frames from {segments_to_process} subtitle segments")
     
     for i, sub in enumerate(subs[:segments_to_process], 1):
-        print(f"📝 Processing segment {i}/{segments_to_process}: {sub.content[:50]}...")
+        if i % 10 == 0:  # Progress every 10 segments
+            print(f"📝 Processing segment {i}/{segments_to_process}...")
         
         # Create segment directory
         sub_dir = f"frames/sub{sub.index}"
@@ -46,43 +50,45 @@ def generate_keyframes_simple(video):
             os.makedirs(sub_dir)
         
         try:
-            # Extract 3-5 frames per segment (reduced from 10)
+            # Extract 2 frames per segment for efficiency
             frames = extract_frames(video, sub_dir, 
                                   sub.start.total_seconds(), 
                                   sub.end.total_seconds(), 
-                                  3)  # Only 3 frames per segment
+                                  2)  # 2 frames per segment for speed
             
             if frames:
-                # Simple selection: pick middle frame or best quality frame
+                # Simple selection: pick best quality frame
                 best_frame = _select_best_frame_simple(frames)
                 
-                if best_frame and frame_counter <= 16:
+                if best_frame and frame_counter <= target_frames:
                     # Copy to final directory
                     final_name = f"frame{frame_counter:03}.png"
                     copy_and_rename_file(best_frame, final_dir, final_name)
-                    print(f"📖 Frame {frame_counter}: {sub.content[:30]}...")
+                    if i <= 10:  # Show first 10 for feedback
+                        print(f"📖 Frame {frame_counter}: {sub.content[:30]}...")
                     frame_counter += 1
                     
         except Exception as e:
-            print(f"⚠️ Error processing segment {i}: {e}")
+            if i <= 5:  # Only show first few errors
+                print(f"⚠️ Error processing segment {i}: {e}")
             continue
     
     frames_generated = frame_counter - 1
-    print(f"✅ Generated {frames_generated} frames using simplified method")
+    print(f"✅ Generated {frames_generated} frames using enhanced method")
     
-    # If we don't have enough frames, duplicate some to reach 16
-    if frames_generated < 16:
-        print(f"🔄 Duplicating frames to reach 16 total...")
-        for i in range(frames_generated + 1, 17):
-            # Duplicate existing frames
-            source_frame = f"frame{((i-1) % frames_generated) + 1:03}.png"
+    # If we still don't have enough frames, duplicate strategically
+    if frames_generated < target_frames:
+        print(f"🔄 Adding more frames to reach {target_frames} total...")
+        for i in range(frames_generated + 1, target_frames + 1):
+            # Duplicate existing frames in a smart pattern
+            source_idx = ((i-1) % frames_generated) + 1
+            source_frame = f"frame{source_idx:03}.png"
             source_path = os.path.join(final_dir, source_frame)
             target_path = os.path.join(final_dir, f"frame{i:03}.png")
             
             if os.path.exists(source_path):
                 import shutil
                 shutil.copy2(source_path, target_path)
-                print(f"📋 Duplicated frame{i:03}.png")
     
     return True
 

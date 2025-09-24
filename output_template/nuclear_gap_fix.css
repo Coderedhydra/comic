@@ -1,0 +1,164 @@
+/* NUCLEAR GAP FIX - ELIMINATES ALL GAPS */
+/* This file is the final solution to the persistent gap issue */
+
+/* COMPLETE RESET */
+*, *::before, *::after {
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+}
+
+/* FORCE BODY TO CENTER CONTENT WITH NO GAPS */
+body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    background: #f0f0f0 !important;
+    overflow-x: hidden !important;
+}
+
+/* NAVIGATION BUTTONS - POSITIONED ABSOLUTELY */
+.button {
+    position: fixed !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 2000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.button:first-of-type {
+    left: 10px !important;
+}
+
+.button:last-of-type {
+    right: 10px !important;
+}
+
+/* MAIN COMIC CONTAINER - EXACT DIMENSIONS */
+.wrapper {
+    width: 600px !important;
+    height: 400px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    border: 3px solid #333 !important;
+    position: relative !important;
+    display: block !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+}
+
+/* GRID CONTAINER - FORCED EXACT LAYOUT */
+.grid-container {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 600px !important;
+    height: 400px !important;
+    display: grid !important;
+    grid-template-columns: 295px 295px !important;
+    grid-template-rows: 195px 195px !important;
+    gap: 10px !important;
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+/* GRID ITEMS - EXACT PANEL DIMENSIONS */
+.grid-item {
+    width: 295px !important;
+    height: 195px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 1px solid #ddd !important;
+    background: #f8f9fa !important;
+    position: relative !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: bold !important;
+    box-sizing: border-box !important;
+}
+
+/* OVERRIDE ANY CONFLICTING STYLES */
+.grid-item img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+/* CONTROL PANELS AND SELECTORS */
+.edit-controls,
+.panel-controls,
+.shape-selector {
+    position: fixed !important;
+    z-index: 3000 !important;
+}
+
+.edit-controls {
+    bottom: 20px !important;
+    right: 20px !important;
+}
+
+.panel-controls {
+    top: 20px !important;
+    left: 20px !important;
+}
+
+.shape-selector {
+    bottom: 20px !important;
+    left: 20px !important;
+}
+
+/* MATHEMATICAL VERIFICATION OVERLAY */
+.gap-debug {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    font-family: monospace;
+    font-size: 12px;
+    z-index: 4000;
+}
+
+.gap-debug::after {
+    content: "295×2 + 10 = 600px | 195×2 + 10 = 400px";
+}
+
+/* FORCE OVERRIDE FOR EXACT MODE */
+body.exact .wrapper {
+    border: 3px solid black !important;
+}
+
+body.exact .grid-container {
+    border: none !important;
+}
+
+/* DEBUG MODE - RED LINES SHOWING EXACT MEASUREMENTS */
+.debug-gaps .grid-container {
+    background-image: 
+        linear-gradient(to right, transparent 295px, red 295px, red 305px, transparent 305px),
+        linear-gradient(to bottom, transparent 195px, blue 195px, blue 205px, transparent 205px) !important;
+    background-size: 600px 400px !important;
+    background-repeat: no-repeat !important;
+    background-position: 0 0 !important;
+}
+
+.debug-gaps .grid-item {
+    outline: 1px dashed green !important;
+}

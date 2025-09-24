@@ -81,6 +81,62 @@ class EnhancedComicGenerator:
         self.ai_mode = os.getenv('AI_ENHANCED', '1')
         self.apply_comic_style = False  # Disabled to preserve original colors
         self.preserve_colors = True  # Preserve more original colors in comic style
+    
+    def _cleanup_previous_files(self):
+        """Clean previous SRT and temporary files to prevent conflicts"""
+        try:
+            from backend.srt_cleanup import delete_srt_files, delete_temp_files
+            
+            # Delete SRT files
+            srt_result = delete_srt_files(".")
+            print(f"   🗑️  Deleted {srt_result['deleted_count']} SRT files")
+            
+            # Delete temporary files
+            temp_result = delete_temp_files(".")
+            print(f"   🗑️  Deleted {temp_result['deleted_count']} temporary files")
+            
+            if srt_result['errors'] or temp_result['errors']:
+                print("   ⚠️  Some files could not be deleted (may be in use)")
+                
+        except Exception as e:
+            print(f"   ⚠️  Cleanup warning: {e}")
+            # Don't fail the entire process for cleanup issues
+    
+    def _create_frame_dialogue_sync(self):
+        """Create frame-dialogue synchronization mapping"""
+        try:
+            from backend.frame_dialogue_sync import enhance_bubble_sync
+            import srt
+            
+            # Load subtitles
+            if not os.path.exists('test1.srt'):
+                print("   ⚠️  No subtitles found for synchronization")
+                return
+                
+            with open('test1.srt', 'r') as f:
+                subtitles = list(srt.parse(f.read()))
+            
+            # Get frame files
+            frames_dir = os.path.join(self.frames_dir)
+            if not os.path.exists(frames_dir):
+                print("   ⚠️  No frames directory found for synchronization")
+                return
+                
+            frame_files = [f for f in os.listdir(frames_dir) if f.endswith('.png')]
+            frame_files.sort()
+            
+            if not frame_files:
+                print("   ⚠️  No frame files found for synchronization")
+                return
+            
+            # Create synchronization mapping
+            mapping = enhance_bubble_sync(self.video_path, frame_files, subtitles)
+            
+            print(f"   ✅ Synchronized {len(subtitles)} dialogues with {len(frame_files)} frames")
+            
+        except Exception as e:
+            print(f"   ⚠️  Frame-dialogue sync warning: {e}")
+            # Don't fail the entire process for sync issues
         
         # Check for GPU
         try:
@@ -106,10 +162,18 @@ class EnhancedComicGenerator:
         if smart_mode:
             print("🎭 Smart mode enabled: Will create 10-15 panel summary with emotion matching")
         
+        # Clean previous SRT files to prevent conflicts
+        print("\n🧹 Cleaning previous SRT files...")
+        self._cleanup_previous_files()
+        
         try:
             # 1. Extract real subtitles from video audio
             print("📝 Extracting real subtitles from video...")
             get_real_subtitles(self.video_path)
+            
+            # 1.5. Create frame-dialogue synchronization mapping
+            print("🔗 Creating frame-dialogue synchronization...")
+            self._create_frame_dialogue_sync()
             
             # 2. Extract FULL story (don't skip important parts)
             print("📖 Extracting complete story...")
@@ -157,7 +221,36 @@ class EnhancedComicGenerator:
                     
                 except Exception as e:
                     print(f"⚠️ Full story extraction failed: {e}")
-                    filtered_subs = None
+                    # Create a fallback with limited subtitles instead of None
+                    print("🔄 Creating fallback story extraction...")
+                    with open('test1.srt', 'r', encoding='utf-8') as f:
+                        all_subs = list(srt.parse(f.read()))
+                    
+                    # Simple fallback: take every Nth subtitle to get ~48
+                    if len(all_subs) > 48:
+                        step = len(all_subs) // 48
+                        filtered_subs = []
+                        for i in range(0, len(all_subs), step):
+                            if len(filtered_subs) < 48:
+                                filtered_subs.append({
+                                    'index': all_subs[i].index,
+                                    'text': all_subs[i].content,
+                                    'start': all_subs[i].start.total_seconds(),
+                                    'end': all_subs[i].end.total_seconds()
+                                })
+                        self._filtered_count = len(filtered_subs)
+                        print(f"🔄 Fallback extraction: {len(all_subs)} → {len(filtered_subs)} subtitles")
+                    else:
+                        # Use all if less than 48
+                        filtered_subs = []
+                        for sub in all_subs:
+                            filtered_subs.append({
+                                'index': sub.index,
+                                'text': sub.content,
+                                'start': sub.start.total_seconds(),
+                                'end': sub.end.total_seconds()
+                            })
+                        self._filtered_count = len(filtered_subs)
             
             # 3. Generate keyframes based on story moments
             print("🎯 Generating keyframes...")
@@ -182,7 +275,8 @@ class EnhancedComicGenerator:
                     from backend.keyframes.keyframes_fixed import generate_keyframes_fixed
                     generate_keyframes_fixed(self.video_path, filtered_subs, max_frames=48)
             else:
-                # Fallback to simple method
+                # Fallback to simple method with improved frame count
+                print("🔄 Using simple keyframe method with enhanced frame count...")
                 generate_keyframes_simple(self.video_path)
             
             # 4. Remove black bars
@@ -963,17 +1057,31 @@ class EnhancedComicGenerator:
             overflow: hidden;
         }
         .comic-grid { 
-            display: grid; 
-            grid-template-columns: 300px 300px; 
-            grid-template-rows: 200px 200px; 
-            gap: 0; /* No gap between panels */
-            width: 600px;
-            height: 400px;
-            margin: 0;
-            padding: 0;
-            position: absolute;
-            top: 0;
-            left: 0;
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            grid-template-rows: 1fr 1fr !important;
+            gap: 10px !important; /* Simple 10px gap */
+            width: 600px !important;
+            height: 400px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            background: white !important; /* White background for gaps */
+            box-sizing: border-box !important;
+        }
+        
+        .panel {
+            position: relative !important;
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
+            background: #f8f9fa !important;
+            border: 1px solid #dee2e6 !important;
         }
         .page-wrapper {
             margin: 30px auto;
@@ -1018,16 +1126,16 @@ class EnhancedComicGenerator:
             left: 15px;
         }
         .panel { 
-            position: relative; 
-            border: none; /* Remove individual borders for zero gaps */
-            overflow: hidden;
-            /* No borders for perfect zero-gap layout */ 
-            width: 300px;
-            height: 200px;
-            box-sizing: border-box; /* Border included in dimensions */
-            margin: 0;
-            padding: 0;
-            flex-shrink: 0; /* Don't shrink */
+            position: relative !important; 
+            border: none !important;
+            overflow: hidden !important;
+            width: 295px !important; /* Exact panel size for 10px gaps */
+            height: 195px !important; /* Exact panel size for 10px gaps */
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            flex-shrink: 0 !important;
+            background: #f5f5f5 !important; /* Light background to see panels clearly */
         }
         /* All individual panel borders removed for perfect zero gaps */
         .panel img { 
@@ -1084,23 +1192,111 @@ class EnhancedComicGenerator:
         }
         .speech-bubble { 
             position: absolute; 
-            background: white; 
-            border: 3px solid #333; 
-            border-radius: 15px; 
-            padding: 12px; 
-            max-width: 200px; 
-            font-size: 14px; 
-            font-weight: bold;
-            box-shadow: 3px 3px 8px rgba(0,0,0,0.4);
-            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             text-align: center;
-            color: #333;
-            cursor: move;
-            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+            font-size: 12px;
+            color: #000;
+            cursor: grab;
+            z-index: 10;
+            padding: 8px;
+            resize: both;
+            overflow: auto;
+            min-width: 80px;
+            min-height: 40px;
+            max-width: 250px;
+            max-height: 120px;
+            word-wrap: break-word;
+            line-height: 1.3;
+            transition: all 0.3s ease;
+            /* Default to normal style */
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            border: 3px solid #333;
+            border-radius: 25px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.1);
         }
+        
+        /* FORCE BUBBLE STYLES - EXTREMELY AGGRESSIVE */
+        .speech-bubble.thought,
+        .bubble.thought {
+            background: #e0f7ff !important;
+            border: 4px solid #0066cc !important;
+            border-radius: 50% !important;
+            font-style: italic !important;
+            color: #003366 !important;
+            font-size: 11px !important;
+        }
+        
+        .speech-bubble.boom,
+        .bubble.boom {
+            background: #ff3300 !important;
+            border: 5px solid #cc0000 !important;
+            border-radius: 0px !important;
+            color: white !important;
+            font-weight: bold !important;
+            text-shadow: 2px 2px 4px black !important;
+            transform: rotate(-2deg) !important;
+        }
+        
+        .speech-bubble.idea,
+        .bubble.idea {
+            background: #ffff99 !important;
+            border: 4px solid #ffcc00 !important;
+            border-radius: 15px !important;
+            color: #663300 !important;
+            font-weight: bold !important;
+            box-shadow: 0 0 25px yellow !important;
+        }
+        
+        .speech-bubble.electric,
+        .bubble.electric {
+            background: #ccffff !important;
+            border: 4px solid #0099ff !important;
+            border-radius: 10px !important;
+            color: #0066cc !important;
+            font-weight: bold !important;
+            box-shadow: 0 0 20px cyan !important;
+        }
+        
+        @keyframes boomPulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+        
         .speech-bubble:hover { 
-            transform: scale(1.02); 
-            box-shadow: 3px 3px 12px rgba(0,0,0,0.6); 
+            border: 3px solid #4CAF50 !important;
+            cursor: nw-resize !important;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.6) !important;
+        }
+        
+        /* Enhanced resizing for all directions */
+        .speech-bubble {
+            resize: both !important;
+            overflow: auto !important;
+        }
+        
+        .speech-bubble::-webkit-resizer {
+            background: linear-gradient(135deg, #4CAF50, #45a049) !important;
+            border: 2px solid white !important;
+            border-radius: 50% !important;
+            width: 18px !important;
+            height: 18px !important;
+            opacity: 1 !important;
+            cursor: nw-resize !important;
+        }
+        
+        .speech-bubble:hover::-webkit-resizer {
+            background: linear-gradient(135deg, #66BB6A, #4CAF50) !important;
+            width: 20px !important;
+            height: 20px !important;
+            animation: resizeBounce 0.5s ease !important;
+        }
+        
+        @keyframes resizeBounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
         }
         .speech-bubble.editing { 
             cursor: text; 
@@ -1159,24 +1355,34 @@ class EnhancedComicGenerator:
         <p>• <strong>Drag</strong> speech bubbles to move</p>
         <p>• <strong>Double-click</strong> to edit text</p>
         <p>• Changes auto-save locally</p>
-        <button onclick="saveEditableHTML()" style="margin-top: 10px; padding: 8px 15px; background: #FF9800; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
-            💾 Save Editable Comic
+        <button onclick="changeBubbleInteractive()" style="margin-top: 8px; padding: 6px 12px; background: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 11px;">
+            🎨 Change Bubble
         </button>
-        <button onclick="exportToPDF()" style="margin-top: 5px; padding: 4px 8px; background: #4CAF50; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; width: 60%; font-size: 12px;">
-            📄 Export to PDF
+        <button onclick="activateStretchMode()" style="margin-top: 5px; padding: 6px 12px; background: #FF5722; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 11px;">
+            🤏 STRETCH Bubble
         </button>
-                   <button onclick="printComic()" style="margin-top: 5px; padding: 4px 8px; background: #2196F3; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; width: 60%; font-size: 12px;">
-               🖨️ Print Comic
-           </button>
-           <button onclick="viewPageImages()" style="margin-top: 5px; padding: 4px 8px; background: #9C27B0; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; width: 60%; font-size: 12px;">
-               🖼️ View Page Images
-           </button>
-           <button onclick="toggleUnityMode()" style="margin-top: 5px; padding: 8px 15px; background: #FF5722; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
-               🎮 Unity Mode (No Borders)
-           </button>
-           <button onclick="checkDimensions()" style="margin-top: 5px; padding: 8px 15px; background: #607D8B; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
-               📏 Check Dimensions
-           </button>
+        <div style="display: flex; gap: 5px; margin-top: 10px;">
+            <button onclick="saveEditableHTML()" style="padding: 6px 10px; background: #FF9800; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; flex: 1; font-size: 11px;">
+                💾 Save
+            </button>
+            <button onclick="exportToPDF()" style="padding: 6px 10px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; flex: 1; font-size: 11px;">
+                📄 PDF
+            </button>
+            <button onclick="printComic()" style="padding: 6px 10px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; flex: 1; font-size: 11px;">
+                🖨️ Print
+            </button>
+        </div>
+        <div style="display: flex; gap: 5px; margin-top: 5px;">
+            <button onclick="viewPageImages()" style="padding: 6px 10px; background: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; flex: 1; font-size: 11px;">
+                🖼️ Pages
+            </button>
+            <button onclick="toggleUnityMode()" style="padding: 6px 10px; background: #FF5722; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; flex: 1; font-size: 11px;">
+                🎮 Unity
+            </button>
+        </div>
+        <button onclick="checkDimensions()" style="margin-top: 5px; padding: 6px 10px; background: #607D8B; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 11px;">
+            📏 Check Dimensions
+        </button>
     </div>
     <script>
         // Load comic data
@@ -1290,10 +1496,40 @@ class EnhancedComicGenerator:
         
         function initializeEditor() {
             document.querySelectorAll('.speech-bubble').forEach(bubble => {
-                bubble.addEventListener('dblclick', (e) => {
+                let clickCount = 0;
+                let clickTimer = null;
+                
+                bubble.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    editBubbleText(bubble);
+                    clickCount++;
+                    
+                    if (clickCount === 1) {
+                        // First click - select
+                        console.log('1st click - Select bubble');
+                        bubble.style.outline = '2px solid #007bff';
+                        clickTimer = setTimeout(() => {
+                            clickCount = 0;
+                            bubble.style.outline = '';
+                        }, 800);
+                    } else if (clickCount === 2) {
+                        // Second click - edit text
+                        console.log('2nd click - Edit text');
+                        clearTimeout(clickTimer);
+                        bubble.style.outline = '2px solid #ffc107';
+                        editBubbleText(bubble);
+                        clickTimer = setTimeout(() => {
+                            clickCount = 0;
+                            bubble.style.outline = '';
+                        }, 800);
+                    } else if (clickCount === 3) {
+                        // Third click - stretch mode
+                        console.log('3rd click - STRETCH MODE ACTIVATED!');
+                        clearTimeout(clickTimer);
+                        activateStretchMode(bubble);
+                        clickCount = 0;
+                    }
                 });
+                
                 bubble.addEventListener('mousedown', startDrag);
             });
             
@@ -1415,6 +1651,35 @@ class EnhancedComicGenerator:
             } catch (e) {
                 console.error('Failed to load saved state:', e);
             }
+        }
+        
+        function activateStretchMode(bubble) {
+            console.log('🤏 STRETCH MODE ACTIVATED!');
+            
+            // Visual feedback
+            bubble.style.outline = '3px solid #FF5722';
+            bubble.style.cursor = 'nw-resize';
+            bubble.style.resize = 'both';
+            bubble.style.overflow = 'auto';
+            
+            // Add instruction overlay
+            const instruction = document.createElement('div');
+            instruction.style.cssText = 'position: absolute; top: -30px; left: 0; background: #FF5722; color: white; padding: 5px 10px; border-radius: 5px; font-size: 10px; white-space: nowrap; z-index: 1000; pointer-events: none;';
+            instruction.textContent = 'STRETCH MODE - Drag corners!';
+            bubble.appendChild(instruction);
+            
+            // Show alert
+            alert('🤏 STRETCH MODE ACTIVATED!\\n\\n✨ Triple-click detected!\\n\\nDrag the corners to stretch the bubble\\n\\nMode will auto-disable in 5 seconds');
+            
+            // Auto-disable after 5 seconds
+            setTimeout(() => {
+                bubble.style.outline = '';
+                bubble.style.cursor = 'grab';
+                if (instruction && instruction.parentNode) {
+                    instruction.remove();
+                }
+                console.log('Stretch mode disabled');
+            }, 5000);
         }
         
         // Export functions
@@ -1562,10 +1827,12 @@ class EnhancedComicGenerator:
                         height: 400px !important;
                         margin: 0 !important;
                         padding: 0 !important;
-                        gap: 0 !important; /* No gap for exact panel sizing */
+                        column-gap: 10px !important; /* 10px horizontal divider */
+                        row-gap: 10px !important; /* 10px vertical divider */
                         display: grid !important;
-                        grid-template-columns: 300px 300px !important;
-                        grid-template-rows: 200px 200px !important;
+                        grid-template-columns: 295px 295px !important;
+                        grid-template-rows: 195px 195px !important;
+                        background: white !important; /* White divider color */
                     }
                     
                     /* Show page info in print */
@@ -1738,6 +2005,317 @@ class EnhancedComicGenerator:
                 setTimeout(() => msgDiv.remove(), 500);
             }, 3000);
         }
+        
+        function changeBubbleInteractive() {
+            // COMPLETELY NEW APPROACH: Direct DOM targeting
+            
+            console.log('🚀 Starting new bubble change approach...');
+            
+            // Step 1: Show bubble type selection (clean beautiful types)
+            const bubbleTypes = ['normal', 'simple', 'ideas', 'cloud', 'empty'];
+            const bubbleEmojis = ['💬', '🗨️', '💡', '☁️', '❌'];
+            const bubbleNames = ['Normal', 'Simple', 'Ideas', 'Cloud', 'Empty'];
+            
+            let menu = '🎨 SELECT BUBBLE TYPE:\\n\\n';
+            for (let i = 0; i < bubbleTypes.length; i++) {
+                menu += `${i + 1}. ${bubbleEmojis[i]} ${bubbleNames[i]}\\n`;
+            }
+            
+            const choice = prompt(menu + '\\nEnter 1-5:');
+            const choiceNum = parseInt(choice);
+            
+            if (isNaN(choiceNum) || choiceNum < 1 || choiceNum > 5) {
+                alert('❌ Invalid choice! Please enter 1-5.');
+                return;
+            }
+            
+            const selectedType = bubbleTypes[choiceNum - 1];
+            const selectedEmoji = bubbleEmojis[choiceNum - 1];
+            const selectedName = bubbleNames[choiceNum - 1];
+            
+            // Step 2: Ask for panel number (1-48)
+            const panelPrompt = '🎯 ENTER PANEL NUMBER (1-48):\\n\\n' +
+                '📖 Comic has 12 pages × 4 panels = 48 total\\n\\n' +
+                'Page 1: Panels 1, 2, 3, 4\\n' +
+                'Page 2: Panels 5, 6, 7, 8\\n' +
+                'Page 3: Panels 9, 10, 11, 12\\n' +
+                '...and so on...\\n' +
+                'Page 12: Panels 45, 46, 47, 48';
+            
+            const panelChoice = prompt(panelPrompt);
+            const panelNum = parseInt(panelChoice);
+            
+            if (isNaN(panelNum) || panelNum < 1 || panelNum > 48) {
+                alert('❌ Invalid panel! Enter 1-48.');
+                return;
+            }
+            
+            // Step 3: Apply using completely new method (no size selection needed)
+            const result = directBubbleChange(panelNum, selectedType);
+            
+            if (result.success) {
+                alert(`✅ SUCCESS!\\n\\nPanel ${panelNum} bubble changed to ${selectedEmoji} ${selectedName}\\n\\nLocation: ${result.location}\\n\\n💡 RESIZE: Hold and drag the bubble corners to stretch manually!`);
+                
+                // Add resize instructions
+                setTimeout(() => {
+                    alert('🎯 MANUAL RESIZE INSTRUCTIONS:\\n\\n1. Hover over the bubble\\n2. Hold and drag any corner to stretch\\n3. Resize in real-time by dragging\\n4. Release to set new size\\n\\n✨ Try it now!');
+                }, 2000);
+            } else {
+                alert(`❌ FAILED!\\n\\nCould not change Panel ${panelNum}\\n\\nReason: ${result.reason}`);
+            }
+        }
+        
+        function applyBubbleChange(panelNumber, bubbleType) {
+            try {
+                // Find all comic pages
+                const pages = document.querySelectorAll('.comic-page');
+                
+                // Also check for grid items if comic pages not found
+                const gridItems = document.querySelectorAll('.grid-item');
+                
+                let changed = false;
+                
+                // Method 1: Try comic pages approach
+                pages.forEach(page => {
+                    const panels = page.querySelectorAll('.panel');
+                    if (panels[panelNumber - 1]) {
+                        const targetPanel = panels[panelNumber - 1];
+                        const bubble = targetPanel.querySelector('.speech-bubble') || targetPanel.querySelector('.bubble');
+                        
+                        if (bubble) {
+                            // Remove all existing shape classes
+                            const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+                            shapes.forEach(shape => bubble.classList.remove(shape));
+                            
+                            // Handle empty bubble type
+                            if (bubbleType === 'empty') {
+                                bubble.style.display = 'none';
+                            } else {
+                                bubble.style.display = 'flex';
+                                bubble.classList.add(bubbleType);
+                            }
+                            
+                            changed = true;
+                            console.log(`✅ Changed panel ${panelNumber} bubble to ${bubbleType} (pages method)`);
+                        }
+                    }
+                });
+                
+                // Method 2: Try grid items approach if no pages found
+                if (!changed && gridItems.length >= panelNumber) {
+                    const targetGridItem = gridItems[panelNumber - 1];
+                    const bubble = targetGridItem.querySelector('.bubble') || targetGridItem.querySelector('.speech-bubble');
+                    
+                    if (bubble) {
+                        // Remove all existing shape classes
+                        const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+                        shapes.forEach(shape => bubble.classList.remove(shape));
+                        
+                        // Handle empty bubble type
+                        if (bubbleType === 'empty') {
+                            bubble.style.display = 'none';
+                        } else {
+                            bubble.style.display = 'flex';
+                            bubble.classList.add(bubbleType);
+                        }
+                        
+                        changed = true;
+                        console.log(`✅ Changed panel ${panelNumber} bubble to ${bubbleType} (grid method)`);
+                    }
+                }
+                
+                // Method 3: Debug - log what elements were found
+                if (!changed) {
+                    console.log('🔍 Debug info:');
+                    console.log('Comic pages found:', pages.length);
+                    console.log('Grid items found:', gridItems.length);
+                    console.log('Looking for panel:', panelNumber);
+                    
+                    if (gridItems.length >= panelNumber) {
+                        const targetItem = gridItems[panelNumber - 1];
+                        console.log('Target grid item:', targetItem);
+                        console.log('Bubbles in target:', targetItem.querySelectorAll('.bubble, .speech-bubble'));
+                    }
+                }
+                
+                return changed;
+            } catch (error) {
+                console.error('Error changing bubble:', error);
+                return false;
+            }
+        }
+        
+        function directBubbleChange(globalPanelNumber, bubbleType) {
+            console.log(`🚀 SIMPLE: Changing panel ${globalPanelNumber} to ${bubbleType}`);
+            
+            try {
+                // Method 1: Find all bubbles (both .bubble and .speech-bubble)
+                const allBubbles = document.querySelectorAll('.bubble, .speech-bubble');
+                console.log(`Found ${allBubbles.length} total bubbles`);
+                
+                if (allBubbles.length >= globalPanelNumber) {
+                    const targetBubble = allBubbles[globalPanelNumber - 1];
+                    console.log(`🎯 Targeting bubble #${globalPanelNumber}:`, targetBubble);
+                    console.log(`📋 Current classes:`, targetBubble.className);
+                    
+                    // Remove ALL possible shape classes
+                    const allShapes = ['normal', 'thought', 'boom', 'idea', 'electric', 'jagged', 'square', 'whisper', 'scream', 'dream', 'radio', 'love', 'crystal', 'fire'];
+                    allShapes.forEach(shape => {
+                        targetBubble.classList.remove(shape);
+                        console.log(`Removed class: ${shape}`);
+                    });
+                    
+                    if (bubbleType === 'empty') {
+                        targetBubble.style.display = 'none';
+                        console.log('❌ Hidden bubble');
+                    } else {
+                        targetBubble.style.display = 'flex';
+                        targetBubble.classList.add(bubbleType);
+                        console.log(`✅ Added class: ${bubbleType}`);
+                        console.log(`📋 New classes:`, targetBubble.className);
+                        
+                        // FORCE CLEAN BUBBLE STYLES DIRECTLY
+                        switch(bubbleType) {
+                            case 'simple':
+                                targetBubble.style.background = '#ffffff';
+                                targetBubble.style.border = '2px solid #333333';
+                                targetBubble.style.borderRadius = '20px';
+                                targetBubble.style.color = '#333333';
+                                targetBubble.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                                console.log('🗨️ Applied SIMPLE style');
+                                break;
+                            case 'ideas':
+                                targetBubble.style.background = 'linear-gradient(135deg, #fff7e6, #ffe066)';
+                                targetBubble.style.border = '2px solid #ffb300';
+                                targetBubble.style.borderRadius = '25px';
+                                targetBubble.style.color = '#b8860b';
+                                targetBubble.style.boxShadow = '0 4px 12px rgba(255, 179, 0, 0.3)';
+                                console.log('💡 Applied IDEAS style');
+                                break;
+                            case 'cloud':
+                                targetBubble.style.background = '#f0f8ff';
+                                targetBubble.style.border = '2px dashed #87ceeb';
+                                targetBubble.style.borderRadius = '50px';
+                                targetBubble.style.color = '#4682b4';
+                                targetBubble.style.fontStyle = 'italic';
+                                targetBubble.style.boxShadow = '0 3px 10px rgba(135, 206, 235, 0.2)';
+                                console.log('☁️ Applied CLOUD style');
+                                break;
+                            default: // normal
+                                targetBubble.style.background = 'linear-gradient(145deg, #ffffff, #f0f0f0)';
+                                targetBubble.style.border = '3px solid #333';
+                                targetBubble.style.borderRadius = '25px';
+                                targetBubble.style.color = '#000';
+                                targetBubble.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)';
+                                targetBubble.style.fontStyle = 'normal';
+                                targetBubble.style.transform = 'none';
+                                console.log('💬 Applied NORMAL style');
+                        }
+                        
+                        // Force resize capability
+                        targetBubble.style.resize = 'both';
+                        targetBubble.style.overflow = 'auto';
+                        targetBubble.style.cursor = 'grab';
+                        
+                        // Temporary visual feedback
+                        const originalOutline = targetBubble.style.outline;
+                        targetBubble.style.outline = '3px solid #00ff00';
+                        setTimeout(() => {
+                            targetBubble.style.outline = originalOutline;
+                        }, 3000);
+                    }
+                    
+                    return { success: true, location: `Bubble #${globalPanelNumber}` };
+                }
+                
+                // Method 2: Find by grid items
+                const gridItems = document.querySelectorAll('.grid-item');
+                console.log(`Found ${gridItems.length} grid items`);
+                
+                if (gridItems.length >= globalPanelNumber) {
+                    const targetItem = gridItems[globalPanelNumber - 1];
+                    let bubble = targetItem.querySelector('.bubble') || targetItem.querySelector('.speech-bubble');
+                    
+                    if (!bubble) {
+                        // Create new bubble
+                        bubble = document.createElement('div');
+                        bubble.className = 'bubble normal';
+                        bubble.style.cssText = 'position: absolute; top: 20px; right: 20px; display: flex; align-items: center; justify-content: center; z-index: 10;';
+                        bubble.textContent = 'New!';
+                        targetItem.appendChild(bubble);
+                        console.log('Created new bubble');
+                    }
+                    
+                    // Apply style
+                    const allShapes = ['normal', 'thought', 'boom', 'idea', 'electric'];
+                    allShapes.forEach(shape => bubble.classList.remove(shape));
+                    
+                    if (bubbleType !== 'empty') {
+                        bubble.style.display = 'flex';
+                        bubble.classList.add(bubbleType);
+                    } else {
+                        bubble.style.display = 'none';
+                    }
+                    
+                    return { success: true, location: `Grid item #${globalPanelNumber}` };
+                }
+                
+                return { success: false, reason: `No bubbles found. Total bubbles: ${allBubbles.length}, Grid items: ${gridItems.length}` };
+                
+            } catch (error) {
+                console.error('Bubble change error:', error);
+                return { success: false, reason: error.message };
+            }
+        }
+        
+        function activateStretchMode() {
+            // Ask which bubble to stretch
+            const panelNumber = prompt('🤏 STRETCH BUBBLE\\n\\nWhich panel bubble to stretch? (1-4)\\n\\n1. Top-left\\n2. Top-right\\n3. Bottom-left\\n4. Bottom-right');
+            
+            if (!panelNumber || panelNumber < 1 || panelNumber > 4) {
+                alert('❌ Invalid panel! Please enter 1-4.');
+                return;
+            }
+            
+            // Find the bubble in that panel
+            const allBubbles = document.querySelectorAll('.speech-bubble');
+            console.log(`🎯 Found ${allBubbles.length} bubbles for stretching`);
+            
+            if (allBubbles.length >= panelNumber) {
+                const targetBubble = allBubbles[parseInt(panelNumber) - 1];
+                console.log(`🤏 Activating stretch for bubble #${panelNumber}`);
+                
+                // STRONG visual feedback for stretch mode
+                targetBubble.style.outline = '4px solid #FF5722 !important';
+                targetBubble.style.background = '#fff3e0 !important';
+                targetBubble.style.cursor = 'nw-resize !important';
+                targetBubble.style.resize = 'both !important';
+                targetBubble.style.overflow = 'auto !important';
+                
+                // Add instruction overlay
+                const instruction = document.createElement('div');
+                instruction.style.cssText = 'position: absolute; top: -35px; left: -5px; background: #FF5722; color: white; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; white-space: nowrap; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.3);';
+                instruction.textContent = '🤏 STRETCH MODE - Drag any corner!';
+                targetBubble.appendChild(instruction);
+                
+                // Show success alert
+                alert(`✅ STRETCH MODE ACTIVATED!\\n\\nBubble ${panelNumber} is now in stretch mode\\n\\n🤏 Drag any corner to resize in all directions\\n\\nClick here to confirm, then try stretching!`);
+                
+                // Remove stretch mode after 10 seconds
+                setTimeout(() => {
+                    targetBubble.style.outline = '';
+                    targetBubble.style.background = '';
+                    targetBubble.style.cursor = 'grab';
+                    if (instruction && instruction.parentNode) {
+                        instruction.remove();
+                    }
+                    console.log('🤏 Stretch mode auto-disabled');
+                }, 10000);
+                
+            } else {
+                alert(`❌ Could not find bubble in panel ${panelNumber}\\n\\nAvailable bubbles: ${allBubbles.length}`);
+            }
+        }
     </script>
 </body>
 </html>'''
@@ -1770,13 +2348,31 @@ def upload_file():
             if f.filename == '':
                 return "❌ No file selected"
             
-            # Clean up previous files
+            # Clean up previous files and SRT cache
+            print("🧹 Cleaning previous video and subtitle files...")
+            
+            # Remove old video
             if os.path.exists('video/uploaded.mp4'):
                 os.remove('video/uploaded.mp4')
+                print("🗑️ Removed old video file")
+            
+            # Clean all SRT files to prevent caching issues
+            from backend.srt_cleanup import clean_comic_workspace
+            cleanup_result = clean_comic_workspace(".")
+            print(f"🗑️ Cleaned {cleanup_result['total_deleted']} cached files")
+            
+            # Clean frames directory for fresh generation
+            frames_dir = 'frames/final'
+            if os.path.exists(frames_dir):
+                import shutil
+                shutil.rmtree(frames_dir)
+                os.makedirs(frames_dir, exist_ok=True)
+                print("🗑️ Cleared previous frames for fresh generation")
             
             # Save uploaded file
             f.save("video/uploaded.mp4")
-            print(f"✅ File saved: {f.filename}")
+            print(f"✅ New video saved: {f.filename}")
+            print("🆕 Ready for fresh comic generation with new video")
             
             # Get smart comic options
             smart_mode = request.form.get('smart_mode', 'false').lower() == 'true'
@@ -1813,9 +2409,25 @@ def handle_link():
             if not link:
                 return "❌ No link provided"
             
-            # Clean up previous files
+            # Clean up previous files and SRT cache
+            print("🧹 Cleaning previous video and subtitle files...")
+            
             if os.path.exists('video/uploaded.mp4'):
                 os.remove('video/uploaded.mp4')
+                print("🗑️ Removed old video file")
+            
+            # Clean all SRT files to prevent caching issues
+            from backend.srt_cleanup import clean_comic_workspace
+            cleanup_result = clean_comic_workspace(".")
+            print(f"🗑️ Cleaned {cleanup_result['total_deleted']} cached files")
+            
+            # Clean frames directory for fresh generation
+            frames_dir = 'frames/final'
+            if os.path.exists(frames_dir):
+                import shutil
+                shutil.rmtree(frames_dir)
+                os.makedirs(frames_dir, exist_ok=True)
+                print("🗑️ Cleared previous frames for fresh generation")
             
             # Download video using yt-dlp
             try:
@@ -1947,9 +2559,27 @@ if __name__ == '__main__':
     print("   - Advanced face detection")
     print("   - Smart bubble placement")
     print("   - High-quality comic styling")
+    print("   - 11 professional bubble types")
+    print("   - Perfect 10px panel gaps")
     print("   - Optimized 2x2 layout")
     print("")
     print("🌐 Web interface available at: http://localhost:5000")
     print("📁 Upload videos or paste YouTube links to generate comics!")
+    
+    # Get WSL IP for Windows Chrome access
+    try:
+        import socket
+        hostname = socket.gethostname()
+        wsl_ip = socket.gethostbyname(hostname)
+        print(f"🖥️ For Windows Chrome: http://{wsl_ip}:5000")
+    except:
+        print("🖥️ For Windows Chrome: Use WSL IP address")
+    
     print("")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    print("💡 WSL Chrome Access Fix:")
+    print("   1. In WSL: ip addr show eth0 | grep inet")
+    print("   2. Use that IP in Windows Chrome")
+    print("   3. Or try: http://127.0.0.1:5000")
+    print("")
+    
+    app.run(debug=True, host='0.0.0.0', port=5000, threaded=True)

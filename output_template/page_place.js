@@ -27,25 +27,40 @@ function placeDialogs(page) {
             bubble_temp.innerHTML = page['bubbles'][index]['dialog'];
 
             const emotion = page['bubbles'][index]['emotion'];
-
-            if (emotion == 'jagged') {
-                bubble_temp.style.backgroundImage = `url("assets/jagged.png")`;
-                bubble_temp.style.backgroundPosition = 'center center';
-                bubble_temp.style.backgroundRepeat = 'no-repeat';
-                bubble_temp.style.backgroundSize = 'cover';
-                bubble_temp.style.backgroundColor = 'transparent';
-                bubble_temp.style.width = '200px'; // Adjust height if necessary
-                bubble_temp.style.height = '94px'; // Adjust height if necessary
-                bubble_temp.style.padding = '70px'; // Adjust height if necessary
-
+            
+            // Add appropriate shape class based on emotion
+            // Map old emotion values to new shape system
+            let shapeClass = 'normal'; // default
+            if (emotion === 'jagged') {
+                shapeClass = 'jagged';
+            } else if (emotion === 'normal') {
+                shapeClass = 'normal';
+            } else {
+                // For new emotion types, map them to appropriate shapes
+                const emotionToShape = {
+                    'thought': 'thought',
+                    'idea': 'idea', 
+                    'boom': 'boom',
+                    'square': 'square',
+                    'narration': 'square'
+                };
+                shapeClass = emotionToShape[emotion] || 'normal';
             }
+            
+            bubble_temp.classList.add(shapeClass);
 
             bubble_temp.style.fontSize = dialog_temp.length;
             bubble_temp.style.transform = `translate(${page['bubbles'][index]['bubble_offset_x']}px, ${page['bubbles'][index]['bubble_offset_y']}px)`;
 
             const tail = document.createElement('div');
             tail.classList.add('tail');
-            if (page['bubbles'][index]['tail_offset_x'] == null || emotion == 'jagged') {
+            
+            // Hide tail for certain bubble types that have their own tail styling
+            if (page['bubbles'][index]['tail_offset_x'] == null || 
+                shapeClass === 'jagged' || 
+                shapeClass === 'thought' || 
+                shapeClass === 'boom' ||
+                shapeClass === 'square') {
                 tail.style.display = 'none';
             } else {
                 tail.style.transform = `translate(${page['bubbles'][index]['tail_offset_x']}px, ${page['bubbles'][index]['tail_offset_y']}px) rotate(${page['bubbles'][index]['tail_deg']}deg)`;

@@ -1,0 +1,148 @@
+/* DEFINITIVE GAP FIX - 10px Exact */
+/* This file forces exact 10px gaps with no interference */
+
+/* Reset all browser defaults */
+* {
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+}
+
+body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #f0f0f0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    min-height: 100vh !important;
+}
+
+/* Force center the main content */
+body > * {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Navigation buttons spacing fix */
+.button {
+    margin: 10px 0 !important;
+}
+
+/* Force exact wrapper dimensions */
+.wrapper {
+    display: flex !important;
+    width: 600px !important;
+    height: 400px !important;
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 2px solid #333 !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+}
+
+/* Force exact grid dimensions */
+.grid-container {
+    width: 600px !important;
+    height: 400px !important;
+    display: grid !important;
+    grid-template-columns: 295px 295px !important;
+    grid-template-rows: 195px 195px !important;
+    gap: 10px !important;
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+}
+
+/* Force exact panel dimensions */
+.grid-item {
+    width: 295px !important;
+    height: 195px !important;
+    background: #f8f9fa !important;
+    border: 1px solid #dee2e6 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: bold !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+/* Navigation buttons positioning */
+.button {
+    position: fixed !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 1000 !important;
+}
+
+.button:first-child {
+    left: 20px !important;
+}
+
+.button:last-child {
+    right: 20px !important;
+}
+
+.button button {
+    background: rgba(0, 0, 0, 0.7) !important;
+    border: none !important;
+    border-radius: 50% !important;
+    width: 50px !important;
+    height: 50px !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.button button img {
+    width: 30px !important;
+    height: 30px !important;
+    filter: invert(1) !important;
+}
+
+/* Ensure exact mode works properly */
+body.exact .grid-container {
+    border: 0 !important;
+}
+
+body.exact .wrapper {
+    border: 3px solid black !important;
+}
+
+/* Mathematical verification display */
+.gap-info {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    font-family: monospace;
+    font-size: 12px;
+    z-index: 1000;
+}
+
+/* Override any conflicting styles */
+.grid-container * {
+    box-sizing: border-box !important;
+}
+
+/* Debug grid overlay (can be enabled) */
+.debug .grid-container {
+    background-image: 
+        linear-gradient(to right, red 295px, transparent 295px, transparent 305px, red 305px),
+        linear-gradient(to bottom, blue 195px, transparent 195px, transparent 205px, blue 205px) !important;
+    background-size: 600px 400px !important;
+    background-repeat: no-repeat !important;
+}
