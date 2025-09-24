@@ -1,0 +1,145 @@
+/* ZERO GAP LAYOUT WITH 10PX WHITE STRIPS */
+/* This creates perfect 0% gaps with 10px visual dividers */
+
+/* Complete reset */
+* {
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background: #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+/* MAIN CONTAINER - EXACT 600x400 */
+.wrapper {
+    width: 600px !important;
+    height: 400px !important;
+    background: white !important; /* White strips background */
+    border: 3px solid #333 !important;
+    position: relative !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+}
+
+/* GRID WITH 0% GAPS BUT 10PX VISUAL STRIPS */
+.grid-container {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 600px !important;
+    height: 400px !important;
+    display: grid !important;
+    /* 0% gaps in grid, but panels are smaller to create visual strips */
+    grid-template-columns: 295px 295px !important;
+    grid-template-rows: 195px 195px !important;
+    gap: 0px !important; /* 0% gaps as requested */
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* PANELS POSITIONED TO CREATE 10PX WHITE STRIPS */
+.grid-item:nth-child(1) {
+    /* Top-left: Start at 0,0 */
+    grid-column: 1;
+    grid-row: 1;
+    width: 295px !important;
+    height: 195px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.grid-item:nth-child(2) {
+    /* Top-right: Start at 305px (295 + 10px strip) */
+    grid-column: 2;
+    grid-row: 1;
+    width: 295px !important;
+    height: 195px !important;
+    margin-left: 10px !important; /* 10px white strip */
+    padding: 0 !important;
+}
+
+.grid-item:nth-child(3) {
+    /* Bottom-left: Start at 205px (195 + 10px strip) */
+    grid-column: 1;
+    grid-row: 2;
+    width: 295px !important;
+    height: 195px !important;
+    margin-top: 10px !important; /* 10px white strip */
+    padding: 0 !important;
+}
+
+.grid-item:nth-child(4) {
+    /* Bottom-right: Both margins for strips */
+    grid-column: 2;
+    grid-row: 2;
+    width: 295px !important;
+    height: 195px !important;
+    margin-left: 10px !important; /* 10px horizontal strip */
+    margin-top: 10px !important; /* 10px vertical strip */
+    padding: 0 !important;
+}
+
+/* PANEL STYLING */
+.grid-item {
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+    background-size: cover !important;
+    border: 1px solid #ddd !important;
+    position: relative !important;
+    overflow: hidden !important;
+    background-color: #f8f9fa !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: bold !important;
+}
+
+.grid-item img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* NAVIGATION BUTTONS */
+.button {
+    position: fixed !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 2000 !important;
+}
+
+.button:first-of-type {
+    left: 10px !important;
+}
+
+.button:last-of-type {
+    right: 10px !important;
+}
+
+/* EXACT MODE OVERRIDE */
+body.exact .wrapper {
+    border: 3px solid black !important;
+}
+
+/* MATHEMATICAL VERIFICATION */
+/* 
+Panel layout with 10px white strips:
+- Panel 1: 0,0 to 295,195
+- Panel 2: 305,0 to 600,195 (295px + 10px strip + 295px = 600px)
+- Panel 3: 0,205 to 295,400 (195px + 10px strip + 195px = 400px)  
+- Panel 4: 305,205 to 600,400
+Total: 600x400 with 10px white cross-strips
+*/

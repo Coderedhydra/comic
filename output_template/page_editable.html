@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interactive Comic Editor</title>
-    <link rel="stylesheet" href="nuclear_gap_fix.css">
-    <link rel="stylesheet" href="bubble.css">
-    <!-- Nuclear gap fix loaded first to override everything -->
+    <link rel="stylesheet" href="zero_gap_layout.css">
+    <link rel="stylesheet" href="beautiful_bubbles.css">
+    <!-- Zero gap layout with 10px white strips -->
     
     <style>
         /* Additional styles for editing */
@@ -377,9 +377,33 @@
                     selectBubble(bubble);
                 });
                 
-                bubble.addEventListener('dblclick', (e) => {
+                // Track clicks for triple-click stretch activation
+                let clickCount = 0;
+                let clickTimer = null;
+                
+                bubble.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    editBubbleText(bubble);
+                    clickCount++;
+                    
+                    if (clickCount === 1) {
+                        // First click - select bubble
+                        selectBubble(bubble);
+                        clickTimer = setTimeout(() => {
+                            clickCount = 0;
+                        }, 800); // Reset after 800ms
+                    } else if (clickCount === 2) {
+                        // Second click - edit text
+                        clearTimeout(clickTimer);
+                        editBubbleText(bubble);
+                        clickTimer = setTimeout(() => {
+                            clickCount = 0;
+                        }, 800);
+                    } else if (clickCount === 3) {
+                        // Third click - activate stretch mode
+                        clearTimeout(clickTimer);
+                        activateStretchMode(bubble);
+                        clickCount = 0;
+                    }
                 });
                 
                 bubble.addEventListener('mousedown', startDrag);
@@ -647,6 +671,38 @@
                 localStorage.removeItem('comicBubbles');
                 location.reload();
             }
+        }
+        
+        function activateStretchMode(bubble) {
+            // 3-click activates stretch mode
+            console.log('🤏 Activating stretch mode for bubble');
+            
+            // Visual feedback for stretch mode
+            bubble.style.border = '3px solid #FF5722';
+            bubble.style.boxShadow = '0 0 20px rgba(255, 87, 34, 0.6)';
+            bubble.style.cursor = 'nw-resize';
+            
+            // Enable resize
+            bubble.style.resize = 'both';
+            bubble.style.overflow = 'auto';
+            
+            // Add stretch instructions
+            const instruction = document.createElement('div');
+            instruction.style.cssText = 'position: absolute; top: -30px; left: 0; background: #FF5722; color: white; padding: 5px 10px; border-radius: 5px; font-size: 10px; white-space: nowrap; z-index: 100;';
+            instruction.textContent = 'STRETCH MODE: Drag corners to resize';
+            bubble.appendChild(instruction);
+            
+            // Remove stretch mode after 5 seconds
+            setTimeout(() => {
+                bubble.style.border = '';
+                bubble.style.boxShadow = '';
+                bubble.style.cursor = 'move';
+                if (instruction.parentNode) {
+                    instruction.remove();
+                }
+            }, 5000);
+            
+            alert('🤏 STRETCH MODE ACTIVATED!\\n\\n✨ 3-click detected!\\n\\n📏 Now drag the corners to resize the bubble\\n\\nMode will auto-disable in 5 seconds');
         }
         
         function changePanelBubble(panelNum, shape) {

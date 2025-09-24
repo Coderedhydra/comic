@@ -1849,21 +1849,21 @@ class EnhancedComicGenerator:
             
             console.log('🚀 Starting new bubble change approach...');
             
-            // Step 1: Show bubble type selection
-            const bubbleTypes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square', 'whisper', 'scream', 'dream', 'radio', 'electric', 'love', 'crystal', 'fire', 'empty'];
-            const bubbleEmojis = ['💬', '⚡', '💭', '💡', '💥', '📝', '🤫', '😱', '🌙', '📡', '⚡', '💖', '💎', '🔥', '❌'];
-            const bubbleNames = ['Normal', 'Jagged', 'Thought', 'Idea', 'Boom', 'Square', 'Whisper', 'Scream', 'Dream', 'Radio', 'Electric', 'Love', 'Crystal', 'Fire', 'Empty'];
+            // Step 1: Show bubble type selection (5 beautiful types only)
+            const bubbleTypes = ['normal', 'thought', 'boom', 'idea', 'electric', 'empty'];
+            const bubbleEmojis = ['💬', '💭', '💥', '💡', '⚡', '❌'];
+            const bubbleNames = ['Normal', 'Thought', 'Boom', 'Idea', 'Electric', 'Empty'];
             
             let menu = '🎨 SELECT BUBBLE TYPE:\\n\\n';
             for (let i = 0; i < bubbleTypes.length; i++) {
                 menu += `${i + 1}. ${bubbleEmojis[i]} ${bubbleNames[i]}\\n`;
             }
             
-            const choice = prompt(menu + '\\nEnter 1-15:');
+            const choice = prompt(menu + '\\nEnter 1-6:');
             const choiceNum = parseInt(choice);
             
-            if (isNaN(choiceNum) || choiceNum < 1 || choiceNum > 15) {
-                alert('❌ Invalid choice! Please enter 1-15.');
+            if (isNaN(choiceNum) || choiceNum < 1 || choiceNum > 6) {
+                alert('❌ Invalid choice! Please enter 1-6.');
                 return;
             }
             
@@ -1984,98 +1984,111 @@ class EnhancedComicGenerator:
         }
         
         function directBubbleChange(globalPanelNumber, bubbleType) {
-            // ULTRA-SIMPLE DIRECT APPROACH
-            console.log(`🚀 DIRECT: Changing panel ${globalPanelNumber} to ${bubbleType}`);
+            console.log(`🚀 SIMPLE: Changing panel ${globalPanelNumber} to ${bubbleType}`);
             
             try {
-                // Method 1: Find all speech bubbles directly
-                const allSpeechBubbles = document.querySelectorAll('.speech-bubble');
-                console.log(`Found ${allSpeechBubbles.length} speech bubbles total`);
+                // Method 1: Find all bubbles (both .bubble and .speech-bubble)
+                const allBubbles = document.querySelectorAll('.bubble, .speech-bubble');
+                console.log(`Found ${allBubbles.length} total bubbles`);
                 
-                if (allSpeechBubbles.length >= globalPanelNumber) {
-                    const targetBubble = allSpeechBubbles[globalPanelNumber - 1];
-                    console.log(`Targeting speech bubble #${globalPanelNumber}:`, targetBubble);
+                if (allBubbles.length >= globalPanelNumber) {
+                    const targetBubble = allBubbles[globalPanelNumber - 1];
+                    console.log(`Targeting bubble #${globalPanelNumber}:`, targetBubble);
                     
-                    // Direct style application
-                    const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
-                    shapes.forEach(s => targetBubble.classList.remove(s));
+                    // Remove all shape classes (5 types only)
+                    const allShapes = ['normal', 'thought', 'boom', 'idea', 'electric'];
+                    allShapes.forEach(shape => targetBubble.classList.remove(shape));
                     
                     if (bubbleType === 'empty') {
                         targetBubble.style.display = 'none';
                     } else {
                         targetBubble.style.display = 'flex';
-                        
-                        // Remove all shape classes first
-                        const allShapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square', 'whisper', 'scream', 'dream', 'radio', 'electric', 'love', 'crystal', 'fire'];
-                        allShapes.forEach(shape => targetBubble.classList.remove(shape));
-                        
-                        // Add new bubble type class
                         targetBubble.classList.add(bubbleType);
                         
-                        // Enable manual resizing
+                        // Force visual change
                         targetBubble.style.resize = 'both';
                         targetBubble.style.overflow = 'auto';
-                        targetBubble.style.minWidth = '80px';
-                        targetBubble.style.minHeight = '40px';
-                        targetBubble.style.maxWidth = '280px';
-                        targetBubble.style.maxHeight = '150px';
                         targetBubble.style.cursor = 'grab';
                         
-                        // Add visual feedback for resizing
+                        // Visual feedback
                         targetBubble.style.border = '3px solid #4CAF50';
-                        targetBubble.style.boxShadow = '0 0 10px rgba(76, 175, 80, 0.3)';
-                        
-                        // Reset border after 2 seconds
                         setTimeout(() => {
-                            if (targetBubble.classList.contains(bubbleType)) {
-                                // Let CSS handle the styling
-                                targetBubble.style.border = '';
-                                targetBubble.style.boxShadow = '';
-                            }
+                            targetBubble.style.border = '';
                         }, 2000);
                     }
                     
-                    return { success: true, location: `Speech bubble #${globalPanelNumber}` };
+                    return { success: true, location: `Bubble #${globalPanelNumber}` };
                 }
                 
-                // Method 2: Find all panels and look inside them
-                const allPanels = document.querySelectorAll('.panel');
-                console.log(`Found ${allPanels.length} panels total`);
+                // Method 2: Find by grid items
+                const gridItems = document.querySelectorAll('.grid-item');
+                console.log(`Found ${gridItems.length} grid items`);
                 
-                if (allPanels.length >= globalPanelNumber) {
-                    const targetPanel = allPanels[globalPanelNumber - 1];
-                    let bubble = targetPanel.querySelector('.speech-bubble');
+                if (gridItems.length >= globalPanelNumber) {
+                    const targetItem = gridItems[globalPanelNumber - 1];
+                    let bubble = targetItem.querySelector('.bubble') || targetItem.querySelector('.speech-bubble');
                     
                     if (!bubble) {
-                        // Create a new bubble
+                        // Create new bubble
                         bubble = document.createElement('div');
-                        bubble.className = 'speech-bubble';
-                        bubble.style.cssText = 'position: absolute; top: 20px; right: 20px; background: white; border: 2px solid #333; border-radius: 15px; padding: 8px; font-size: 12px; display: flex; align-items: center; justify-content: center; z-index: 10; min-width: 80px; min-height: 30px;';
+                        bubble.className = 'bubble normal';
+                        bubble.style.cssText = 'position: absolute; top: 20px; right: 20px; display: flex; align-items: center; justify-content: center; z-index: 10;';
                         bubble.textContent = 'New!';
-                        targetPanel.appendChild(bubble);
-                        console.log('Created new bubble in panel');
+                        targetItem.appendChild(bubble);
+                        console.log('Created new bubble');
                     }
                     
-                    // Apply change
-                    const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
-                    shapes.forEach(s => bubble.classList.remove(s));
+                    // Apply style
+                    const allShapes = ['normal', 'thought', 'boom', 'idea', 'electric'];
+                    allShapes.forEach(shape => bubble.classList.remove(shape));
                     
-                    if (bubbleType === 'empty') {
-                        bubble.style.display = 'none';
-                    } else {
+                    if (bubbleType !== 'empty') {
                         bubble.style.display = 'flex';
                         bubble.classList.add(bubbleType);
+                    } else {
+                        bubble.style.display = 'none';
                     }
                     
-                    return { success: true, location: `Panel #${globalPanelNumber}` };
+                    return { success: true, location: `Grid item #${globalPanelNumber}` };
                 }
                 
-                return { success: false, reason: `No panel or bubble found for #${globalPanelNumber}` };
+                return { success: false, reason: `No bubbles found. Total bubbles: ${allBubbles.length}, Grid items: ${gridItems.length}` };
                 
             } catch (error) {
-                console.error('Direct bubble change error:', error);
+                console.error('Bubble change error:', error);
                 return { success: false, reason: error.message };
             }
+        }
+        
+        function applyBubbleStyle(targetBubble, bubbleType, panelNumber, elementType) {
+            console.log(`Applying ${bubbleType} to ${elementType} #${panelNumber}`);
+            
+            // Remove all shape classes
+            const allShapes = ['normal', 'thought', 'boom', 'idea', 'electric'];
+            allShapes.forEach(shape => targetBubble.classList.remove(shape));
+            
+            if (bubbleType === 'empty') {
+                targetBubble.style.display = 'none';
+            } else {
+                targetBubble.style.display = 'flex';
+                targetBubble.classList.add(bubbleType);
+                
+                // Enable manual resizing
+                targetBubble.style.resize = 'both';
+                targetBubble.style.overflow = 'auto';
+                targetBubble.style.cursor = 'grab';
+                
+                // Visual feedback
+                targetBubble.style.border = '3px solid #4CAF50';
+                targetBubble.style.boxShadow = '0 0 10px rgba(76, 175, 80, 0.3)';
+                
+                setTimeout(() => {
+                    targetBubble.style.border = '';
+                    targetBubble.style.boxShadow = '';
+                }, 2000);
+            }
+            
+            return { success: true, location: `${elementType} #${panelNumber}` };
         }
     </script>
 </body>
