@@ -974,6 +974,8 @@ class EnhancedComicGenerator:
             position: absolute;
             top: 0;
             left: 0;
+            border: 1px solid #333; /* Single outer border only */
+            box-sizing: border-box;
         }
         .page-wrapper {
             margin: 30px auto;
@@ -1019,31 +1021,14 @@ class EnhancedComicGenerator:
         }
         .panel { 
             position: relative; 
-            border: 1px solid #333;
+            border: none; /* No internal borders to avoid gaps */
             overflow: hidden; 
             width: 400px;
             height: 540px;
-            box-sizing: border-box; /* Border included in dimensions */
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            flex-shrink: 0; /* Don't shrink */
-        }
-        /* Remove double borders between adjacent panels */
-        .panel:nth-child(1) {
-            border-right: none;
-            border-bottom: none;
-        }
-        .panel:nth-child(2) {
-            border-left: 1px solid #333;
-            border-bottom: none;
-        }
-        .panel:nth-child(3) {
-            border-right: none;
-            border-top: 1px solid #333;
-        }
-        .panel:nth-child(4) {
-            border-left: 1px solid #333;
-            border-top: 1px solid #333;
+            flex-shrink: 0;
         }
         .panel img { 
             width: 100%; 
@@ -1142,6 +1127,69 @@ class EnhancedComicGenerator:
             border-right: 10px solid transparent; 
             border-top: 10px solid #333; 
         }
+        /* Bubble style variants */
+        .speech-bubble.bubble-speech { background: #fff; border-color: #333; }
+        .speech-bubble.bubble-speech::after { border-top-color: #333; }
+        
+        .speech-bubble.bubble-thought {
+            border-radius: 30px;
+            background: #fff;
+            border: 3px solid #333;
+        }
+        .speech-bubble.bubble-thought::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 28px;
+            width: 14px;
+            height: 14px;
+            background: #fff;
+            border: 3px solid #333;
+            border-radius: 50%;
+            transform: translateY(0);
+        }
+        .speech-bubble.bubble-thought::before {
+            content: '';
+            position: absolute;
+            bottom: -18px;
+            left: 20px;
+            width: 8px;
+            height: 8px;
+            background: #fff;
+            border: 3px solid #333;
+            border-radius: 50%;
+        }
+        
+        .speech-bubble.bubble-idea {
+            background: #FFF9C4;
+            border: 3px solid #FFB300;
+            box-shadow: 3px 3px 10px rgba(255,179,0,0.35);
+        }
+        .speech-bubble.bubble-idea::before {
+            content: '💡';
+            position: absolute;
+            top: -14px;
+            right: -10px;
+            font-size: 18px;
+        }
+        .speech-bubble.bubble-idea::after { border-top-color: #FFB300; }
+        
+        /* Selection and resize handle */
+        .speech-bubble.selected { outline: 2px dashed #4CAF50; }
+        .resize-handle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            right: 2px;
+            bottom: 2px;
+            background: #4CAF50;
+            border: 2px solid #fff;
+            border-radius: 2px;
+            cursor: se-resize;
+            display: none;
+            z-index: 11;
+        }
+        .resize-mode-on .resize-handle { display: block; }
         .comic-title { text-align: center; color: #333; margin-bottom: 20px; }
         .loading { text-align: center; color: #666; font-style: italic; }
         .edit-controls {
@@ -1192,6 +1240,34 @@ class EnhancedComicGenerator:
            <button onclick="checkDimensions()" style="margin-top: 5px; padding: 8px 15px; background: #607D8B; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
                📏 Check Dimensions
            </button>
+            <button id="toggleResizeBtn" onclick="toggleResizeMode()" style="margin-top: 5px; padding: 8px 15px; background: #3F51B5; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">
+                ↔️ Enable Bubble Resize
+            </button>
+            <div style="margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                <select id="bubbleStyleSelect" style="padding: 6px; border-radius: 5px; border: 1px solid #555; background: #222; color: #fff;">
+                    <option value="bubble-speech">Speech Bubble</option>
+                    <option value="bubble-thought">Thought Bubble</option>
+                    <option value="bubble-idea">Idea Bubble</option>
+                </select>
+                <button onclick="applyBubbleStyle()" style="padding: 6px 10px; background: #8BC34A; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Apply Style</button>
+            </div>
+            <div style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 10px;">
+                <div style="font-weight: bold; margin-bottom: 6px; color: #4CAF50;">🧩 Panel Manager</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                    <select id="pageSelect" style="padding: 6px; border-radius: 5px; border: 1px solid #555; background: #222; color: #fff;"></select>
+                    <select id="panelSelect" style="padding: 6px; border-radius: 5px; border: 1px solid #555; background: #222; color: #fff;"></select>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr auto; gap: 6px; margin-top: 6px; align-items: center;">
+                    <input id="panelsCount" type="number" min="1" max="4" value="4" style="padding: 6px; border-radius: 5px; border: 1px solid #555; background: #222; color: #fff;" />
+                    <button onclick="applyPanelsCount()" style="padding: 6px 10px; background: #00BCD4; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Apply Count</button>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px;">
+                    <button onclick="addPanel()" style="padding: 6px 10px; background: #607D8B; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Add Panel</button>
+                    <button onclick="removeSelectedPanel()" style="padding: 6px 10px; background: #F44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Remove Panel</button>
+                </div>
+                <label for="imageUpload" style="display:block; margin-top: 8px; font-size: 12px; opacity: 0.85;">Replace panel image</label>
+                <input type="file" id="imageUpload" accept="image/*" onchange="replacePanelImage(event)" style="width: 100%; padding: 6px; border-radius: 5px; border: 1px solid #555; background: #222; color: #fff;" />
+            </div>
     </div>
     <script>
         // Load comic data
@@ -1302,6 +1378,10 @@ class EnhancedComicGenerator:
         let currentEditBubble = null;
         let draggedBubble = null;
         let offset = {x: 0, y: 0};
+        let resizeMode = false;
+        let resizingBubble = null;
+        let resizeStart = {x: 0, y: 0, width: 0, height: 0};
+        let selectedBubble = null;
         
         function initializeEditor() {
             document.querySelectorAll('.speech-bubble').forEach(bubble => {
@@ -1310,11 +1390,30 @@ class EnhancedComicGenerator:
                     editBubbleText(bubble);
                 });
                 bubble.addEventListener('mousedown', startDrag);
+                bubble.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('resize-handle')) return;
+                    if (selectedBubble && selectedBubble !== bubble) selectedBubble.classList.remove('selected');
+                    selectedBubble = bubble;
+                    bubble.classList.add('selected');
+                });
+                // Ensure a default bubble style class exists
+                const hasStyle = Array.from(bubble.classList).some(c => c.startsWith('bubble-'));
+                if (!hasStyle) bubble.classList.add('bubble-speech');
+                // Attach resize handle if missing
+                if (!bubble.querySelector('.resize-handle')) {
+                    const handle = document.createElement('div');
+                    handle.className = 'resize-handle';
+                    handle.addEventListener('mousedown', startResize);
+                    bubble.appendChild(handle);
+                }
             });
             
             document.addEventListener('mousemove', drag);
             document.addEventListener('mouseup', stopDrag);
+            document.addEventListener('mousemove', doResize);
+            document.addEventListener('mouseup', stopResize);
             loadSavedState();
+            populatePagePanelSelectors();
         }
         
         function editBubbleText(bubble) {
@@ -1399,14 +1498,75 @@ class EnhancedComicGenerator:
             }
         }
         
+        function startResize(e) {
+            if (!resizeMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const bubble = e.target.closest('.speech-bubble');
+            resizingBubble = bubble;
+            const rect = bubble.getBoundingClientRect();
+            resizeStart.x = e.clientX;
+            resizeStart.y = e.clientY;
+            resizeStart.width = rect.width;
+            resizeStart.height = rect.height;
+        }
+        function doResize(e) {
+            if (!resizingBubble || !resizeMode) return;
+            const dx = e.clientX - resizeStart.x;
+            const dy = e.clientY - resizeStart.y;
+            const parent = resizingBubble.parentElement;
+            const parentRect = parent.getBoundingClientRect();
+            let newW = Math.max(80, resizeStart.width + dx);
+            let newH = Math.max(40, resizeStart.height + dy);
+            // Clamp within parent
+            newW = Math.min(newW, parentRect.width - resizingBubble.offsetLeft);
+            newH = Math.min(newH, parentRect.height - resizingBubble.offsetTop);
+            resizingBubble.style.width = newW + 'px';
+            resizingBubble.style.height = newH + 'px';
+        }
+        function stopResize() {
+            if (resizingBubble) {
+                saveState();
+                resizingBubble = null;
+            }
+        }
+        function toggleResizeMode() {
+            resizeMode = !resizeMode;
+            const container = document.querySelector('.comic-container');
+            const btn = document.getElementById('toggleResizeBtn');
+            if (resizeMode) {
+                container.classList.add('resize-mode-on');
+                btn.innerHTML = '↔️ Bubble Resize: ON';
+                btn.style.background = '#2E3B8E';
+            } else {
+                container.classList.remove('resize-mode-on');
+                btn.innerHTML = '↔️ Enable Bubble Resize';
+                btn.style.background = '#3F51B5';
+            }
+        }
+        function applyBubbleStyle() {
+            const style = document.getElementById('bubbleStyleSelect').value;
+            if (!selectedBubble) { showSaveMessage('Select a bubble first'); return; }
+            // Remove existing bubble-* class
+            Array.from(selectedBubble.classList)
+                .filter(c => c.startsWith('bubble-'))
+                .forEach(c => selectedBubble.classList.remove(c));
+            selectedBubble.classList.add(style);
+            saveState();
+        }
+        
         function saveState() {
             const bubbles = [];
             document.querySelectorAll('.speech-bubble').forEach((bubble, index) => {
+                const styleClass = Array.from(bubble.classList).find(c => c.startsWith('bubble-')) || 'bubble-speech';
                 bubbles.push({
                     index: index,
                     text: bubble.innerText,
                     left: bubble.style.left,
-                    top: bubble.style.top
+                    top: bubble.style.top,
+                    width: bubble.style.width,
+                    height: bubble.style.height,
+                    style: styleClass
                 });
             });
             localStorage.setItem('comicBubbles', JSON.stringify(bubbles));
@@ -1425,11 +1585,128 @@ class EnhancedComicGenerator:
                         elements[index].innerText = data.text;
                         if (data.left) elements[index].style.left = data.left;
                         if (data.top) elements[index].style.top = data.top;
+                        if (data.width) elements[index].style.width = data.width;
+                        if (data.height) elements[index].style.height = data.height;
+                        if (data.style) {
+                            Array.from(elements[index].classList)
+                                .filter(c => c.startsWith('bubble-'))
+                                .forEach(c => elements[index].classList.remove(c));
+                            elements[index].classList.add(data.style);
+                        }
                     }
                 });
             } catch (e) {
                 console.error('Failed to load saved state:', e);
             }
+        }
+        
+        // Panel management helpers
+        function getPages() {
+            return Array.from(document.querySelectorAll('.page-wrapper'));
+        }
+        function getSelectedPageIndex() {
+            const sel = document.getElementById('pageSelect');
+            return sel && sel.value ? parseInt(sel.value, 10) : 0;
+        }
+        function getSelectedPanelIndex() {
+            const sel = document.getElementById('panelSelect');
+            return sel && sel.value ? parseInt(sel.value, 10) : 0;
+        }
+        function getSelectedPageGrid() {
+            const pages = getPages();
+            const idx = getSelectedPageIndex();
+            const page = pages[idx];
+            return page ? page.querySelector('.comic-grid') : null;
+        }
+        function populatePagePanelSelectors() {
+            const pageSel = document.getElementById('pageSelect');
+            const panelSel = document.getElementById('panelSelect');
+            if (!pageSel || !panelSel) return;
+            pageSel.innerHTML = '';
+            getPages().forEach((p, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = `Page ${i+1}`;
+                pageSel.appendChild(opt);
+            });
+            pageSel.addEventListener('change', updatePanelSelectorOptions);
+            updatePanelSelectorOptions();
+        }
+        function updatePanelSelectorOptions() {
+            const panelSel = document.getElementById('panelSelect');
+            if (!panelSel) return;
+            panelSel.innerHTML = '';
+            const grid = getSelectedPageGrid();
+            const panels = grid ? Array.from(grid.querySelectorAll('.panel')) : [];
+            panels.forEach((p, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = `Panel ${i+1}`;
+                panelSel.appendChild(opt);
+            });
+            document.getElementById('panelsCount').value = panels.length || 4;
+        }
+        function applyPanelsCount() {
+            const count = Math.max(1, Math.min(4, parseInt(document.getElementById('panelsCount').value || '4', 10)));
+            const grid = getSelectedPageGrid();
+            if (!grid) return;
+            let panels = Array.from(grid.querySelectorAll('.panel'));
+            // Remove extra panels
+            while (panels.length > count) {
+                grid.removeChild(panels.pop());
+            }
+            // Add missing panels
+            while (panels.length < count) {
+                const panelDiv = document.createElement('div');
+                panelDiv.className = 'panel';
+                const img = document.createElement('img');
+                img.alt = 'New Panel';
+                img.style.display = 'block';
+                img.style.background = '#fafafa';
+                img.style.color = '#666';
+                img.style.objectFit = 'contain';
+                panelDiv.appendChild(img);
+                grid.appendChild(panelDiv);
+                panels.push(panelDiv);
+            }
+            updatePanelSelectorOptions();
+            showSaveMessage('Panels count updated');
+        }
+        function addPanel() {
+            document.getElementById('panelsCount').value = Math.min(4, (parseInt(document.getElementById('panelsCount').value || '4', 10) + 1));
+            applyPanelsCount();
+        }
+        function removeSelectedPanel() {
+            const grid = getSelectedPageGrid();
+            if (!grid) return;
+            const idx = getSelectedPanelIndex();
+            const panels = Array.from(grid.querySelectorAll('.panel'));
+            if (panels[idx]) grid.removeChild(panels[idx]);
+            updatePanelSelectorOptions();
+            showSaveMessage('Panel removed');
+        }
+        function replacePanelImage(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                const grid = getSelectedPageGrid();
+                if (!grid) return;
+                const idx = getSelectedPanelIndex();
+                const panels = Array.from(grid.querySelectorAll('.panel'));
+                if (!panels[idx]) return;
+                let img = panels[idx].querySelector('img');
+                if (!img) {
+                    img = document.createElement('img');
+                    panels[idx].appendChild(img);
+                }
+                img.src = ev.target.result;
+                img.style.display = 'block';
+                showSaveMessage('Panel image replaced');
+            };
+            reader.readAsDataURL(file);
+            // Clear the input so the same file can be chosen again later
+            event.target.value = '';
         }
         
         // Export functions
