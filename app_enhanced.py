@@ -1028,9 +1028,10 @@ class EnhancedComicGenerator:
         }
         .comic-grid { 
             display: grid; 
-            grid-template-columns: 299px 299px; 
-            grid-template-rows: 199px 199px; 
-            gap: 2px; /* Very thin white comic-style divider */
+            grid-template-columns: 299.5px 299.5px; 
+            grid-template-rows: 199.5px 199.5px; 
+            column-gap: 1px; /* Ultra-thin horizontal divider */
+            row-gap: 1px; /* Ultra-thin vertical divider */
             width: 600px;
             height: 400px;
             margin: 0;
@@ -1224,6 +1225,9 @@ class EnhancedComicGenerator:
         <p>• <strong>Drag</strong> speech bubbles to move</p>
         <p>• <strong>Double-click</strong> to edit text</p>
         <p>• Changes auto-save locally</p>
+        <button onclick="changeBubbleInteractive()" style="margin-top: 8px; padding: 6px 12px; background: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 11px;">
+            🎨 Change Bubble
+        </button>
         <div style="display: flex; gap: 5px; margin-top: 10px;">
             <button onclick="saveEditableHTML()" style="padding: 6px 10px; background: #FF9800; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; flex: 1; font-size: 11px;">
                 💾 Save
@@ -1631,10 +1635,11 @@ class EnhancedComicGenerator:
                         height: 400px !important;
                         margin: 0 !important;
                         padding: 0 !important;
-                        gap: 2px !important; /* Thin white divider */
+                        column-gap: 1px !important; /* Ultra-thin horizontal divider */
+                        row-gap: 1px !important; /* Ultra-thin vertical divider */
                         display: grid !important;
-                        grid-template-columns: 299px 299px !important;
-                        grid-template-rows: 199px 199px !important;
+                        grid-template-columns: 299.5px 299.5px !important;
+                        grid-template-rows: 199.5px 199.5px !important;
                         background: white !important; /* White divider color */
                     }
                     
@@ -1807,6 +1812,89 @@ class EnhancedComicGenerator:
                 msgDiv.style.opacity = '0';
                 setTimeout(() => msgDiv.remove(), 500);
             }, 3000);
+        }
+        
+        function changeBubbleInteractive() {
+            // Step 1: Show bubble type selection
+            const bubbleTypes = [
+                {name: 'Normal', value: 'normal', emoji: '💬'},
+                {name: 'Jagged', value: 'jagged', emoji: '⚡'},
+                {name: 'Thought', value: 'thought', emoji: '💭'},
+                {name: 'Idea', value: 'idea', emoji: '💡'},
+                {name: 'Boom', value: 'boom', emoji: '💥'},
+                {name: 'Square', value: 'square', emoji: '📝'},
+                {name: 'Empty', value: 'empty', emoji: '❌'}
+            ];
+            
+            let bubbleOptions = 'Select bubble type:\\n\\n';
+            bubbleTypes.forEach((type, index) => {
+                bubbleOptions += `${index + 1}. ${type.emoji} ${type.name}\\n`;
+            });
+            
+            const bubbleChoice = prompt(bubbleOptions + '\\nEnter number (1-7):');
+            
+            if (!bubbleChoice || bubbleChoice < 1 || bubbleChoice > 7) {
+                alert('❌ Invalid bubble type selection!');
+                return;
+            }
+            
+            const selectedBubbleType = bubbleTypes[parseInt(bubbleChoice) - 1];
+            
+            // Step 2: Ask for panel number
+            const panelNumber = prompt('🎯 Enter panel number to change (1-4):');
+            
+            if (!panelNumber || panelNumber < 1 || panelNumber > 4) {
+                alert('❌ Invalid panel number! Please enter 1, 2, 3, or 4.');
+                return;
+            }
+            
+            // Step 3: Apply the change
+            const success = applyBubbleChange(parseInt(panelNumber), selectedBubbleType.value);
+            
+            if (success) {
+                alert(`✅ Changed Panel ${panelNumber} bubble to ${selectedBubbleType.emoji} ${selectedBubbleType.name}!`);
+            } else {
+                alert(`❌ Could not change bubble in Panel ${panelNumber}. Make sure the panel exists and has a bubble.`);
+            }
+        }
+        
+        function applyBubbleChange(panelNumber, bubbleType) {
+            try {
+                // Find all comic pages
+                const pages = document.querySelectorAll('.comic-page');
+                
+                // For each page, try to change the specified panel
+                let changed = false;
+                pages.forEach(page => {
+                    const panels = page.querySelectorAll('.panel');
+                    if (panels[panelNumber - 1]) {
+                        const targetPanel = panels[panelNumber - 1];
+                        const bubble = targetPanel.querySelector('.speech-bubble');
+                        
+                        if (bubble) {
+                            // Remove all existing shape classes
+                            const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+                            shapes.forEach(shape => bubble.classList.remove(shape));
+                            
+                            // Handle empty bubble type
+                            if (bubbleType === 'empty') {
+                                bubble.style.display = 'none';
+                            } else {
+                                bubble.style.display = 'flex';
+                                bubble.classList.add(bubbleType);
+                            }
+                            
+                            changed = true;
+                            console.log(`✅ Changed panel ${panelNumber} bubble to ${bubbleType}`);
+                        }
+                    }
+                });
+                
+                return changed;
+            } catch (error) {
+                console.error('Error changing bubble:', error);
+                return false;
+            }
         }
     </script>
 </body>
