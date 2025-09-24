@@ -1850,20 +1850,20 @@ class EnhancedComicGenerator:
             console.log('🚀 Starting new bubble change approach...');
             
             // Step 1: Show bubble type selection
-            const bubbleTypes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square', 'empty'];
-            const bubbleEmojis = ['💬', '⚡', '💭', '💡', '💥', '📝', '❌'];
-            const bubbleNames = ['Normal', 'Jagged', 'Thought', 'Idea', 'Boom', 'Square', 'Empty'];
+            const bubbleTypes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square', 'whisper', 'scream', 'dream', 'radio', 'empty'];
+            const bubbleEmojis = ['💬', '⚡', '💭', '💡', '💥', '📝', '🤫', '😱', '🌙', '📡', '❌'];
+            const bubbleNames = ['Normal', 'Jagged', 'Thought', 'Idea', 'Boom', 'Square', 'Whisper', 'Scream', 'Dream', 'Radio', 'Empty'];
             
             let menu = '🎨 SELECT BUBBLE TYPE:\\n\\n';
             for (let i = 0; i < bubbleTypes.length; i++) {
                 menu += `${i + 1}. ${bubbleEmojis[i]} ${bubbleNames[i]}\\n`;
             }
             
-            const choice = prompt(menu + '\\nEnter 1-7:');
+            const choice = prompt(menu + '\\nEnter 1-11:');
             const choiceNum = parseInt(choice);
             
-            if (isNaN(choiceNum) || choiceNum < 1 || choiceNum > 7) {
-                alert('❌ Invalid choice! Please enter 1-7.');
+            if (isNaN(choiceNum) || choiceNum < 1 || choiceNum > 11) {
+                alert('❌ Invalid choice! Please enter 1-11.');
                 return;
             }
             
@@ -2001,14 +2001,18 @@ class EnhancedComicGenerator:
                         targetBubble.style.display = 'flex';
                         targetBubble.classList.add(bubbleType);
                         
-                        // Force visual change with direct styles
+                        // Force visual change with direct styles for all bubble types
                         const styles = {
-                            normal: { bg: 'white', border: '2px solid #333', radius: '15px' },
-                            jagged: { bg: '#ffeeee', border: '3px solid #ff4444', radius: '0px' },
-                            thought: { bg: '#f0f8ff', border: '2px dashed #6699cc', radius: '50%' },
-                            idea: { bg: '#fffacd', border: '2px solid #ffd700', radius: '15px' },
-                            boom: { bg: '#fff5ee', border: '3px solid #ff6600', radius: '0px' },
-                            square: { bg: '#f9f9f9', border: '2px solid #666', radius: '5px' }
+                            normal: { bg: 'linear-gradient(145deg, #ffffff, #f0f0f0)', border: '3px solid #333', radius: '25px' },
+                            jagged: { bg: 'linear-gradient(145deg, #ffeeee, #ffdddd)', border: '3px solid #ff4444', radius: '0px' },
+                            thought: { bg: 'radial-gradient(circle, #f8f9fa, #e9ecef)', border: '2px dashed #6c757d', radius: '50%' },
+                            idea: { bg: 'radial-gradient(circle, #fff9c4, #fff3cd)', border: '3px solid #ffc107', radius: '20px' },
+                            boom: { bg: 'radial-gradient(circle, #fff5ee, #ffebcd)', border: '4px solid #ff6600', radius: '0px' },
+                            square: { bg: 'linear-gradient(145deg, #f8f9fa, #e9ecef)', border: '2px solid #6c757d', radius: '8px' },
+                            whisper: { bg: 'linear-gradient(145deg, #f1f3f4, #e8eaed)', border: '1px dashed #9aa0a6', radius: '30px' },
+                            scream: { bg: 'radial-gradient(circle, #fff2f2, #ffe6e6)', border: '4px solid #dc3545', radius: '15px' },
+                            dream: { bg: 'radial-gradient(ellipse, #e8f4fd, #cce7f0)', border: '2px solid #0dcaf0', radius: '60% 40% 60% 40%' },
+                            radio: { bg: 'linear-gradient(145deg, #f8f9fa, #e9ecef)', border: '2px solid #6c757d', radius: '15px' }
                         };
                         
                         const style = styles[bubbleType];
@@ -2093,13 +2097,31 @@ def upload_file():
             if f.filename == '':
                 return "❌ No file selected"
             
-            # Clean up previous files
+            # Clean up previous files and SRT cache
+            print("🧹 Cleaning previous video and subtitle files...")
+            
+            # Remove old video
             if os.path.exists('video/uploaded.mp4'):
                 os.remove('video/uploaded.mp4')
+                print("🗑️ Removed old video file")
+            
+            # Clean all SRT files to prevent caching issues
+            from backend.srt_cleanup import clean_comic_workspace
+            cleanup_result = clean_comic_workspace(".")
+            print(f"🗑️ Cleaned {cleanup_result['total_deleted']} cached files")
+            
+            # Clean frames directory for fresh generation
+            frames_dir = 'frames/final'
+            if os.path.exists(frames_dir):
+                import shutil
+                shutil.rmtree(frames_dir)
+                os.makedirs(frames_dir, exist_ok=True)
+                print("🗑️ Cleared previous frames for fresh generation")
             
             # Save uploaded file
             f.save("video/uploaded.mp4")
-            print(f"✅ File saved: {f.filename}")
+            print(f"✅ New video saved: {f.filename}")
+            print("🆕 Ready for fresh comic generation with new video")
             
             # Get smart comic options
             smart_mode = request.form.get('smart_mode', 'false').lower() == 'true'
@@ -2136,9 +2158,25 @@ def handle_link():
             if not link:
                 return "❌ No link provided"
             
-            # Clean up previous files
+            # Clean up previous files and SRT cache
+            print("🧹 Cleaning previous video and subtitle files...")
+            
             if os.path.exists('video/uploaded.mp4'):
                 os.remove('video/uploaded.mp4')
+                print("🗑️ Removed old video file")
+            
+            # Clean all SRT files to prevent caching issues
+            from backend.srt_cleanup import clean_comic_workspace
+            cleanup_result = clean_comic_workspace(".")
+            print(f"🗑️ Cleaned {cleanup_result['total_deleted']} cached files")
+            
+            # Clean frames directory for fresh generation
+            frames_dir = 'frames/final'
+            if os.path.exists(frames_dir):
+                import shutil
+                shutil.rmtree(frames_dir)
+                os.makedirs(frames_dir, exist_ok=True)
+                print("🗑️ Cleared previous frames for fresh generation")
             
             # Download video using yt-dlp
             try:
@@ -2270,9 +2308,27 @@ if __name__ == '__main__':
     print("   - Advanced face detection")
     print("   - Smart bubble placement")
     print("   - High-quality comic styling")
+    print("   - 11 professional bubble types")
+    print("   - Perfect 10px panel gaps")
     print("   - Optimized 2x2 layout")
     print("")
     print("🌐 Web interface available at: http://localhost:5000")
     print("📁 Upload videos or paste YouTube links to generate comics!")
+    
+    # Get WSL IP for Windows Chrome access
+    try:
+        import socket
+        hostname = socket.gethostname()
+        wsl_ip = socket.gethostbyname(hostname)
+        print(f"🖥️ For Windows Chrome: http://{wsl_ip}:5000")
+    except:
+        print("🖥️ For Windows Chrome: Use WSL IP address")
+    
     print("")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    print("💡 WSL Chrome Access Fix:")
+    print("   1. In WSL: ip addr show eth0 | grep inet")
+    print("   2. Use that IP in Windows Chrome")
+    print("   3. Or try: http://127.0.0.1:5000")
+    print("")
+    
+    app.run(debug=True, host='0.0.0.0', port=5000, threaded=True)

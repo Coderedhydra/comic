@@ -26,6 +26,9 @@ body {
     height: 400px;
     width: 600px;
     background-color: rgb(255, 255, 255);
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 .grid-container {
@@ -46,6 +49,11 @@ body {
     background-size: cover;
     border: 0;
     position: relative;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    width: 295px;
+    height: 195px;
 }
 
 /* Exact Mode: single outer border, panels edge-to-edge */
