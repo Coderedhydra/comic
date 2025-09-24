@@ -1028,10 +1028,10 @@ class EnhancedComicGenerator:
         }
         .comic-grid { 
             display: grid; 
-            grid-template-columns: 297.5px 297.5px; 
-            grid-template-rows: 197.5px 197.5px; 
-            column-gap: 5px; /* 5px thick horizontal divider */
-            row-gap: 5px; /* 5px thick vertical divider */
+            grid-template-columns: 295px 295px; 
+            grid-template-rows: 195px 195px; 
+            column-gap: 10px; /* 10px horizontal divider */
+            row-gap: 10px; /* 10px vertical divider */
             width: 600px;
             height: 400px;
             margin: 0;
@@ -1635,11 +1635,11 @@ class EnhancedComicGenerator:
                         height: 400px !important;
                         margin: 0 !important;
                         padding: 0 !important;
-                        column-gap: 5px !important; /* 5px thick horizontal divider */
-                        row-gap: 5px !important; /* 5px thick vertical divider */
+                        column-gap: 10px !important; /* 10px horizontal divider */
+                        row-gap: 10px !important; /* 10px vertical divider */
                         display: grid !important;
-                        grid-template-columns: 297.5px 297.5px !important;
-                        grid-template-rows: 197.5px 197.5px !important;
+                        grid-template-columns: 295px 295px !important;
+                        grid-template-rows: 195px 195px !important;
                         background: white !important; /* White divider color */
                     }
                     
@@ -1840,19 +1840,27 @@ class EnhancedComicGenerator:
             
             const selectedBubbleType = bubbleTypes[parseInt(bubbleChoice) - 1];
             
-            // Step 2: Ask for panel number
-            const panelNumber = prompt('🎯 Enter panel number to change (1-4):');
+            // Step 2: Ask for panel number (1-48 across all pages)
+            const panelNumber = prompt('🎯 Enter panel number to change (1-48):\\n\\n' +
+                'Panel Layout: 12 pages × 4 panels each = 48 total panels\\n' +
+                'Page 1: Panels 1-4\\n' +
+                'Page 2: Panels 5-8\\n' +
+                'Page 3: Panels 9-12\\n' +
+                '... and so on ...\\n' +
+                'Page 12: Panels 45-48');
             
-            if (!panelNumber || panelNumber < 1 || panelNumber > 4) {
-                alert('❌ Invalid panel number! Please enter 1, 2, 3, or 4.');
+            if (!panelNumber || panelNumber < 1 || panelNumber > 48) {
+                alert('❌ Invalid panel number! Please enter a number between 1 and 48.');
                 return;
             }
             
             // Step 3: Apply the change
-            const success = applyBubbleChange(parseInt(panelNumber), selectedBubbleType.value);
+            const success = applyBubbleChangeGlobal(parseInt(panelNumber), selectedBubbleType.value);
             
             if (success) {
-                alert(`✅ Changed Panel ${panelNumber} bubble to ${selectedBubbleType.emoji} ${selectedBubbleType.name}!`);
+                const pageNum = Math.ceil(panelNumber / 4);
+                const panelInPage = ((panelNumber - 1) % 4) + 1;
+                alert(`✅ Changed Panel ${panelNumber} (Page ${pageNum}, Panel ${panelInPage}) bubble to ${selectedBubbleType.emoji} ${selectedBubbleType.name}!`);
             } else {
                 alert(`❌ Could not change bubble in Panel ${panelNumber}. Make sure the panel exists and has a bubble.`);
             }
@@ -1934,6 +1942,115 @@ class EnhancedComicGenerator:
                 return changed;
             } catch (error) {
                 console.error('Error changing bubble:', error);
+                return false;
+            }
+        }
+        
+        function applyBubbleChangeGlobal(globalPanelNumber, bubbleType) {
+            try {
+                // Calculate which page and panel within that page
+                const pageIndex = Math.ceil(globalPanelNumber / 4) - 1; // 0-based page index
+                const panelInPage = ((globalPanelNumber - 1) % 4) + 1; // 1-based panel in page
+                
+                console.log(`🎯 Looking for: Global Panel ${globalPanelNumber} = Page ${pageIndex + 1}, Panel ${panelInPage}`);
+                
+                // Find all comic pages
+                const pages = document.querySelectorAll('.comic-page');
+                
+                // Try to find the specific page
+                if (pages.length > pageIndex) {
+                    const targetPage = pages[pageIndex];
+                    const panels = targetPage.querySelectorAll('.panel');
+                    
+                    if (panels.length >= panelInPage) {
+                        const targetPanel = panels[panelInPage - 1];
+                        const bubble = targetPanel.querySelector('.speech-bubble') || targetPanel.querySelector('.bubble');
+                        
+                        if (bubble) {
+                            // Remove all existing shape classes
+                            const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+                            shapes.forEach(shape => bubble.classList.remove(shape));
+                            
+                            // Handle empty bubble type
+                            if (bubbleType === 'empty') {
+                                bubble.style.display = 'none';
+                            } else {
+                                bubble.style.display = 'flex';
+                                bubble.classList.add(bubbleType);
+                            }
+                            
+                            console.log(`✅ Changed global panel ${globalPanelNumber} bubble to ${bubbleType} (pages method)`);
+                            return true;
+                        }
+                    }
+                }
+                
+                // Fallback: Try grid items approach (for single page layouts)
+                const allGridItems = document.querySelectorAll('.grid-item');
+                if (allGridItems.length >= globalPanelNumber) {
+                    const targetGridItem = allGridItems[globalPanelNumber - 1];
+                    const bubble = targetGridItem.querySelector('.bubble') || targetGridItem.querySelector('.speech-bubble');
+                    
+                    if (bubble) {
+                        // Remove all existing shape classes
+                        const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+                        shapes.forEach(shape => bubble.classList.remove(shape));
+                        
+                        // Handle empty bubble type
+                        if (bubbleType === 'empty') {
+                            bubble.style.display = 'none';
+                        } else {
+                            bubble.style.display = 'flex';
+                            bubble.classList.add(bubbleType);
+                        }
+                        
+                        console.log(`✅ Changed global panel ${globalPanelNumber} bubble to ${bubbleType} (grid method)`);
+                        return true;
+                    }
+                }
+                
+                // Alternative approach: Look for all panels across all pages
+                const allPanels = [];
+                pages.forEach(page => {
+                    const pagePanels = page.querySelectorAll('.panel');
+                    allPanels.push(...pagePanels);
+                });
+                
+                if (allPanels.length >= globalPanelNumber) {
+                    const targetPanel = allPanels[globalPanelNumber - 1];
+                    const bubble = targetPanel.querySelector('.speech-bubble') || targetPanel.querySelector('.bubble');
+                    
+                    if (bubble) {
+                        // Remove all existing shape classes
+                        const shapes = ['normal', 'jagged', 'thought', 'idea', 'boom', 'square'];
+                        shapes.forEach(shape => bubble.classList.remove(shape));
+                        
+                        // Handle empty bubble type
+                        if (bubbleType === 'empty') {
+                            bubble.style.display = 'none';
+                        } else {
+                            bubble.style.display = 'flex';
+                            bubble.classList.add(bubbleType);
+                        }
+                        
+                        console.log(`✅ Changed global panel ${globalPanelNumber} bubble to ${bubbleType} (all panels method)`);
+                        return true;
+                    }
+                }
+                
+                // Debug information
+                console.log('🔍 Debug info for global panel change:');
+                console.log('Total pages found:', pages.length);
+                console.log('Total grid items found:', allGridItems.length);
+                console.log('Total panels found:', allPanels.length);
+                console.log('Looking for global panel:', globalPanelNumber);
+                console.log('Calculated page index:', pageIndex);
+                console.log('Calculated panel in page:', panelInPage);
+                
+                return false;
+                
+            } catch (error) {
+                console.error('Error in global bubble change:', error);
                 return false;
             }
         }

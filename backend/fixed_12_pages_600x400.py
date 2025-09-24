@@ -48,8 +48,8 @@ def generate_12_pages_600x400(frame_files, bubbles):
                     metadata={
                         'page_width': page_width,
                         'page_height': page_height,
-                        'panel_width': 297.5,  # Adjusted for 5px white divider
-                        'panel_height': 197.5  # Adjusted for 5px white divider
+                        'panel_width': 295,  # Adjusted for 10px white divider
+                        'panel_height': 195  # Adjusted for 10px white divider
                     }
                 )
                 page_panels.append(panel_obj)
@@ -69,8 +69,8 @@ def generate_12_pages_600x400(frame_files, bubbles):
                     metadata={
                         'page_width': page_width,
                         'page_height': page_height,
-                        'panel_width': 297.5,
-                        'panel_height': 197.5
+                        'panel_width': 295,
+                        'panel_height': 195
                     }
                 )
                 page_panels.append(panel_obj)
