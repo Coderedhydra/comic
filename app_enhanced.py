@@ -7,7 +7,7 @@ import os
 import webbrowser
 import time
 import threading
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, send_file
 from pathlib import Path
 import cv2
 import numpy as np
