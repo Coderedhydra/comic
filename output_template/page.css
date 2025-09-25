@@ -23,8 +23,8 @@ body {
 
 .wrapper {
     display: flex;
-    height: 1100px;
-    width: 1035px;
+    height: 400px;
+    width: 600px;
     background-color: rgb(255, 255, 255);
 }
 
@@ -32,16 +32,27 @@ body {
     width: 100%;
     height: 100%;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    border: 3px solid rgb(255, 255, 255);
-    row-gap: 3px;
-    column-gap: 3px;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    border: 0;
+    row-gap: 0;
+    column-gap: 0;
 }
 
 .grid-item {
     background-position: center center;
     background-repeat: no-repeat;
     background-size: cover;
-    border: 3px solid black;
+    border: 0;
     position: relative;
+}
+
+/* Make navigation buttons small */
+.button button {
+    padding: 4px;
+}
+
+.button button img {
+    width: 20px;
+    height: 20px;
 }
