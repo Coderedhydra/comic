@@ -49,7 +49,7 @@ def create_portable_comic(pages_json_path="output/pages.json", output_path="outp
         .comic-page {{ background: white; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-bottom: 30px; }}
         .comic-grid {{ display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; height: 600px; }}
         .panel {{ position: relative; border: 2px solid #333; overflow: hidden; }}
-        .panel img {{ width: 100%; height: 100%; object-fit: cover; }}
+        .panel img {{ width: 100%; height: 100%; object-fit: contain; background: #000; }}
         .speech-bubble {{ 
             position: absolute; 
             background: white; 

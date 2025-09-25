@@ -42,7 +42,8 @@ body {
 .grid-item {
     background-position: center center;
     background-repeat: no-repeat;
-    background-size: cover;
+    background-size: contain;
+    background-color: #000;
     border: 0;
     position: relative;
 }

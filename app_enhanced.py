@@ -862,7 +862,7 @@ class EnhancedComicGenerator:
         .comic-container { max-width: 1200px; margin: 0 auto; }
         .comic-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; margin-top: 30px; }
         .comic-panel { background: white; border: 4px solid #333; box-shadow: 0 5px 20px rgba(0,0,0,0.3); position: relative; overflow: hidden; }
-        .comic-panel img { width: 100%; height: 400px; object-fit: cover; display: block; }
+        .comic-panel img { width: 100%; height: 400px; object-fit: contain; display: block; background: #000; }
         .panel-info { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.8); color: white; padding: 15px; }
         .panel-text { font-size: 14px; margin-bottom: 8px; line-height: 1.4; }
         .emotion-badges { display: flex; gap: 10px; font-size: 12px; }

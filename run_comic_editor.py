@@ -143,7 +143,7 @@ def generate_html_output(data):
         body { margin: 0; padding: 20px; background: #f0f0f0; }
         .comic-page { position: relative; background: white; margin: 20px auto; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
         .comic-panel { position: absolute; border: 2px solid #333; overflow: hidden; }
-        .comic-panel img { width: 100%; height: 100%; object-fit: cover; }
+        .comic-panel img { width: 100%; height: 100%; object-fit: contain; background: #000; }
         .speech-bubble { position: absolute; background: white; border: 3px solid #333; border-radius: 20px; padding: 15px; font-family: "Comic Sans MS", cursive; font-size: 14px; font-weight: bold; text-align: center; z-index: 10; }
         .print-page { page-break-after: always; }
         @media print { body { margin: 0; padding: 0; } .comic-page { box-shadow: none; } }
