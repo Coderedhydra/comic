@@ -230,8 +230,8 @@ class EnhancedComicGenerator:
             print("\n📸 Extracting individual panels...")
             self._extract_panels()
             
-            # 13. Generate page images at 800x1080
-            print("\n📄 Generating page images (800x1080)...")
+            # 13. Generate page images (generator still uses 800x1080 canvases)
+            print("\n📄 Generating page images...")
             self._generate_page_images()
             
             execution_time = (time.time() - start_time) / 60
@@ -606,13 +606,17 @@ class EnhancedComicGenerator:
     
     def _generate_story_pages(self, frame_files, bubbles):
         """Generate pages based on story extraction"""
-        # Use 2x2 grid with 12 PAGES at 800x1080 resolution
-        from backend.fixed_12_pages_800x1080 import generate_12_pages_800x1080
-        
-        print(f"📖 Generating 12-page comic (800x1080 resolution)")
-        print(f"📊 Target: 48 meaningful panels from {len(frame_files)} frames")
-        
-        return generate_12_pages_800x1080(frame_files, bubbles)
+        # Use 2x2 grid; prefer compact 600x400 interactive template for viewing
+        from backend.fixed_12_pages_2x2 import generate_12_pages_2x2_grid
+        try:
+            pages = generate_12_pages_2x2_grid(frame_files, bubbles)
+            print(f"📖 Generated {len(pages)} pages in 2x2 layout for compact viewer")
+            return pages
+        except Exception:
+            # Fallback to existing 800x1080 generator if compact not available
+            from backend.fixed_12_pages_800x1080 import generate_12_pages_800x1080
+            print(f"📖 Falling back to 800x1080 generator")
+            return generate_12_pages_800x1080(frame_files, bubbles)
         
         # Get adaptive layout configuration
         if STORY_EXTRACTOR_AVAILABLE:
@@ -908,7 +912,7 @@ class EnhancedComicGenerator:
             print(f"⚠️ Panel extraction failed: {e}")
     
     def _generate_page_images(self):
-        """Generate page images at 800x1080 resolution"""
+        """Generate page images using the page image generator"""
         try:
             from backend.page_image_generator import PageImageGenerator
             
@@ -928,7 +932,7 @@ class EnhancedComicGenerator:
             saved_pages = generator.generate_page_images(pages_data, "frames/final")
             
             if saved_pages:
-                print(f"✅ Generated {len(saved_pages)} page images (800x1080)")
+                print(f"✅ Generated {len(saved_pages)} page images")
                 print("📄 Page gallery available at: output/page_images/index.html")
                 
                 # Open the gallery in browser
@@ -953,8 +957,8 @@ class EnhancedComicGenerator:
         .comic-container { max-width: 1200px; margin: 0 auto; }
         .comic-page { 
             background: white; 
-            width: 800px; /* Exact image width */
-            height: 1080px; /* Exact image height */
+            width: 600px; /* Exact width */
+            height: 400px; /* Exact height */
             padding: 0; /* No padding */
             margin: 0; /* No margin */
             box-shadow: 0 0 10px rgba(0,0,0,0.1); 
@@ -964,11 +968,11 @@ class EnhancedComicGenerator:
         }
         .comic-grid { 
             display: grid; 
-            grid-template-columns: 400px 400px; 
-            grid-template-rows: 540px 540px; 
+            grid-template-columns: 300px 300px; 
+            grid-template-rows: 200px 200px; 
             gap: 0; /* No gap between panels */
-            width: 800px;
-            height: 1080px;
+            width: 600px;
+            height: 400px;
             margin: 0;
             padding: 0;
             position: absolute;
@@ -977,7 +981,7 @@ class EnhancedComicGenerator:
         }
         .page-wrapper {
             margin: 30px auto;
-            width: 800px;
+            width: 600px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -1083,7 +1087,7 @@ class EnhancedComicGenerator:
             outline: 2px solid red;
         }
         .debug-mode .comic-page::before {
-            content: "Page: 800×1080";
+            content: "Page: 600×400";
             position: absolute;
             top: -25px;
             left: 0;
@@ -1227,7 +1231,7 @@ class EnhancedComicGenerator:
                             // Add page info (resolution)
                             const pageInfo = document.createElement('div');
                             pageInfo.className = 'page-info';
-                            pageInfo.textContent = '800x1080';
+            pageInfo.textContent = '600x400';
                             pageDiv.appendChild(pageInfo);
                             
                             // Create grid for this page
@@ -1492,13 +1496,13 @@ class EnhancedComicGenerator:
                 const computed = window.getComputedStyle(page);
                 
                 const info = `📏 Page Dimensions Check:\n\n` +
-                    `Page Width: ${pageRect.width}px (should be 800)\n` +
-                    `Page Height: ${pageRect.height}px (should be 1080)\n` +
+                    `Page Width: ${pageRect.width}px (should be 600)\n` +
+                    `Page Height: ${pageRect.height}px (should be 400)\n` +
                     `Grid Width: ${gridRect ? gridRect.width : 'N/A'}px\n` +
                     `Grid Height: ${gridRect ? gridRect.height : 'N/A'}px\n` +
                     `Padding: ${computed.padding}\n` +
                     `Box-sizing: ${computed.boxSizing}\n\n` +
-                    `${pageRect.width === 800 && pageRect.height === 1080 ? '✅ EXACT MATCH!' : '❌ Size mismatch!'}\n\n` +
+                    `${pageRect.width === 600 && pageRect.height === 400 ? '✅ EXACT MATCH!' : '❌ Size mismatch!'}\n\n` +
                     `Exact-size mode: ${container.classList.contains('exact-size') ? 'ON' : 'OFF'}`;
                 
                 alert(info);
@@ -1549,7 +1553,7 @@ class EnhancedComicGenerator:
                         width: 100% !important;
                     }
                     
-                    /* Each comic page exactly 800x1080 */
+            /* Each comic page exactly 600x400 */
                     .comic-page { 
                         page-break-inside: avoid !important;
                         page-break-after: always !important;
@@ -1557,8 +1561,8 @@ class EnhancedComicGenerator:
                         padding: 0 !important;
                         box-shadow: none !important;
                         background: white !important;
-                        width: 800px !important;
-                        height: 1080px !important;
+                width: 600px !important;
+                height: 400px !important;
                         box-sizing: border-box !important;
                         position: relative !important;
                     }
@@ -1571,16 +1575,16 @@ class EnhancedComicGenerator:
                         display: none !important;
                     }
                     
-                    /* Comic grid exact 800x1080 with 4 panels */
+            /* Comic grid exact 600x400 with 4 panels */
                     .comic-grid {
-                        width: 800px !important;
-                        height: 1080px !important;
+                width: 600px !important;
+                height: 400px !important;
                         margin: 0 !important;
                         padding: 0 !important;
                         gap: 0 !important; /* No gap for exact panel sizing */
                         display: grid !important;
-                        grid-template-columns: 400px 400px !important;
-                        grid-template-rows: 540px 540px !important;
+                grid-template-columns: 300px 300px !important;
+                grid-template-rows: 200px 200px !important;
                     }
                     
                     /* Show page info in print */
@@ -1593,10 +1597,10 @@ class EnhancedComicGenerator:
                         color: #999 !important;
                     }
                     
-                    /* Panels exact 400x540 each - no gaps */
+            /* Panels exact 300x200 each - no gaps */
                     .panel {
-                        width: 400px !important;
-                        height: 540px !important;
+                width: 300px !important;
+                height: 200px !important;
                         border: 1px solid #000 !important;
                         overflow: hidden !important;
                         position: relative !important;
