@@ -48,6 +48,29 @@ body {
     position: relative;
 }
 
+/* Image and overlay layers */
+.grid-item .panel-img{
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    background: #000;
+}
+
+.grid-item .bubble-layer{
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none; /* bubbles themselves will re-enable */
+}
+
+.grid-item .bubble-layer .bubble{
+    position: absolute;
+    pointer-events: auto;
+}
+
 /* Make navigation buttons small */
 .button button {
     padding: 4px;

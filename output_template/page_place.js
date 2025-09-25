@@ -9,7 +9,7 @@ function placeDialogs(page) {
     // First, clear all items and hide by default
     for (var j = 0; j < gridItems.length; j++) {
         var gi = gridItems[j];
-        gi.style.display = 'none';
+        gi.style.display = '';
         gi.style.gridRow = '';
         gi.style.gridColumn = '';
         gi.style.backgroundImage = '';
@@ -21,11 +21,20 @@ function placeDialogs(page) {
         var gridItem = gridItems[index];
         if (!gridItem) return;
 
-        gridItem.style.display = 'flex';
-        gridItem.style.backgroundImage = `url("${path}${panel.image}.png")`;
-
         // Reset content
         gridItem.innerHTML = "";
+
+        // Add panel image element instead of background-image
+        const img = document.createElement('img');
+        img.className = 'panel-img';
+        img.src = `${path}${panel.image}.png`;
+        img.alt = 'Panel';
+        gridItem.appendChild(img);
+
+        // Bubble overlay layer (absolute, full-size)
+        const bubbleLayer = document.createElement('div');
+        bubbleLayer.className = 'bubble-layer';
+        gridItem.appendChild(bubbleLayer);
 
         // Add speech bubble if present and not an action scene
         var bubbleData = (page['bubbles'] || [])[index];
@@ -33,11 +42,6 @@ function placeDialogs(page) {
 
         const dialog_temp = bubbleData['dialog'];
         if (dialog_temp == "((action-scene))") return;
-
-        const wrapper = document.createElement('div');
-        wrapper.style.position = 'relative';
-        wrapper.style.width = '100%';
-        wrapper.style.height = '100%';
 
         const bubble_temp = document.createElement('div');
         bubble_temp.classList.add('bubble');
@@ -68,8 +72,7 @@ function placeDialogs(page) {
         }
 
         bubble_temp.appendChild(tail);
-        wrapper.appendChild(bubble_temp);
-        gridItem.appendChild(wrapper);
+        bubbleLayer.appendChild(bubble_temp);
     });
 }
 
