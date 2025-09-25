@@ -45,8 +45,8 @@ class ComicEditor {
                 background: white;
                 margin: 20px auto;
                 box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-                width: 800px;  /* exact width */
-                height: 1080px; /* exact height */
+                width: 600px;  /* updated width */
+                height: 400px; /* updated height */
             }
             
             .comic-panel {
@@ -149,13 +149,14 @@ class ComicEditor {
             .toolbar-btn {
                 display: block;
                 width: 100%;
-                padding: 10px 15px;
-                margin: 5px 0;
+                padding: 6px 10px; /* smaller buttons */
+                margin: 3px 0;
                 background: #007bff;
                 color: white;
                 border: none;
                 border-radius: 5px;
                 cursor: pointer;
+                font-size: 12px; /* smaller font */
                 font-weight: bold;
                 transition: background 0.2s;
             }
@@ -237,6 +238,12 @@ class ComicEditor {
             .edit-hint.show {
                 opacity: 1;
             }
+
+            /* Bubble style modifiers */
+            .bubble-square { border-radius: 0 !important; }
+            .bubble-cloud { border-radius: 40px !important; }
+            .bubble-thought { border-style: dashed !important; border-radius: 30px !important; }
+            .bubble-idea { background: #fff9c4 !important; border-color: #fdd835 !important; border-radius: 20px !important; }
         `;
         document.head.appendChild(style);
     }
@@ -275,29 +282,17 @@ class ComicEditor {
         // Create a default comic if loading fails
         const sampleData = {
             pages: [{
-                width: 800,
-                height: 600,
+                width: 600,
+                height: 400,
                 panels: [
-                    {
-                        x: 10, y: 10, width: 380, height: 280,
-                        image: '/frames/frame000.png'
-                    },
-                    {
-                        x: 410, y: 10, width: 380, height: 280,
-                        image: '/frames/frame001.png'
-                    }
+                    { x: 0, y: 0, width: 300, height: 200, image: '/frames/frame000.png' },
+                    { x: 300, y: 0, width: 300, height: 200, image: '/frames/frame001.png' },
+                    { x: 0, y: 200, width: 300, height: 200, image: '/frames/frame002.png' },
+                    { x: 300, y: 200, width: 300, height: 200, image: '/frames/frame003.png' }
                 ],
-                bubbles: [
-                    {
-                        id: 'bubble1',
-                        x: 50, y: 50, width: 150, height: 60,
-                        text: 'Add your text here!',
-                        panelIndex: 0
-                    }
-                ]
+                bubbles: []
             }]
         };
-        
         this.renderComic(sampleData);
     }
     
@@ -320,6 +315,7 @@ class ComicEditor {
                 panelDiv.style.top = panel.y + 'px';
                 panelDiv.style.width = panel.width + 'px';
                 panelDiv.style.height = panel.height + 'px';
+                panelDiv.style.border = 'none';
                 panelDiv.dataset.panelIndex = panelIndex;
                 
                 const img = document.createElement('img');
@@ -368,6 +364,10 @@ class ComicEditor {
         const coords = document.createElement('div');
         coords.className = 'coordinates';
         bubble.appendChild(coords);
+        
+        // Apply style class
+        const styleType = bubbleData.style || 'rounded';
+        this.applyBubbleStyle(bubble, styleType);
         
         // Store data
         bubble.dataset.bubbleData = JSON.stringify(bubbleData);
@@ -587,6 +587,13 @@ class ComicEditor {
         resetBtn.textContent = '🔄 Reset';
         resetBtn.onclick = () => this.resetComic();
         toolbar.appendChild(resetBtn);
+
+        // Change bubble style button
+        const styleBtn = document.createElement('button');
+        styleBtn.className = 'toolbar-btn';
+        styleBtn.textContent = '🔄 Bubble Style';
+        styleBtn.onclick = () => this.changeBubbleStyle();
+        toolbar.appendChild(styleBtn);
         
         document.body.appendChild(toolbar);
     }
@@ -651,7 +658,8 @@ class ComicEditor {
                     y: parseInt(bubble.style.top),
                     width: parseInt(bubble.style.width),
                     height: parseInt(bubble.style.height),
-                    text: bubble.querySelector('.bubble-text').textContent
+                    text: bubble.querySelector('.bubble-text').textContent,
+                    style: (JSON.parse(bubble.dataset.bubbleData||'{}').style)||'rounded'
                 });
             });
             
@@ -778,6 +786,46 @@ class ComicEditor {
                 }, 'image/png');
             });
         });
+    }
+
+    /** New methods for bubble style changes */
+    applyBubbleStyle(bubble, styleType) {
+        bubble.classList.remove('bubble-square', 'bubble-cloud', 'bubble-thought', 'bubble-idea');
+        switch(styleType) {
+            case 'square':
+                bubble.classList.add('bubble-square');
+                break;
+            case 'cloud':
+                bubble.classList.add('bubble-cloud');
+                break;
+            case 'thought':
+                bubble.classList.add('bubble-thought');
+                break;
+            case 'idea':
+                bubble.classList.add('bubble-idea');
+                break;
+            default:
+                break; // rounded default
+        }
+        // Save style type in dataset
+        const data = JSON.parse(bubble.dataset.bubbleData || '{}');
+        data.style = styleType;
+        bubble.dataset.bubbleData = JSON.stringify(data);
+    }
+
+    changeBubbleStyle() {
+        if (!this.selectedBubble) {
+            this.showHint('Select a bubble first');
+            return;
+        }
+        const styles = ['rounded','square','cloud','thought','idea'];
+        const data = JSON.parse(this.selectedBubble.dataset.bubbleData || '{}');
+        const current = data.style || 'rounded';
+        const idx = styles.indexOf(current);
+        const nextStyle = styles[(idx + 1) % styles.length];
+        this.applyBubbleStyle(this.selectedBubble, nextStyle);
+        this.saveComicData();
+        this.showHint(`Bubble now: ${nextStyle}`);
     }
 }
 
