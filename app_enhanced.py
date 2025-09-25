@@ -103,6 +103,12 @@ class EnhancedComicGenerator:
         start_time = time.time()
         
         print("🎬 Starting Enhanced Comic Generation...")
+        # Always start with a fresh workspace to avoid stale conflicts
+        print("🧹 Pre-run cleanup: removing old SRT, frames, and output files...")
+        try:
+            self.cleanup_generated(remove_srt=True, remove_frames=True, remove_output=True)
+        except Exception as _cleanup_err:
+            print(f"⚠️ Cleanup warning: {_cleanup_err}")
         if smart_mode:
             print("🎭 Smart mode enabled: Will create 10-15 panel summary with emotion matching")
         
