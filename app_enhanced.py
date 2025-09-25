@@ -1249,8 +1249,8 @@ class EnhancedComicGenerator:
            </button>
     </div>
     <script>
-        // Load comic data
-        fetch('/output/pages.json')
+        // Load comic data (cache-busted)
+        fetch('/output/pages.json?t=' + Date.now())
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Failed to load pages.json');
@@ -1347,7 +1347,8 @@ class EnhancedComicGenerator:
             })
             .catch(error => {
                 console.error('Error loading comic:', error);
-                document.getElementById('comic-grid').innerHTML = '<div class="loading">Error loading comic data: ' + error.message + '</div>';
+                const container = document.getElementById('comic-pages') || document.body;
+                container.innerHTML = '<div class="loading">Error loading comic data: ' + error.message + '</div>';
             });
             
         // Initialize editing functionality after comic loads
