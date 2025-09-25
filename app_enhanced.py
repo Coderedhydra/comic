@@ -245,6 +245,51 @@ class EnhancedComicGenerator:
             traceback.print_exc()
             return False
     
+    def cleanup_generated(self, remove_srt: bool = False, remove_frames: bool = True, remove_output: bool = True):
+        """Remove previously generated artifacts to ensure a fresh run."""
+        removed = {
+            'srt': [],
+            'frames': [],
+            'output': []
+        }
+        try:
+            # Remove SRT files (optional)
+            if remove_srt:
+                for fname in ["test1.srt", "audio/temp_subtitles.json"]:
+                    if os.path.exists(fname):
+                        os.remove(fname)
+                        removed['srt'].append(fname)
+                # Also remove any temp dir
+                if os.path.isdir('temp'):
+                    shutil.rmtree('temp', ignore_errors=True)
+                    removed['srt'].append('temp/')
+            
+            # Remove frames directory (pngs)
+            if remove_frames and os.path.isdir(self.frames_dir):
+                shutil.rmtree(self.frames_dir, ignore_errors=True)
+                os.makedirs(self.frames_dir, exist_ok=True)
+                removed['frames'].append(self.frames_dir + '/**')
+            
+            # Remove output artifacts
+            if remove_output and os.path.isdir(self.output_dir):
+                shutil.rmtree(self.output_dir, ignore_errors=True)
+                os.makedirs(self.output_dir, exist_ok=True)
+                removed['output'].append(self.output_dir + '/**')
+            
+            # Also clear panel exports if exist
+            if remove_output and os.path.isdir('output/panels'):
+                shutil.rmtree('output/panels', ignore_errors=True)
+                removed['output'].append('output/panels/**')
+            if remove_output and os.path.isdir('output/page_images'):
+                shutil.rmtree('output/page_images', ignore_errors=True)
+                removed['output'].append('output/page_images/**')
+            
+            print("🧹 Cleanup complete:", removed)
+            return removed
+        except Exception as e:
+            print(f"❌ Cleanup failed: {e}")
+            return removed
+    
     def _enhance_all_images(self):
         """Enhance quality of all extracted frames (simple color-preserving method)"""
         if not os.path.exists(self.frames_dir):
@@ -1885,6 +1930,21 @@ def status():
         'frames_exist': os.path.exists(comic_generator.frames_dir),
         'output_exists': os.path.exists('output/page.html')
     })
+
+@app.route('/cleanup', methods=['POST'])
+def cleanup():
+    """Delete previously generated files so a new run starts fresh.
+    Body JSON optional flags: remove_srt, remove_frames, remove_output
+    """
+    try:
+        opts = request.get_json(silent=True) or {}
+        remove_srt = bool(opts.get('remove_srt', False))
+        remove_frames = bool(opts.get('remove_frames', True))
+        remove_output = bool(opts.get('remove_output', True))
+        result = comic_generator.cleanup_generated(remove_srt, remove_frames, remove_output)
+        return jsonify({'ok': True, 'removed': result})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
 
 @app.route('/output/<path:filename>')
 def output_file(filename):
