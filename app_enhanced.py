@@ -1905,6 +1905,11 @@ def view_comic():
     # Otherwise serve regular comic
     return send_from_directory('output', 'page.html')
 
+@app.route('/interactive-editor')
+def interactive_editor():
+    """Serve the custom interactive editor template that loads /output/pages.json"""
+    return render_template('generated_comic_editor_custom.html')
+
 @app.route('/smart_comic')
 def view_smart_comic():
     """Serve the smart comic viewer"""
