@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generated Comic - Interactive Editor</title>
+    <style>
+        body { margin: 0; padding: 20px; background: #f0f0f0; font-family: Arial, sans-serif; }
+        .comic-container { max-width: 1200px; margin: 0 auto; }
+        .comic-page {
+            background: white; width: 600px; height: 400px; padding: 0; margin: 0;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1); box-sizing: border-box;
+            position: relative; overflow: hidden; border: 1px solid #333;
+        }
+        .comic-grid {
+            display: grid; grid-template-columns: 300px 300px; grid-template-rows: 200px 200px;
+            gap: 0; width: 100%; height: 100%; position: absolute; top: 0; left: 0;
+        }
+        .page-wrapper { margin: 30px auto; width: 600px; display: flex; flex-direction: column; align-items: center; }
+        .page-title { text-align: center; color: #333; margin-bottom: 10px; font-size: 18px; font-weight: bold; }
+        .panel {
+            position: relative; overflow: hidden; width: 100%; height: 100%;
+            box-sizing: border-box; cursor: pointer; transition: outline 0.2s ease;
+        }
+        .panel.selected { outline: 3px solid #2196F3; outline-offset: -3px; }
+        .panel:nth-child(1) { border-right: 1px solid #333; border-bottom: 1px solid #333; }
+        .panel:nth-child(2) { border-bottom: 1px solid #333; }
+        .panel:nth-child(3) { border-right: 1px solid #333; }
+        .panel img { width: 100%; height: 100%; object-fit: contain; object-position: center; background-color: #fff; }
+
+        .speech-bubble {
+            position: absolute; display: flex; justify-content: center; align-items: center;
+            background: white; border: 2px solid #333; border-radius: 15px; padding: 10px;
+            width: 160px; min-width: 60px; height: auto; min-height: 40px; 
+            font-size: 13px; font-weight: bold;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3); z-index: 10; text-align: center; color: #333;
+            cursor: move; transition: transform 0.2s, box-shadow 0.2s, border-radius 0.2s, outline 0.2s;
+            resize: both; overflow: hidden;
+        }
+        .bubble-text { padding: 2px; }
+        .speech-bubble.selected { outline: 2px dashed #4CAF50; }
+        .speech-bubble:hover { box-shadow: 3px 3px 12px rgba(0,0,0,0.5); }
+        .speech-bubble::after {
+            content: ''; position: absolute; bottom: -9px; left: 20px; width: 0; height: 0;
+            border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 10px solid #333;
+            transition: border-color 0.2s;
+        }
+        .speech-bubble.cloud {
+            border-radius: 55% 45% 42% 58% / 60% 60% 40% 40%; border: 2px solid #03A9F4;
+            background: #E1F5FE; color: #0277BD;
+        }
+        .speech-bubble.cloud::after { border-top-color: #03A9F4; }
+        .speech-bubble.thought {
+            border-radius: 50%; border-style: dashed; border-color: #78909C; background: #F5F5F5; color: #455A64;
+        }
+        .speech-bubble.thought::after { display: none; }
+        .speech-bubble.thought::before, .speech-bubble.thought > .thought-trail::before {
+            content: ''; position: absolute; bottom: -20px; left: 20px; width: 15px; height: 15px;
+            background: #F5F5F5; border: 2px dashed #78909C; border-radius: 50%; z-index: -1;
+        }
+        .speech-bubble.thought::before { bottom: -32px; left: 10px; width: 10px; height: 10px; }
+        
+        .speech-bubble.reaction {
+            background: #FFFDE7; border: 2px solid #FBC02D; color: #F57F17;
+            clip-path: polygon(0% 25%, 15% 25%, 20% 0%, 25% 25%, 75% 25%, 80% 0%, 85% 25%, 100% 25%, 100% 75%, 85% 75%, 80% 100%, 75% 75%, 25% 75%, 20% 100%, 15% 75%, 0% 75%);
+        }
+        .speech-bubble.reaction::after { border-top-color: #FBC02D; }
+
+        .speech-bubble.narration {
+            background: #FAFAFA; border: 2px solid #BDBDBD; color: #424242; border-radius: 3px;
+        }
+        .speech-bubble.narration::after { display: none; }
+
+        .speech-bubble textarea {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; box-sizing: border-box;
+            border: 1px solid #4CAF50; background: rgba(255,255,255,0.95);
+            font: inherit; text-align: center; resize: none; padding: 10px; z-index: 102;
+        }
+
+        .edit-controls {
+            position: fixed; bottom: 20px; right: 20px; background: rgba(44, 62, 80, 0.9);
+            color: white; padding: 10px 15px; border-radius: 8px; font-size: 13px;
+            z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); width: 200px;
+        }
+        .edit-controls h4 { margin: 0 0 10px 0; color: #26a69a; text-align: center; }
+        .edit-controls p { margin: 5px 0; opacity: 0.9; font-size: 12px; }
+        .edit-controls button, .edit-controls select {
+            margin-top: 5px; padding: 5px 8px; font-size: 12px; border: none;
+            border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; box-sizing: border-box;
+        }
+        .edit-controls button { background-color: #3498db; color: white; }
+        .edit-controls .control-group { margin-top: 10px; border-top: 1px solid #555; padding-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="comic-container">
+        <h1 class="comic-title">🎬 Generated Comic</h1>
+        <div id="comic-pages"><div class="loading">Loading comic...</div></div>
+    </div>
+
+    <div class="edit-controls">
+        <h4>✏️ Interactive Editor</h4>
+        <p>• Double-click bubble to edit text.</p>
+        <p>• Hover & scroll on bubble to resize.</p>
+        <p>• Drag handle (bottom-right) to resize.</p>
+        <div class="control-group">
+            <button onclick="addBubble()">➕ Add Bubble to Panel</button>
+        </div>
+        <div class="control-group">
+            <label for="bubble-type-select" style="font-size: 12px; display: block; margin-bottom: 5px;">Change Selected Bubble Type:</label>
+            <select id="bubble-type-select" onchange="changeBubbleType(this.value)">
+                <option value="speech">Speech</option>
+                <option value="thought">Thought</option>
+                <option value="reaction">Reaction</option>
+                <option value="narration">Narration</option>
+            </select>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('/output/pages.json')
+                .then(res => res.ok ? res.json() : Promise.reject(new Error('Failed to load pages.json')))
+                .then(data => {
+                    renderComic(data);
+                    initializeEditor();
+                })
+                .catch(err => {
+                    document.getElementById('comic-pages').innerHTML = `<div class="loading">Error: ${err.message}</div>`;
+                });
+        });
+
+        function renderComic(data) {
+            const container = document.getElementById('comic-pages');
+            container.innerHTML = '';
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div class="loading">No comic data found</div>';
+                return;
+            }
+            
+            data.forEach((pageData, pageIndex) => {
+                const pageWrapper = document.createElement('div');
+                pageWrapper.className = 'page-wrapper';
+                
+                const pageTitleEl = document.createElement('h2');
+                pageTitleEl.className = 'page-title';
+                pageTitleEl.textContent = `Page ${pageIndex + 1}`;
+                pageWrapper.appendChild(pageTitleEl);
+
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'comic-page';
+                pageDiv.dataset.pageIndex = pageIndex;
+                const grid = document.createElement('div');
+                grid.className = 'comic-grid';
+                
+                pageData.panels.forEach((panelData, panelIndex) => {
+                    const panelDiv = document.createElement('div');
+                    panelDiv.className = 'panel';
+                    panelDiv.dataset.panelIndex = panelIndex;
+                    const img = document.createElement('img');
+                    img.src = '/frames/final/' + panelData.image;
+                    panelDiv.appendChild(img);
+
+                    if (pageData.bubbles && pageData.bubbles[panelIndex]) {
+                        const bubbleData = pageData.bubbles[panelIndex];
+                        const bubbleDiv = createBubbleElement({
+                            id: `initial-${pageIndex}-${panelIndex}`,
+                            text: bubbleData.dialog || '',
+                            left: `${bubbleData.bubble_offset_x || 50}px`,
+                            top: `${bubbleData.bubble_offset_y || 50}px`,
+                            type: 'speech'
+                        });
+                        panelDiv.appendChild(bubbleDiv);
+                    }
+                    grid.appendChild(panelDiv);
+                });
+                pageDiv.appendChild(grid);
+                pageWrapper.appendChild(pageDiv);
+                container.appendChild(pageWrapper);
+            });
+        }
+
+        let currentlyEditing = null, draggedBubble = null;
+        let offset = {x: 0, y: 0};
+        let currentlySelectedBubble = null, currentlySelectedPanel = null;
+        let resizeObserver;
+
+        function initializeEditor() {
+            resizeObserver = new ResizeObserver(() => saveState());
+            document.querySelectorAll('.panel').forEach(p => p.addEventListener('click', () => selectPanel(p)));
+            document.querySelectorAll('.speech-bubble').forEach(b => initializeBubbleEvents(b));
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+            loadState();
+        }
+
+        function initializeBubbleEvents(bubble) {
+            bubble.addEventListener('dblclick', e => { e.stopPropagation(); editBubbleText(bubble); });
+            bubble.addEventListener('mousedown', startDrag);
+            bubble.addEventListener('click', e => { e.stopPropagation(); selectBubble(bubble); });
+            
+            bubble.addEventListener('wheel', e => {
+                e.preventDefault();
+                const currentWidth = parseFloat(bubble.style.width) || bubble.offsetWidth;
+                const newWidth = currentWidth - (e.deltaY > 0 ? 10 : -10);
+                if (newWidth >= 60) {
+                    bubble.style.width = `${newWidth}px`;
+                    bubble.style.height = 'auto';
+                }
+                saveState();
+            }, { passive: false });
+
+            if (bubble.classList.contains('thought') && !bubble.querySelector('.thought-trail')) {
+                bubble.appendChild(document.createElement('span')).className = 'thought-trail';
+            }
+            resizeObserver.observe(bubble);
+        }
+
+        function selectPanel(panel) {
+            if (currentlySelectedPanel) currentlySelectedPanel.classList.remove('selected');
+            currentlySelectedPanel = panel;
+            if(panel) panel.classList.add('selected');
+            selectBubble(null);
+        }
+
+        function selectBubble(bubble) {
+            if (currentlySelectedBubble) {
+                currentlySelectedBubble.classList.remove('selected');
+                currentlySelectedBubble.style.zIndex = '10';
+            }
+            currentlySelectedBubble = bubble;
+            if (currentlySelectedBubble) {
+                currentlySelectedBubble.classList.add('selected');
+                currentlySelectedBubble.style.zIndex = '101';
+                const type = bubble.classList.contains('narration') ? 'narration' : bubble.classList.contains('reaction') ? 'reaction' : bubble.classList.contains('thought') ? 'thought' : 'speech';
+                document.getElementById('bubble-type-select').value = type;
+                if(currentlySelectedPanel) {
+                    currentlySelectedPanel.classList.remove('selected');
+                    currentlySelectedPanel = null;
+                }
+            }
+        }
+        
+        function addBubble() {
+            if (!currentlySelectedPanel) { alert('Please select a panel first by clicking it.'); return; }
+            const newBubble = createBubbleElement({
+                id: `dynamic-${Date.now()}`, text: 'New Text',
+                left: 'calc(50% - 80px)', top: 'calc(50% - 25px)', type: 'speech'
+            });
+            currentlySelectedPanel.appendChild(newBubble);
+            initializeBubbleEvents(newBubble);
+            selectBubble(newBubble);
+            saveState();
+        }
+
+        function createBubbleElement(data) {
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.className = 'speech-bubble';
+            bubbleDiv.dataset.id = data.id;
+            
+            const textSpan = document.createElement('span');
+            textSpan.className = 'bubble-text';
+            textSpan.textContent = data.text || '';
+            bubbleDiv.appendChild(textSpan);
+
+            if (data.type) bubbleDiv.classList.add(data.type);
+            
+            bubbleDiv.style.left = data.left || '50px';
+            bubbleDiv.style.top = data.top || '50px';
+            bubbleDiv.style.width = data.width || '160px';
+            bubbleDiv.style.height = data.height || 'auto';
+            bubbleDiv.style.borderRadius = data.borderRadius || '';
+            return bubbleDiv;
+        }
+
+        function changeBubbleType(type) {
+            if (!currentlySelectedBubble) { alert('Please select a bubble first.'); return; }
+            currentlySelectedBubble.classList.remove('speech', 'thought', 'reaction', 'narration');
+            currentlySelectedBubble.style.borderRadius = ''; 
+            currentlySelectedBubble.style.clipPath = '';
+            currentlySelectedBubble.classList.add(type);
+            
+            if (type === 'thought' && !currentlySelectedBubble.querySelector('.thought-trail')) {
+                currentlySelectedBubble.appendChild(document.createElement('span')).className = 'thought-trail';
+            }
+            saveState();
+        }
+
+        function editBubbleText(bubble) {
+            if (currentlyEditing) return;
+            currentlyEditing = bubble;
+            const textSpan = bubble.querySelector('.bubble-text');
+            const currentText = textSpan.textContent;
+            textSpan.style.display = 'none';
+            
+            const textarea = document.createElement('textarea');
+            textarea.value = currentText;
+            bubble.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+
+            const finishEditing = () => {
+                textSpan.textContent = textarea.value;
+                bubble.removeChild(textarea);
+                textSpan.style.display = '';
+                currentlyEditing = null;
+                saveState();
+            };
+            textarea.addEventListener('blur', finishEditing, { once: true });
+            textarea.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); textarea.blur(); }});
+        }
+        
+        function startDrag(e) {
+            const bubble = e.target.closest('.speech-bubble');
+            if (!bubble || currentlyEditing || e.target.tagName === 'TEXTAREA') return;
+            if (e.offsetX > bubble.offsetWidth - 15 && e.offsetY > bubble.offsetHeight - 15) return;
+
+            draggedBubble = bubble;
+            selectBubble(bubble);
+            const rect = bubble.getBoundingClientRect();
+            offset = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            draggedBubble.style.transition = 'none';
+            e.preventDefault();
+        }
+        function drag(e) {
+            if (!draggedBubble) return;
+            const parentRect = draggedBubble.parentElement.getBoundingClientRect();
+            let x = e.clientX - parentRect.left - offset.x;
+            let y = e.clientY - parentRect.top - offset.y;
+            const { offsetWidth: w, offsetHeight: h } = draggedBubble;
+            
+            draggedBubble.style.borderRadius = '';
+            const threshold = 10;
+            if (draggedBubble.classList.contains('speech') && (x < threshold || x + w > parentRect.width - threshold || y < threshold || y + h > parentRect.height - threshold)) {
+                 draggedBubble.style.borderRadius = '30% 70% 50% 50% / 50% 60% 40% 50%';
+            }
+
+            draggedBubble.style.left = `${Math.max(0, Math.min(x, parentRect.width - w))}px`;
+            draggedBubble.style.top = `${Math.max(0, Math.min(y, parentRect.height - h))}px`;
+        }
+        function stopDrag() {
+            if (draggedBubble) {
+                draggedBubble.style.transition = '';
+                saveState();
+                draggedBubble = null;
+            }
+        }
+
+        function saveState() {
+            const state = [];
+            document.querySelectorAll('.speech-bubble').forEach(bubble => {
+                const textSpan = bubble.querySelector('.bubble-text');
+                if (!textSpan) return;
+                state.push({
+                    id: bubble.dataset.id,
+                    text: textSpan.textContent,
+                    left: bubble.style.left, top: bubble.style.top,
+                    width: bubble.style.width, height: bubble.style.height,
+                    type: bubble.className.split(' ').find(c => ['speech','thought','reaction','narration'].includes(c)) || 'speech',
+                    borderRadius: bubble.style.borderRadius,
+                });
+            });
+            localStorage.setItem('comicEditorState', JSON.stringify(state));
+        }
+
+        function loadState() {
+            const savedState = localStorage.getItem('comicEditorState');
+            if (!savedState) return;
+            try {
+                const state = JSON.parse(savedState);
+                state.forEach(bubbleData => {
+                    let bubble = document.querySelector(`[data-id="${bubbleData.id}"]`);
+                    if (!bubble && bubbleData.id.startsWith('dynamic')) {
+                        // Optional: recreate dynamic bubbles if needed
+                    } else if (bubble) {
+                        const textSpan = bubble.querySelector('.bubble-text');
+                        bubble.className = 'speech-bubble';
+                        bubble.classList.add(bubbleData.type);
+                        if(textSpan) textSpan.textContent = bubbleData.text;
+                        bubble.style.left = bubbleData.left;
+                        bubble.style.top = bubbleData.top;
+                        bubble.style.width = bubbleData.width;
+                        bubble.style.height = bubbleData.height;
+                        bubble.style.borderRadius = bubbleData.borderRadius;
+                    }
+                });
+            } catch(e) {
+                console.error("Failed to load state:", e);
+                localStorage.removeItem('comicEditorState');
+            }
+        }
+    </script>
+</body>
+</html>
