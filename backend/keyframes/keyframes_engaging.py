@@ -6,6 +6,7 @@ Focuses on visual quality and storytelling, not showing emotion labels
 import os
 import cv2
 import srt
+import json  # 👈 ADD THIS LINE
 from typing import List, Dict, Tuple
 import numpy as np
 from backend.enhanced_emotion_matcher import EnhancedEmotionMatcher
@@ -52,6 +53,9 @@ def generate_keyframes_engaging(video_path: str, story_subs: List, max_frames: i
     print(f"📹 Analyzing video: {fps:.1f} fps, {total_frames} frames")
     print(f"🔍 Finding best frames for each story moment...")
     
+    # Track frame filename -> original timestamp
+    frame_metadata = {}
+    
     # Process each subtitle
     selected_count = 0
     
@@ -73,27 +77,43 @@ def generate_keyframes_engaging(video_path: str, story_subs: List, max_frames: i
         )
         
         if best_frame is not None:
-            # Save the selected frame
-            output_path = os.path.join(final_dir, f"frame{selected_count:03d}.png")
+            # Save the selected frame with consistent naming
+            filename = f"frame_{selected_count:03d}.png"
+            output_path = os.path.join(final_dir, filename)
             
             # Apply any visual enhancements for comic style
             enhanced_frame = enhance_for_comic(best_frame['image'])
             cv2.imwrite(output_path, enhanced_frame)
+            
+            # Store original timestamp (midpoint of subtitle)
+            original_timestamp = sub.start.total_seconds() + (sub.end.total_seconds() - sub.start.total_seconds()) / 2
+            frame_metadata[filename] = original_timestamp
             
             selected_count += 1
         else:
             # Fallback: get a decent frame from the middle
             fallback_frame = get_decent_frame(cap, sub, fps)
             if fallback_frame is not None:
-                output_path = os.path.join(final_dir, f"frame{selected_count:03d}.png")
+                filename = f"frame_{selected_count:03d}.png"
+                output_path = os.path.join(final_dir, filename)
                 enhanced_frame = enhance_for_comic(fallback_frame)
                 cv2.imwrite(output_path, enhanced_frame)
+                
+                # Store fallback timestamp
+                original_timestamp = sub.start.total_seconds() + (sub.end.total_seconds() - sub.start.total_seconds()) / 2
+                frame_metadata[filename] = original_timestamp
+                
                 selected_count += 1
     
     cap.release()
     
+    # Save metadata for regeneration (critical for video-based regenerate)
+    with open("frames/frame_metadata.json", "w") as f:
+        json.dump(frame_metadata, f, indent=2)
+    
     print(f"\n✅ Selected {selected_count} engaging frames for comic")
     print(f"📁 Frames saved to: {final_dir}")
+    print(f"💾 Frame metadata saved to: frames/frame_metadata.json")
     
     return selected_count > 0
 
@@ -221,47 +241,31 @@ def calculate_sharpness(frame):
     variance = laplacian.var()
     
     # Normalize to 0-1 range
-    # Typical variance ranges from 0 (very blurry) to 1000+ (very sharp)
     normalized = min(variance / 500.0, 1.0)
     return normalized
 
 
 def enhance_for_comic(frame):
     """Apply subtle enhancements to make frame more comic-like"""
-    # Just enhance contrast slightly for better comic appearance
-    # No heavy processing or style changes
-    
-    # Increase contrast slightly
     lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
-    
-    # Apply CLAHE for better contrast
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     l = clahe.apply(l)
-    
     enhanced = cv2.merge([l, a, b])
     enhanced = cv2.cvtColor(enhanced, cv2.COLOR_LAB2BGR)
-    
     return enhanced
 
 
 def get_decent_frame(cap, subtitle, fps):
     """Get a decent fallback frame"""
-    # Try multiple positions to find a decent frame
-    positions = [0.5, 0.3, 0.7, 0.2, 0.8]  # Middle, then alternatives
-    
+    positions = [0.5, 0.3, 0.7, 0.2, 0.8]
     duration = subtitle.end.total_seconds() - subtitle.start.total_seconds()
-    
     for pos in positions:
         time_offset = subtitle.start.total_seconds() + (duration * pos)
         frame_num = int(time_offset * fps)
-        
         cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
         ret, frame = cap.read()
-        
         if ret and frame is not None:
-            # Quick quality check
             if calculate_sharpness(frame) > 0.3:
                 return frame
-    
     return None

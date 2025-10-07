@@ -1,0 +1,720 @@
+"""
+Enhanced Comic Generation Application
+High-quality comic generation using AI-enhanced processing
+"""
+
+import os
+import webbrowser
+import time
+import threading
+from flask import Flask, render_template, request, jsonify, send_from_directory, send_file
+from pathlib import Path
+import cv2
+import numpy as np
+from PIL import Image
+import srt
+import json
+import shutil
+from typing import List
+import traceback
+
+# Import enhanced modules
+from backend.ai_enhanced_core import (
+    image_processor, comic_styler, face_detector, layout_optimizer
+)
+from backend.ai_bubble_placement import ai_bubble_placer
+from backend.subtitles.subs_real import get_real_subtitles
+from backend.keyframes.keyframes_simple import generate_keyframes_simple
+from backend.keyframes.keyframes import black_bar_crop
+from backend.class_def import bubble, panel, Page
+
+# Import smart comic generation
+try:
+    from backend.emotion_aware_comic import EmotionAwareComicGenerator
+    from backend.story_analyzer import SmartComicGenerator
+    SMART_COMIC_AVAILABLE = True
+    print("✅ Smart comic generation available!")
+except Exception as e:
+    SMART_COMIC_AVAILABLE = False
+    print(f"⚠️ Smart comic generation not available: {e}")
+
+# Import panel extractor
+try:
+    from backend.panel_extractor import PanelExtractor
+    PANEL_EXTRACTOR_AVAILABLE = True
+    print("✅ Panel extractor available!")
+except Exception as e:
+    PANEL_EXTRACTOR_AVAILABLE = False
+    print(f"⚠️ Panel extractor not available: {e}")
+
+# Import smart story extractor
+try:
+    from backend.smart_story_extractor import SmartStoryExtractor
+    STORY_EXTRACTOR_AVAILABLE = True
+    print("✅ Smart story extractor available!")
+except Exception as e:
+    STORY_EXTRACTOR_AVAILABLE = False
+    print(f"⚠️ Smart story extractor not available: {e}")
+
+app = Flask(__name__)
+
+# Import editor routes
+try:
+    from comic_editor_server import add_editor_routes
+    add_editor_routes(app)
+    print("✅ Comic editor integrated!")
+except Exception as e:
+    print(f"⚠️ Could not load comic editor: {e}")
+
+# Ensure directories exist
+os.makedirs('video', exist_ok=True)
+os.makedirs('frames/final', exist_ok=True)
+os.makedirs('output', exist_ok=True)
+
+class EnhancedComicGenerator:
+    """High-quality comic generation with AI enhancement"""
+    
+    def __init__(self):
+        self.video_path = 'video/uploaded.mp4'
+        self.frames_dir = 'frames/final'
+        self.output_dir = 'output'
+        self.apply_comic_style = False
+        
+    def cleanup_generated(self):
+        """Deletes all old files to ensure a fresh start."""
+        print("🧹 Performing full cleanup of previous run...")
+        if os.path.isdir(self.frames_dir): shutil.rmtree(self.frames_dir)
+        if os.path.isdir(self.output_dir): shutil.rmtree(self.output_dir)
+        if os.path.isdir('temp'): shutil.rmtree('temp')
+        if os.path.exists('test1.srt'): os.remove('test1.srt')
+        os.makedirs(self.frames_dir, exist_ok=True)
+        os.makedirs(self.output_dir, exist_ok=True)
+        print("✅ Cleanup complete.")
+
+    def generate_comic(self, smart_mode=False, emotion_match=False):
+        """Main comic generation pipeline"""
+        start_time = time.time()
+        self.cleanup_generated()
+        print("🎬 Starting Enhanced Comic Generation...")
+        
+        try:
+            get_real_subtitles(self.video_path)
+            
+            all_subs = []
+            filtered_subs = None
+            if os.path.exists('test1.srt'):
+                with open('test1.srt', 'r', encoding='utf-8') as f:
+                    all_subs = list(srt.parse(f.read()))
+                try:
+                    from backend.full_story_extractor import FullStoryExtractor
+                    extractor = FullStoryExtractor()
+                    sub_list = [{'index': s.index, 'text': s.content, 'start': s.start.total_seconds(), 'end': s.end.total_seconds()} for s in all_subs]
+                    os.makedirs('temp', exist_ok=True)
+                    with open('temp/all_subs.json', 'w') as f: json.dump(sub_list, f)
+                    
+                    story_subs = extractor.extract_full_story('temp/all_subs.json')
+                    story_indices = {s.get('index') for s in story_subs}
+                    filtered_subs = [sub for sub in all_subs if sub.index in story_indices]
+                    print(f"📚 Full story: {len(filtered_subs)} key moments from {len(all_subs)} total")
+                except Exception as e:
+                    print(f"⚠️ Full story extraction failed, using all subtitles: {e}")
+                    filtered_subs = all_subs
+
+            subs_for_keyframes = filtered_subs if filtered_subs is not None else all_subs
+            from backend.keyframes.keyframes_engaging import generate_keyframes_engaging
+            generate_keyframes_engaging(self.video_path, subs_for_keyframes, max_frames=48)
+            
+            black_x, black_y, _, _ = black_bar_crop()
+            self._enhance_all_images()
+            self._enhance_quality_colors()
+            bubbles = self._create_ai_bubbles(black_x, black_y, subs_for_keyframes)
+            pages = self._generate_pages(bubbles)
+            self._save_results(pages)
+            
+            execution_time = (time.time() - start_time) / 60
+            print(f"✅ Comic generation completed in {execution_time:.2f} minutes")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Comic generation failed: {e}")
+            traceback.print_exc()
+            return False
+    
+    def _enhance_all_images(self, single_image_path=None):
+        """Enhances all images in the frames dir, or a single image if specified."""
+        target_dir = self.frames_dir
+        if single_image_path:
+            target_dir = os.path.dirname(single_image_path)
+        
+        if not os.path.exists(target_dir): return
+        try:
+            from backend.simple_color_enhancer import SimpleColorEnhancer
+            enhancer = SimpleColorEnhancer()
+            if single_image_path:
+                enhancer.enhance_image(single_image_path, single_image_path)
+            else:
+                enhancer.enhance_batch(target_dir)
+        except Exception as e:
+            print(f"❌ Simple enhancement failed: {e}")
+    
+    def _enhance_quality_colors(self, single_image_path=None):
+        """Enhances colors for all images, or a single image if specified."""
+        target_dir = self.frames_dir
+        if single_image_path:
+            target_dir = os.path.dirname(single_image_path)
+            
+        try:
+            from backend.quality_color_enhancer import QualityColorEnhancer
+            enhancer = QualityColorEnhancer()
+            if single_image_path:
+                enhancer.enhance_image(single_image_path, single_image_path)
+            else:
+                enhancer.batch_enhance(target_dir)
+        except Exception as e:
+            print(f"⚠️ Quality enhancement failed: {e}")
+
+    def _create_ai_bubbles(self, black_x, black_y, subs_for_bubbles):
+        bubbles = []
+        frame_files = sorted([f for f in os.listdir(self.frames_dir) if f.endswith('.png')])
+        subs_to_use = subs_for_bubbles[:len(frame_files)]
+
+        for i, frame_file in enumerate(frame_files):
+            dialogue = subs_to_use[i].content if i < len(subs_to_use) else ""
+            frame_path = os.path.join(self.frames_dir, frame_file)
+            
+            try:
+                lip_x, lip_y = -1, -1
+                faces = face_detector.detect_faces(frame_path)
+                if faces:
+                    lip_x, lip_y = face_detector.get_lip_position(frame_path, faces[0])
+                
+                bubble_x, bubble_y = ai_bubble_placer.place_bubble_ai(frame_path, (lip_x, lip_y))
+                bubbles.append(bubble(
+                    bubble_offset_x=bubble_x, bubble_offset_y=bubble_y,
+                    lip_x=lip_x, lip_y=lip_y, dialog=dialogue, emotion='normal'
+                ))
+            except Exception:
+                bubbles.append(bubble(
+                    bubble_offset_x=50, bubble_offset_y=20,
+                    lip_x=-1, lip_y=-1, dialog=dialogue, emotion='normal'
+                ))
+        return bubbles
+    
+    def _generate_pages(self, bubbles):
+        """Generates pages using an external function or a fallback."""
+        try:
+            from backend.fixed_12_pages_800x1080 import generate_12_pages_800x1080
+            frame_files = sorted([f for f in os.listdir(self.frames_dir) if f.endswith('.png')])
+            return generate_12_pages_800x1080(frame_files, bubbles)
+        except ImportError:
+            pages = []
+            frame_files = sorted([f for f in os.listdir(self.frames_dir) if f.endswith('.png')])
+            frames_per_page = 4
+            num_pages = (len(frame_files) + frames_per_page - 1) // frames_per_page
+            frame_counter = 0
+            for i in range(num_pages):
+                page_panels, page_bubbles = [], []
+                for _ in range(frames_per_page):
+                    if frame_counter < len(frame_files):
+                        page_panels.append(panel(
+                            image=frame_files[frame_counter], row_span=6, col_span=6
+                        ))
+                        page_bubbles.append(bubbles[frame_counter] if frame_counter < len(bubbles) else bubble(dialog=""))
+                        frame_counter += 1
+                if page_panels:
+                    pages.append(Page(panels=page_panels, bubbles=page_bubbles))
+            return pages
+
+    def _save_results(self, pages):
+        """Safely saves results to a JSON file."""
+        try:
+            os.makedirs(self.output_dir, exist_ok=True)
+            pages_data = []
+            for page in pages:
+                page_dict = {
+                    'panels': [p if isinstance(p, dict) else p.__dict__ for p in page.panels],
+                    'bubbles': [b if isinstance(b, dict) else b.__dict__ for b in page.bubbles]
+                }
+                pages_data.append(page_dict)
+            
+            with open(os.path.join(self.output_dir, 'pages.json'), 'w', encoding='utf-8') as f:
+                json.dump(pages_data, f, indent=2)
+            
+            self._copy_template_files()
+            print("✅ Results saved successfully!")
+            
+        except Exception as e:
+            print(f"Save results failed: {e}")
+            traceback.print_exc()
+
+    def _copy_template_files(self):
+        """This function now includes the working 'Replace Image', 'Flip Bubble', and Panel Gaps."""
+        try:
+            template_html = '''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generated Comic - Interactive Editor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body { margin: 0; padding: 20px; background: #f0f0f0; font-family: Arial, sans-serif; }
+        .comic-container { max-width: 1200px; margin: 0 auto; }
+        .comic-page {
+            background: white; width: 600px; height: 400px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1); box-sizing: content-box;
+            position: relative; overflow: hidden; border: 1px solid #333;
+            padding: 10px;
+        }
+        .comic-grid {
+            display: grid;
+            grid-template-columns: 285px 285px;
+            grid-template-rows: 185px 185px;
+            gap: 10px;
+            width: 100%; height: 100%;
+        }
+        .page-wrapper { margin: 30px auto; width: 622px; display: flex; flex-direction: column; align-items: center; }
+        .page-title { text-align: center; color: #333; margin-bottom: 10px; font-size: 18px; font-weight: bold; }
+        .panel {
+            position: relative; overflow: hidden; width: 100%; height: 100%;
+            box-sizing: border-box; cursor: pointer; border: 1px solid #333;
+        }
+        .panel.selected { outline: 3px solid #2196F3; outline-offset: -3px; }
+        .panel img { width: 100%; height: 100%; object-fit: cover; object-position: center; }
+
+        .speech-bubble {
+            position: absolute; display: flex; justify-content: center; align-items: center;
+            width: auto; height: auto;
+            min-width: 50px; max-width: 220px; min-height: 30px; 
+            box-sizing: border-box; padding: 8px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3); z-index: 10;
+            cursor: move; overflow: visible; font-size: 13px; font-weight: bold; text-align: center;
+        }
+        .bubble-text { padding: 2px; word-wrap: break-word; }
+        .speech-bubble.selected { outline: 2px dashed #4CAF50; }
+        .speech-bubble textarea {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; box-sizing: border-box;
+            border: 1px solid #4CAF50; background: rgba(255,255,255,0.95);
+            font: inherit; text-align: center; resize: none; padding: 8px; z-index: 102;
+        }
+
+        .speech-bubble.speech { background: white; border: 2px solid #333; color: #333; border-radius: 15px; }
+        .speech-bubble.speech::after {
+            content: ''; position: absolute; bottom: -9px; left: 20px; width: 0; height: 0;
+            border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 10px solid #333;
+        }
+        .speech-bubble.speech.flipped::after { left: auto; right: 20px; }
+        
+        .speech-bubble.thought {
+            background: white; border: 2px dashed #555; color: #333; border-radius: 50%;
+        }
+        .speech-bubble.thought::after { display: none; }
+        .thought-dot {
+            position: absolute; background-color: white; border: 2px solid #555;
+            border-radius: 50%; z-index: -1;
+        }
+        .thought-dot-1 { width: 20px; height: 20px; bottom: -20px; left: 15px; }
+        .thought-dot-2 { width: 12px; height: 12px; bottom: -32px; left: 5px; }
+        .speech-bubble.thought.flipped .thought-dot-1 { left: auto; right: 15px; }
+        .speech-bubble.thought.flipped .thought-dot-2 { left: auto; right: 5px; }
+        
+        .speech-bubble.reaction {
+            background: #FFD700; border: 3px solid #E53935; color: #D32F2F;
+            font-weight: 900; text-transform: uppercase; width: 180px;
+            clip-path: polygon(0% 25%, 17% 21%, 17% 0%, 31% 16%, 50% 4%, 69% 16%, 83% 0%, 83% 21%, 100% 25%, 85% 45%, 95% 62%, 82% 79%, 100% 97%, 79% 89%, 60% 98%, 46% 82%, 27% 95%, 15% 78%, 5% 62%, 15% 45%);
+        }
+
+        .speech-bubble.narration { background: #FAFAFA; border: 2px solid #BDBDBD; color: #424242; border-radius: 3px; }
+        .speech-bubble.idea {
+            background: linear-gradient(180deg,#FFFDD0 0%, #FFF8B5 100%);
+            border: 2px solid #FFA500; color: #6a4b00; border-radius: 40% 60% 40% 60% / 60% 40% 60% 40%;
+        }
+        .speech-bubble.idea::after { content: ''; position: absolute; bottom: -9px; left: 20px; width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 10px solid #FFA500; }
+        .speech-bubble.idea.flipped::after { left: auto; right: 20px; }
+
+        .edit-controls {
+            position: fixed; bottom: 20px; right: 20px; background: rgba(44, 62, 80, 0.9);
+            color: white; padding: 10px 15px; border-radius: 8px; font-size: 13px;
+            z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); width: 220px;
+        }
+        .edit-controls h4 { margin: 0 0 10px 0; color: #26a69a; text-align: center; }
+        .edit-controls button, .edit-controls select { margin-top: 5px; padding: 6px 8px; font-size: 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; box-sizing: border-box; }
+        .edit-controls .control-group { margin-top: 10px; border-top: 1px solid #555; padding-top: 10px; }
+        .edit-controls .reset-button { background-color: #e74c3c; }
+        .edit-controls .action-button { background-color: #4CAF50; }
+        .edit-controls .secondary-button { background-color: #f39c12; }
+    </style>
+</head>
+<body>
+    <div class="comic-container">
+        <h1 class="comic-title">🎬 Generated Comic</h1>
+        <div id="comic-pages"><div class="loading">Loading comic...</div></div>
+    </div>
+
+    <input type="file" id="image-uploader" style="display: none;" accept="image/*">
+
+    <div class="edit-controls">
+        <h4>✏️ Interactive Editor</h4>
+        <div class="control-group">
+            <label for="bubble-type-select">Change Selected Bubble Type:</label>
+            <select id="bubble-type-select" onchange="changeBubbleType(this.value)">
+                <option value="speech">Speech</option>
+                <option value="thought">Thought</option>
+                <option value="reaction">Reaction</option>
+                <option value="narration">Narration</option>
+                <option value="idea">Idea</option>
+            </select>
+            <button onclick="flipBubble()" class="secondary-button">↔️ Flip Bubble</button>
+        </div>
+        <div class="control-group">
+             <button onclick="replacePanelImage()" class="action-button">🖼️ Replace Panel Image</button>
+             <button onclick="exportPagesToPNG()" class="action-button" style="background-color: #2196F3;">🖨️ Export Pages to PNG</button>
+        </div>
+        <div class="control-group">
+             <button onclick="clearSavedState()" class="reset-button">🔄 Clear Edits & Reset</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('/output/pages.json')
+                .then(res => res.ok ? res.json() : Promise.reject(new Error('Failed to load pages.json')))
+                .then(data => { renderComic(data); initializeEditor(); })
+                .catch(err => { document.getElementById('comic-pages').innerHTML = `<div class="loading">Error: ${err.message}</div>`; });
+        });
+
+        function renderComic(data) {
+            const container = document.getElementById('comic-pages');
+            container.innerHTML = '';
+            if (!data || data.length === 0) return;
+
+            data.forEach((pageData, pageIndex) => {
+                if (!pageData.panels || pageData.panels.length === 0) return;
+                const pageWrapper = document.createElement('div');
+                pageWrapper.className = 'page-wrapper';
+                const pageTitleEl = document.createElement('h2');
+                pageTitleEl.className = 'page-title';
+                pageTitleEl.textContent = `Page ${pageIndex + 1}`;
+                pageWrapper.appendChild(pageTitleEl);
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'comic-page';
+                const grid = document.createElement('div');
+                grid.className = 'comic-grid';
+                pageData.panels.forEach((panelData, panelIndex) => {
+                    const panelDiv = document.createElement('div');
+                    panelDiv.className = 'panel';
+                    const img = document.createElement('img');
+                    img.src = '/frames/final/' + panelData.image;
+                    panelDiv.appendChild(img);
+                    if (pageData.bubbles && pageData.bubbles[panelIndex]) {
+                        const bubbleData = pageData.bubbles[panelIndex];
+                        const bubbleDiv = createBubbleElement({
+                            id: `initial-${pageIndex}-${panelIndex}`,
+                            text: bubbleData.dialog || '',
+                            left: `${bubbleData.bubble_offset_x ?? 50}px`,
+                            top: `${bubbleData.bubble_offset_y ?? 20}px`,
+                            type: 'speech'
+                        });
+                        panelDiv.appendChild(bubbleDiv);
+                    }
+                    grid.appendChild(panelDiv);
+                });
+                pageDiv.appendChild(grid);
+                pageWrapper.appendChild(pageDiv);
+                container.appendChild(pageWrapper);
+            });
+        }
+
+        let currentlyEditing = null, draggedBubble = null, offset = {x: 0, y: 0};
+        let currentlySelectedBubble = null;
+
+        function initializeEditor() {
+            document.querySelectorAll('.panel').forEach(p => p.addEventListener('click', e => selectPanel(e.currentTarget)));
+            document.querySelectorAll('.speech-bubble').forEach(b => initializeBubbleEvents(b));
+            document.addEventListener('mousemove', e => { if (draggedBubble) drag(e); });
+            document.addEventListener('mouseup', () => { if (draggedBubble) stopDrag(); });
+            document.getElementById('image-uploader').addEventListener('change', handleImageUpload);
+        }
+
+        function initializeBubbleEvents(bubble) {
+            bubble.addEventListener('dblclick', e => { e.stopPropagation(); editBubbleText(bubble); });
+            bubble.addEventListener('mousedown', e => startDrag(e));
+            bubble.addEventListener('click', e => { e.stopPropagation(); selectBubble(bubble); });
+            bubble.addEventListener('wheel', e => {
+                e.preventDefault();
+                const currentWidth = parseFloat(bubble.style.width) || bubble.offsetWidth;
+                const newWidth = currentWidth - (e.deltaY > 0 ? 10 : -10);
+                if (newWidth >= 60) {
+                    bubble.style.width = `${newWidth}px`;
+                    bubble.style.height = 'auto';
+                }
+            }, { passive: false });
+        }
+        
+        function createBubbleElement(data) {
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.dataset.id = data.id;
+            const textSpan = document.createElement('span');
+            textSpan.className = 'bubble-text';
+            textSpan.textContent = data.text;
+            bubbleDiv.appendChild(textSpan);
+            bubbleDiv.style.left = data.left;
+            bubbleDiv.style.top = data.top;
+            applyBubbleType(bubbleDiv, data.type);
+            return bubbleDiv;
+        }
+        
+        function applyBubbleType(bubble, type) {
+            bubble.querySelectorAll('.thought-dot').forEach(el => el.remove());
+            let baseClasses = 'speech-bubble';
+            if (bubble.classList.contains('selected')) baseClasses += ' selected';
+            if (bubble.classList.contains('flipped')) baseClasses += ' flipped';
+            bubble.className = baseClasses;
+            bubble.classList.add(type);
+            bubble.dataset.type = type;
+            if (type === 'thought') {                for (let i = 1; i <= 2; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = `thought-dot thought-dot-${i}`;
+                    bubble.appendChild(dot);
+                }
+            }
+        }
+        
+        function changeBubbleType(type) {
+            if (!currentlySelectedBubble) return;
+            applyBubbleType(currentlySelectedBubble, type);
+        }
+
+        function flipBubble() {
+            if (!currentlySelectedBubble) return alert("Please select a bubble to flip.");
+            currentlySelectedBubble.classList.toggle('flipped');
+        }
+
+        function selectPanel(panel) {
+            document.querySelectorAll('.panel.selected').forEach(p => p.classList.remove('selected'));
+            panel.classList.add('selected');
+            selectBubble(null);
+        }
+
+        function selectBubble(bubble) {
+            if (currentlySelectedBubble) currentlySelectedBubble.classList.remove('selected');
+            currentlySelectedBubble = bubble;
+            if (currentlySelectedBubble) {
+                currentlySelectedBubble.classList.add('selected');
+                document.querySelectorAll('.panel.selected').forEach(p => p.classList.remove('selected'));
+                document.getElementById('bubble-type-select').value = currentlySelectedBubble.dataset.type || 'speech';
+            }
+        }
+
+        function editBubbleText(bubble) {
+            if (currentlyEditing) return;
+            currentlyEditing = bubble;
+            const textSpan = bubble.querySelector('.bubble-text');
+            const currentText = textSpan.textContent;
+            textSpan.style.display = 'none';
+            bubble.style.height = 'auto';
+            const textarea = document.createElement('textarea');
+            textarea.value = currentText;
+            bubble.appendChild(textarea);
+            textarea.focus();
+            const finishEditing = () => {
+                textSpan.textContent = textarea.value;
+                bubble.removeChild(textarea);
+                textSpan.style.display = '';
+                currentlyEditing = null;
+                bubble.style.height = 'auto';
+            };
+            textarea.addEventListener('blur', finishEditing, { once: true });
+            textarea.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); textarea.blur(); }});
+        }
+        function startDrag(e) {
+            const bubble = e.target.closest('.speech-bubble');
+            if (!bubble || currentlyEditing) return;
+            draggedBubble = bubble;
+            selectBubble(bubble);
+            const rect = bubble.getBoundingClientRect();
+            offset = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        }
+
+        function drag(e) {
+            const parentRect = draggedBubble.parentElement.getBoundingClientRect();
+            let x = e.clientX - parentRect.left - offset.x;
+            let y = e.clientY - parentRect.top - offset.y;
+            draggedBubble.style.left = `${x}px`;
+            draggedBubble.style.top = `${y}px`;
+        }
+
+        function stopDrag() {
+            draggedBubble = null;
+        }
+        
+        function clearSavedState() {
+            if (confirm("Reset all edits to the original AI-generated comic?")) {
+                localStorage.removeItem('comicEditorState');
+                window.location.reload();
+            }
+        }
+
+        async function exportPagesToPNG() {
+            const pages = document.querySelectorAll('.comic-page');
+            if (pages.length === 0) return alert("No pages found.");
+            alert(`Starting export of ${pages.length} page(s).`);
+            for (let i = 0; i < pages.length; i++) {
+                try {
+                    const canvas = await html2canvas(pages[i], { scale: 2 });
+                    const link = document.createElement('a');
+                    link.download = `comic-page-${i + 1}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                } catch (err) {
+                    alert(`Failed to export page ${i + 1}.`);
+                }
+            }
+        }
+        
+        let targetImgForUpload = null;
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file || !targetImgForUpload) return;
+
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            targetImgForUpload.style.opacity = '0.5'; // Indicate loading
+
+            fetch('/replace_panel', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Add a cache-busting query parameter to force image reload
+                    targetImgForUpload.src = `/frames/final/${data.new_filename}?t=${new Date().getTime()}`;
+                } else {
+                    alert('Error replacing image: ' + data.error);
+                }
+                targetImgForUpload.style.opacity = '1';
+            })
+            .catch(error => {
+                console.error('Upload error:', error);
+                alert('An error occurred during the upload.');
+                targetImgForUpload.style.opacity = '1';
+            });
+
+            event.target.value = '';
+        }
+
+        function replacePanelImage() {
+            const pageNum = parseInt(prompt("Enter PAGE number (starts from 1):", "1"));
+            if (isNaN(pageNum) || pageNum < 1) return alert("Invalid page number.");
+
+            const panelNum = parseInt(prompt("Enter PANEL number (1-4):", "1"));
+            if (isNaN(panelNum) || panelNum < 1 || panelNum > 4) return alert("Invalid panel number.");
+
+            targetImgForUpload = document.querySelector(`.page-wrapper:nth-child(${pageNum}) .panel:nth-child(${panelNum}) img`);
+            
+            if (targetImgForUpload) {
+                document.getElementById('image-uploader').click();
+            } else {
+                alert(`Could not find Page ${pageNum}, Panel ${panelNum}.`);
+            }
+        }
+    </script>
+</body>
+</html>'''
+
+            with open(os.path.join(self.output_dir, 'page.html'), 'w', encoding='utf-8') as f:
+                f.write(template_html)
+            print("📄 Template files copied successfully!")
+        except Exception as e:
+            print(f"Template copy failed: {e}")
+
+# (Flask routes start here)
+# ...
+# Global comic generator instance
+comic_generator = EnhancedComicGenerator()
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/uploader', methods=['POST'])
+def upload_file():
+    try:
+        if 'file' not in request.files or request.files['file'].filename == '':
+            return "❌ No file selected"
+        f = request.files['file']
+        if os.path.exists(comic_generator.video_path):
+             os.remove(comic_generator.video_path)
+        f.save(comic_generator.video_path)
+        success = comic_generator.generate_comic()
+        if success:
+            webbrowser.open("http://localhost:5000/comic")
+            return "🎉 Enhanced Comic Created Successfully!"
+        else:
+            return "❌ Comic generation failed"
+    except Exception as e:
+        return f"❌ Error: {str(e)}"
+
+@app.route('/handle_link', methods=['POST'])
+def handle_link():
+    try:
+        link = request.form.get('link', '')
+        if not link:
+            return "❌ No link provided"
+        import yt_dlp
+        ydl_opts = {'outtmpl': comic_generator.video_path, 'format': 'best[height<=720]'}
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([link])
+        success = comic_generator.generate_comic()
+        if success:
+            webbrowser.open("http://localhost:5000/comic")
+            return "🎉 Enhanced Comic Created Successfully!"
+        else:
+            return "❌ Comic generation failed"
+    except Exception as e:
+        return f"❌ Error: {str(e)}"
+
+# NEW: Server-side route to handle image replacement and enhancement
+@app.route('/replace_panel', methods=['POST'])
+def replace_panel():
+    try:
+        if 'image' not in request.files:
+            return jsonify({'success': False, 'error': 'No image file provided.'})
+        
+        file = request.files['image']
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'No image file selected.'})
+
+        # Create a unique filename to avoid browser caching issues
+        timestamp = int(time.time() * 1000)
+        filename = f"replaced_panel_{timestamp}.png"
+        save_path = os.path.join(comic_generator.frames_dir, filename)
+        file.save(save_path)
+
+        # Now, run the same enhancement functions on this new image
+        print(f"🖼️ Enhancing replaced panel image: {filename}")
+        comic_generator._enhance_all_images(single_image_path=save_path)
+        comic_generator._enhance_quality_colors(single_image_path=save_path)
+        print(f"✅ Enhancement complete for {filename}")
+
+        return jsonify({'success': True, 'new_filename': filename})
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/comic')
+def view_comic():
+    return send_from_directory('output', 'page.html')
+
+@app.route('/output/<path:filename>')
+def output_file(filename):
+    return send_from_directory('output', filename)
+
+@app.route('/frames/final/<path:filename>')
+def frame_file(filename):
+    return send_from_directory('frames/final', fiif __name__ == '__main_
+
