@@ -16,15 +16,22 @@ body {
     background-color: rgba(0, 0, 0, 0.42);
 }
 
+/* Make navigation button icons smaller for cleaner look */
+.button button img{
+    width: 30px;
+    height: 30px;
+}
+
 .button button:hover {
     box-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #fff, 0 0 1px #000000,
       0 0 2px #000000, 0 0 3px #000000, 0 0 3px #000000;
   }
 
 .wrapper {
+    /* Updated for 600×400 panel template (2×3 grid) */
     display: flex;
-    height: 1100px;
-    width: 1035px;
+    height: 1200px;   /* 3 rows × 400px */
+    width:  1200px;   /* 2 columns × 600px */
     background-color: rgb(255, 255, 255);
 }
 
@@ -32,8 +39,10 @@ body {
     width: 100%;
     height: 100%;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    grid-auto-rows: calc(1100px / 3); /* ensure three exact rows */
+    /* Exactly two 600px-wide columns */
+    grid-template-columns: repeat(2, 600px);
+    /* Exactly three 400px-tall rows */
+    grid-auto-rows: 400px;
     border: 0; /* default no outer border; modes override */
     row-gap: 0;
     column-gap: 0;
@@ -42,7 +51,8 @@ body {
 .grid-item {
     background-position: center center;
     background-repeat: no-repeat;
-    background-size: cover;
+    /* Use contain so entire image is visible without cropping */
+    background-size: contain;
     border: 0;
     position: relative;
 }
